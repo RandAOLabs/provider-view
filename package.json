@@ -15,6 +15,7 @@
     "@react-three/fiber": "^8.17.14",
     "@types/three": "^0.173.0",
     "ao-process-clients": "^3.7.2",
+    "permaweb-deploy": "^1.1.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.4.0",
