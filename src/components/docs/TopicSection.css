@@ -1,0 +1,17 @@
+.docs-section {
+  text-decoration: none !important;
+}
+
+.docs-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #000000;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+
+.topics {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}

@@ -1,0 +1,241 @@
+.provider-table {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.address-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.address-cell:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.address-cell:active {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.copy-icon {
+  font-size: 0.9rem;
+  color: #666;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.address-cell:hover .copy-icon {
+  opacity: 1;
+}
+
+.copy-icon.success {
+  color: #28a745;
+  opacity: 1;
+}
+
+.delegation-fee {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.delegation-fee .stake-button {
+  background: none;
+  border: none;
+  color: rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  padding: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.2s;
+  font-size: 1.2rem;
+}
+
+.delegation-fee .stake-button:hover {
+  color: #000000;
+  transform: scale(1.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+table th:nth-child(1) { width: 50px; }  /* Status */
+table th:nth-child(2) { width: 12%; } /* Name */
+table th:nth-child(3) { width: 15%; } /* Address */
+table th:nth-child(4) { width: 10%; } /* Join Date */
+table th:nth-child(5) { width: 10%; } /* Provided */
+table th:nth-child(6) { width: 12%; } /* Total Staked */
+table th:nth-child(7) { width: 12%; } /* Delegation Fee */
+table th:nth-child(8) { width: 12%; } /* Random Value Fee */
+table th:nth-child(9) { width: 50px; } /* Expand icon */
+
+th {
+  text-align: left;
+  padding: 1rem 1.25rem;
+  background: #f8f9fa;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.9);
+  vertical-align: middle;
+}
+
+tr {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+tr:not(.expanded-content):hover {
+  background: #f8f9fa;
+}
+
+tr.expanded {
+  background: #ffffff;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-indicator.online {
+  color: #28a745;
+}
+
+.status-indicator.offline {
+  color: #dc3545;
+}
+
+.expand-icon {
+  width: 20px;
+  height: 20px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.expanded-content {
+  background: #f8f9fa;
+}
+
+.expanded-details {
+  padding: 2rem;
+}
+
+.expanded-details .provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.expanded-details .detail-group {
+  margin-bottom: 1.5rem;
+}
+
+.expanded-details .detail-group label {
+  display: block;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.expanded-details .detail-group .detail-value {
+  font-size: 1rem;
+  color: #333;
+}
+
+.expanded-details .detail-value.description {
+  line-height: 1.6;
+  color: #666;
+  margin: 1rem 0;
+}
+
+.expanded-details .status-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.expanded-details .status-badge.active {
+  background: #e6f4ea;
+  color: #1e7e34;
+}
+
+.expanded-details .status-badge.inactive {
+  background: #feeced;
+  color: #dc3545;
+}
+
+.expanded-details .social-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.social-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(0, 0, 0, 0.7);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.social-item:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.social-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.social-icon.twitter {
+  color: #1DA1F2;
+}
+
+.social-icon.discord {
+  color: #5865F2;
+}
+
+.social-icon.telegram {
+  color: #0088cc;
+}
+
+.social-icon.website {
+  color: #2196F3;
+}
+
+.social-item span {
+  font-size: 0.9rem;
+}

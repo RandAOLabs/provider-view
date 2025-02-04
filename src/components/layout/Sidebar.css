@@ -1,0 +1,80 @@
+.sidebar {
+  width: 280px;
+  background: #fff;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.sidebar .logo {
+  margin-bottom: 2rem;
+}
+
+.sidebar .logo img {
+  width: 100px;
+  height: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  font-size: 0.95rem;
+  color: rgba(0, 0, 0, 0.8);
+  text-decoration: none;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+
+.nav-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+.nav-item.active {
+  background: rgba(0, 0, 0, 0.1);
+  color: #000;
+  font-weight: 600;
+}
+
+.main-nav {
+  flex: 1;
+}
+
+.bottom-section {
+  margin-top: auto;
+}
+
+.bottom-nav {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.social-link {
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.social-link:hover {
+  color: #000;
+  transform: translateY(-1px);
+}

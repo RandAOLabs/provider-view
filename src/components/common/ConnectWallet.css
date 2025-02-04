@@ -1,0 +1,26 @@
+.wallet-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.connect-wallet {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #000000;
+  padding: 12px 32px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-shadow: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.connect-wallet:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+  border-color: rgba(0, 0, 0, 0.3);
+}

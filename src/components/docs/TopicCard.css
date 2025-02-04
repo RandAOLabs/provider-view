@@ -1,0 +1,52 @@
+.topic-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+.topic-card:hover {
+  background: rgba(0, 0, 0, 0.02);
+  transform: translateY(-1px);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.topic-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+
+.topic-card p {
+  font-size: 0.9rem;
+  color: rgba(0, 0, 0, 0.7);
+  flex-grow: 1;
+  margin: 0;
+}
+
+.topic-card .arrow {
+  position: absolute;
+  bottom: 1rem;
+  right: 1.5rem;
+  color: #000000;
+  font-size: 1.2rem;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.topic-card:hover .arrow {
+  opacity: 0.5;
+  transform: translateX(0);
+}
