@@ -14,8 +14,22 @@ export const PROVIDER_IDS = [
 
 class AOHelpers {
     constructor() {
-        this.stakingClient = StakingClient.autoConfiguration();
-        this.tokenClient = TokenClient.autoConfiguration();
+        this._stakingClient = null;
+        this._tokenClient = null;
+    }
+
+    get stakingClient() {
+        if (!this._stakingClient) {
+            this._stakingClient = StakingClient.autoConfiguration();
+        }
+        return this._stakingClient;
+    }
+
+    get tokenClient() {
+        if (!this._tokenClient) {
+            this._tokenClient = TokenClient.autoConfiguration();
+        }
+        return this._tokenClient;
     }
 
     // Get wallet token balance

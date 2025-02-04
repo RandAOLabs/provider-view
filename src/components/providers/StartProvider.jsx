@@ -8,19 +8,54 @@ export const StartProvider = ({ currentProvider }) => {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [provider, setProvider] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Simulate a loading delay to prevent UI flashing
-    const timer = setTimeout(() => {
-      setProvider(currentProvider)
-      setIsLoading(false)
-    }, 500)
+    let mounted = true;
 
-    return () => clearTimeout(timer)
-  }, [currentProvider])
+    const initializeProvider = async () => {
+      try {
+        // Wait for the page to fully load
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!mounted) return;
+        
+        if (currentProvider) {
+          setProvider(currentProvider);
+        }
+      } catch (err) {
+        if (mounted) {
+          console.error('Error initializing provider:', err);
+          setError('Unable to connect to wallet. Please refresh the page and try again.');
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initializeProvider();
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentProvider]);
 
   if (isLoading) {
     return <Spinner text="Checking provider status..." />
+  }
+
+  if (error) {
+    return (
+      <div className="add-provider">
+        <h2>Connection Error</h2>
+        <p className="error-message">{error}</p>
+        <button className="start-btn" onClick={() => window.location.reload()}>
+          Retry Connection
+        </button>
+      </div>
+    );
   }
 
   if (provider) {
