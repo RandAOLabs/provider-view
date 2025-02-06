@@ -59,12 +59,21 @@ export default function Providers() {
           <ConnectWallet />
         </header>
         <div className="content">
-          <StartProvider 
-            currentProvider={providers.find(p => p.provider_id === connectedAddress)}
-          />
-          {loading && <Spinner text="Loading providers..." />}
-          {error && <div className="error">{error}</div>}
-          {!loading && !error && <ProviderTable providers={providers} />}
+          {loading ? (
+            <Spinner text="Loading providers..." />
+          ) : error ? (
+            <div className="error">{error}</div>
+          ) : (
+            <>
+              {/* Only render StartProvider after loading is complete */}
+              {isReady && !isConnecting && (
+                <StartProvider 
+                  currentProvider={providers.find(p => p.provider_id === connectedAddress)}
+                />
+              )}
+              <ProviderTable providers={providers} />
+            </>
+          )}
         </div>
       </main>
     </div>

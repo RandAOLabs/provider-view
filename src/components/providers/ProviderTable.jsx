@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
-import { FiCircle, FiChevronDown, FiChevronUp, FiGlobe, FiCheck, FiCopy } from 'react-icons/fi'
+import React, { useState, useEffect } from 'react'
+import { getProviderTotalRandom } from '../../utils/graphQLquery'
+import { FiCircle, FiChevronDown, FiChevronUp, FiGlobe, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
+import { aoHelpers } from '../../utils/ao-helpers'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
@@ -9,6 +11,30 @@ export const ProviderTable = ({ providers }) => {
   const [expandedRows, setExpandedRows] = useState(new Set())
   const [stakingProvider, setStakingProvider] = useState(null)
   const [copiedAddress, setCopiedAddress] = useState(null)
+  const [providerRandomCounts, setProviderRandomCounts] = useState({})
+  const [loadingRandomCounts, setLoadingRandomCounts] = useState(true)
+  const [activeRequests, setActiveRequests] = useState({})
+  const [loadingRequests, setLoadingRequests] = useState({})
+
+  useEffect(() => {
+    const fetchRandomCounts = async () => {
+      setLoadingRandomCounts(true)
+      try {
+        const counts = {}
+        for (const provider of providers) {
+          const count = await getProviderTotalRandom(provider.provider_id)
+          counts[provider.provider_id] = count
+        }
+        setProviderRandomCounts(counts)
+      } catch (error) {
+        console.error('Error fetching random counts:', error)
+      } finally {
+        setLoadingRandomCounts(false)
+      }
+    }
+    
+    fetchRandomCounts()
+  }, [providers])
 
   const truncateAddress = (address) => {
     if (!address) return ''
@@ -26,14 +52,63 @@ export const ProviderTable = ({ providers }) => {
     }
   }
 
-  const toggleRow = (id) => {
-    const newExpandedRows = new Set(expandedRows)
-    if (newExpandedRows.has(id)) {
-      newExpandedRows.delete(id)
-    } else {
-      newExpandedRows.add(id)
+  const toggleRow = async (id, e) => {
+    // Prevent toggling if clicking on elements that handle their own clicks
+    if (e.target.closest('.address-cell') || e.target.closest('.stake-button') || e.target.closest('.social-item')) {
+      return;
     }
-    setExpandedRows(newExpandedRows)
+
+    const newExpandedRows = new Set(expandedRows);
+    
+    if (newExpandedRows.has(id)) {
+      newExpandedRows.delete(id);
+      // Clear active requests when collapsing
+      const newActiveRequests = { ...activeRequests };
+      delete newActiveRequests[id];
+      setActiveRequests(newActiveRequests);
+      setExpandedRows(newExpandedRows);
+    } else {
+      newExpandedRows.add(id);
+      setExpandedRows(newExpandedRows);
+      // Fetch active requests when expanding
+      setLoadingRequests(prev => ({ ...prev, [id]: true }));
+      try {
+        console.log(`Fetching active requests for provider: ${id}`);
+        const response = await aoHelpers.getOpenRandomRequests(id);
+        console.log('Processing active requests response:', {
+          providerId: id,
+          hasResponse: !!response,
+          hasChallengeRequests: !!response?.activeChallengeRequests,
+          hasOutputRequests: !!response?.activeOutputRequests
+        });
+        
+        if (!response?.activeChallengeRequests?.request_ids || !response?.activeOutputRequests?.request_ids) {
+          console.error('Invalid response structure:', response);
+          throw new Error('Invalid response structure from getOpenRandomRequests');
+        }
+
+        setActiveRequests(prev => ({
+          ...prev,
+          [id]: {
+            challengeRequests: response.activeChallengeRequests.request_ids,
+            outputRequests: response.activeOutputRequests.request_ids
+          }
+        }));
+        console.log('Successfully updated active requests state');
+      } catch (error) {
+        console.error('Error fetching active requests:', error);
+        // Clear loading state and set empty requests on error
+        setActiveRequests(prev => ({
+          ...prev,
+          [id]: {
+            challengeRequests: [],
+            outputRequests: []
+          }
+        }));
+      } finally {
+        setLoadingRequests(prev => ({ ...prev, [id]: false }));
+      }
+    }
   }
 
   const formatTokenAmount = (amount) => {
@@ -53,7 +128,8 @@ export const ProviderTable = ({ providers }) => {
             <th>Name</th>
             <th>Address</th>
             <th>Join Date</th>
-            <th>Provided</th>
+            <th>Random Available</th>
+            <th>Random Provided</th>
             <th>Total Staked</th>
             <th>Delegation Fee</th>
             <th>Random Value Fee</th>
@@ -65,7 +141,7 @@ export const ProviderTable = ({ providers }) => {
             <React.Fragment key={provider.provider_id}>
               <tr
                 className={expandedRows.has(provider.provider_id) ? 'expanded' : ''}
-                onClick={() => toggleRow(provider.provider_id)}
+                onClick={(e) => toggleRow(provider.provider_id, e)}
               >
                 <td>
                   <FiCircle 
@@ -98,6 +174,15 @@ export const ProviderTable = ({ providers }) => {
                 </td>
                 <td>{new Date(provider.created_at).toISOString().split('T')[0]}</td>
                 <td>{provider.random_balance || 0}</td>
+                <td>
+                  {loadingRandomCounts ? (
+                    <div className="loading-spinner">
+                      <FiLoader className="animate-spin" />
+                    </div>
+                  ) : (
+                    providerRandomCounts[provider.provider_id] || 0
+                  )}
+                </td>
                 <td>{formatTokenAmount(JSON.parse(provider.stake || '{"amount":0}').amount || 0)}</td>
                 <td>
                   <div className="delegation-fee">
@@ -132,7 +217,7 @@ export const ProviderTable = ({ providers }) => {
               </tr>
               {expandedRows.has(provider.provider_id) && (
                 <tr className="expanded-content">
-                  <td colSpan="9">
+                  <td colSpan="10">
                     <div className="expanded-details">
                       <div className="provider-grid">
                         <div className="detail-group">
@@ -237,6 +322,40 @@ export const ProviderTable = ({ providers }) => {
                             return null;
                           }
                         })()}
+                      </div>
+
+                      <div className="active-requests-section">
+                        <h3>Active Requests</h3>
+                        {loadingRequests[provider.provider_id] ? (
+                          <div className="loading-spinner">
+                            <FiLoader className="animate-spin" />
+                          </div>
+                        ) : activeRequests[provider.provider_id] ? (
+                          <div className="requests-container">
+                            <div className="request-group">
+                              <h4>Challenge Requests ({activeRequests[provider.provider_id].challengeRequests.length})</h4>
+                              <div className="request-list">
+                                {activeRequests[provider.provider_id].challengeRequests.map((requestId, index) => (
+                                  <div key={index} className="request-item">
+                                    {truncateAddress(requestId)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="request-group">
+                              <h4>Output Requests ({activeRequests[provider.provider_id].outputRequests.length})</h4>
+                              <div className="request-list">
+                                {activeRequests[provider.provider_id].outputRequests.map((requestId, index) => (
+                                  <div key={index} className="request-item">
+                                    {truncateAddress(requestId)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>No active requests</div>
+                        )}
                       </div>
                     </div>
                   </td>

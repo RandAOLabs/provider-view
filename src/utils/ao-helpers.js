@@ -1,4 +1,4 @@
-import { StakingClient, TokenClient } from 'ao-process-clients'
+import { StakingClient, TokenClient, RandomClient } from 'ao-process-clients'
 
 // Minimum tokens needed to stake for new stakers
 export const MINIMUM_STAKE_AMOUNT = '100000000000000000000'
@@ -16,6 +16,7 @@ class AOHelpers {
     constructor() {
         this._stakingClient = null;
         this._tokenClient = null;
+        this._randomClient = null;
     }
 
     get stakingClient() {
@@ -30,6 +31,38 @@ class AOHelpers {
             this._tokenClient = TokenClient.autoConfiguration();
         }
         return this._tokenClient;
+    }
+
+    get randomClient() {
+        if (!this._randomClient) {
+            this._randomClient = RandomClient.autoConfiguration();
+        }
+        return this._randomClient;
+    }
+
+    // Get open random requests for a provider
+    async getOpenRandomRequests(providerId) {
+        try {
+            console.log(`Fetching open random requests for provider: ${providerId}`);
+            const response = await this.randomClient.getOpenRandomRequests(providerId);
+            console.log('Open random requests response:', {
+                providerId: response.providerId,
+                challengeRequestsCount: response.activeChallengeRequests?.request_ids?.length || 0,
+                outputRequestsCount: response.activeOutputRequests?.request_ids?.length || 0
+            });
+            if (!response.activeChallengeRequests || !response.activeOutputRequests) {
+                console.warn('Response missing expected structure:', response);
+            }
+            return response;
+        } catch (error) {
+            console.error('Error getting open random requests:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                providerId
+            });
+            throw error;
+        }
     }
 
     // Get wallet token balance

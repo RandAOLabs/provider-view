@@ -1,8 +1,9 @@
-import { FiGithub, FiGlobe } from 'react-icons/fi'
+import { FiGithub, FiGlobe, FiLoader } from 'react-icons/fi'
 import { FaXTwitter } from 'react-icons/fa6'
 import { FaTelegram } from 'react-icons/fa'
 import { ConnectWallet } from '../components/common/ConnectWallet'
 import { aoHelpers } from '../utils/ao-helpers'
+import { getTotalProvided } from '../utils/graphQLquery'
 import { useState, useEffect } from 'react'
 import './About.css'
 
@@ -38,22 +39,43 @@ const STATIC_STATS = [
 
 export default function About() {
   const [providerCount, setProviderCount] = useState(0)
+  const [transactionCount, setTransactionCount] = useState(0)
+  const [loadingTransactions, setLoadingTransactions] = useState(true)
 
   useEffect(() => {
-    const fetchProviderCount = async () => {
+    const fetchData = async () => {
+      setLoadingTransactions(true)
       try {
-        const providers = await aoHelpers.getAllProvidersInfo()
+        console.log('Starting data fetch...');
+        const [providers, totalTransactions] = await Promise.all([
+          aoHelpers.getAllProvidersInfo(),
+          getTotalProvided()
+        ])
+        console.log('Providers fetched:', providers.length);
+        console.log('Total transactions fetched:', totalTransactions);
         setProviderCount(providers.length)
+        setTransactionCount(totalTransactions)
       } catch (err) {
-        console.error('Error fetching provider count:', err)
+        console.error('Error fetching data:', err)
+        console.error('Error details:', err.message)
+      } finally {
+        setLoadingTransactions(false)
       }
     }
 
-    fetchProviderCount()
+    fetchData()
   }, [])
 
   const STATS = [
     { label: "Total Providers", value: providerCount.toString() },
+    { 
+      label: "Total Random Requests", 
+      value: loadingTransactions ? (
+        <div className="loading-spinner">
+          <FiLoader className="animate-spin" />
+        </div>
+      ) : transactionCount.toLocaleString()
+    },
     ...STATIC_STATS
   ]
   return (

@@ -10,6 +10,7 @@ export const Sidebar = () => {
   const location = useLocation()
   const { address: connectedAddress, isConnected } = useWallet()
   const [isProvider, setIsProvider] = useState(false)
+  const [finishedLoading, setFinishedLoading] = useState(false)
 
   useEffect(() => {
     const checkIfProvider = async () => {
@@ -17,9 +18,11 @@ export const Sidebar = () => {
         try {
           const providers = await aoHelpers.getAllProvidersInfo()
           setIsProvider(providers.some(p => p.provider_id === connectedAddress))
+          setFinishedLoading(true)
         } catch (err) {
           console.error('Error checking provider status:', err)
           setIsProvider(false)
+          setFinishedLoading(true)
         }
       } else {
         setIsProvider(false)
@@ -45,7 +48,7 @@ export const Sidebar = () => {
           <FiUsers />
           Providers
         </Link>
-        {(!isConnected || !isProvider) && (
+        {( (!isConnected || !isProvider) && finishedLoading) && (
           <Link to="/become-provider" className={`nav-item ${isActive('/become-provider') ? 'active' : ''}`}>
             <FiUserPlus />
             Become a Provider

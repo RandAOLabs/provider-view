@@ -1,3 +1,23 @@
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.loading-spinner .animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .provider-table {
   background: #ffffff;
   border-radius: 16px;
@@ -102,9 +122,15 @@ td {
   vertical-align: middle;
 }
 
-tr {
+tr:not(.expanded-content) {
   cursor: pointer;
   transition: background-color 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+tr.expanded-content {
+  cursor: default;
 }
 
 tr:not(.expanded-content):hover {
@@ -135,8 +161,16 @@ tr.expanded {
   color: rgba(0, 0, 0, 0.5);
 }
 
-.expanded-content {
+tr.expanded-content {
   background: #f8f9fa;
+}
+
+tr.expanded-content td {
+  padding: 0;
+}
+
+.expanded-details {
+  padding: 2rem;
 }
 
 .expanded-details {
@@ -233,7 +267,73 @@ tr.expanded {
 }
 
 .social-icon.website {
-  color: #2196F3;
+  color: #4a5568;
+}
+
+.active-requests-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.active-requests-section h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #2d3748;
+}
+
+.requests-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.request-group {
+  background: #f7fafc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.request-group h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #4a5568;
+}
+
+.request-list {
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.request-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.request-list::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.request-list::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 3px;
+}
+
+.request-item {
+  padding: 0.5rem;
+  background: white;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+}
+
+.request-item:last-child {
+  margin-bottom: 0;
 }
 
 .social-item span {

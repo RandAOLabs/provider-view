@@ -15,9 +15,6 @@ export const StartProvider = ({ currentProvider }) => {
 
     const initializeProvider = async () => {
       try {
-        // Wait for the page to fully load
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
         if (!mounted) return;
         
         if (currentProvider) {
@@ -42,31 +39,31 @@ export const StartProvider = ({ currentProvider }) => {
     };
   }, [currentProvider]);
 
+  // Show nothing while loading
   if (isLoading) {
-    return <Spinner text="Checking provider status..." />
+    return null;
   }
 
+  // Show nothing on error
   if (error) {
-    return (
-      <div className="add-provider">
-        <h2>Connection Error</h2>
-        <p className="error-message">{error}</p>
-        <button className="start-btn" onClick={() => window.location.reload()}>
-          Retry Connection
-        </button>
-      </div>
-    );
+    return null;
   }
 
+  // Show provider details if they are a provider
   if (provider) {
     return <ProviderDetails provider={provider} onEdit={() => {}} />
   }
 
-  return (
-    <div className="add-provider">
-      <h2>Become a Provider</h2>
-      <p>By running a provider, you become a contributor to the ecosystem and can earn rewards.</p>
-      <button className="start-btn" onClick={() => navigate('/become-provider')}>Become a Provider →</button>
-    </div>
-  )
+  // Only show become a provider if we've confirmed they are not a provider
+  if (!isLoading && !error && !provider) {
+    return (
+      <div className="add-provider">
+        <h2>Become a Provider</h2>
+        <p>By running a provider, you become a contributor to the ecosystem and can earn rewards.</p>
+        <button className="start-btn" onClick={() => navigate('/become-provider')}>Become a Provider →</button>
+      </div>
+    );
+  }
+
+  return null;
 }
