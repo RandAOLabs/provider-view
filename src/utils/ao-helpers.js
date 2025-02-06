@@ -44,16 +44,35 @@ class AOHelpers {
     async getOpenRandomRequests(providerId) {
         try {
             console.log(`Fetching open random requests for provider: ${providerId}`);
-            const response = await this.randomClient.getOpenRandomRequests(providerId);
+            // const response = await this.randomClient.getOpenRandomRequests(providerId);
+            // console.log(response)
+
+            // console.log('Open random requests response:', {
+            //     providerId: response.providerId,
+            //     challengeRequestsCount: response.activeChallengeRequests?.request_ids?.length || 0,
+            //     outputRequestsCount: response.activeOutputRequests?.request_ids?.length || 0
+            // });
+            // if (!response.activeChallengeRequests || !response.activeOutputRequests) {
+            //     console.warn('Response missing expected structure:', response);
+            // }
+            // return response;
+
+            const tags = [{ name: "Action", value: "Get-Open-Random-Requests" }];
+            const data = JSON.stringify({ providerId: providerId || await this.stakingClient.getCallingWalletAddress() });
+            const result = await this.stakingClient.dryrun(data, tags);
+            console.log(result)
+            const info = this.stakingClient.getFirstMessageDataJson(result);
+            console.log(info)
+
             console.log('Open random requests response:', {
-                providerId: response.providerId,
-                challengeRequestsCount: response.activeChallengeRequests?.request_ids?.length || 0,
-                outputRequestsCount: response.activeOutputRequests?.request_ids?.length || 0
+                providerId: info.providerId,
+                challengeRequestsCount: info.activeChallengeRequests?.request_ids?.length || 0,
+                outputRequestsCount: info.activeOutputRequests?.request_ids?.length || 0
             });
-            if (!response.activeChallengeRequests || !response.activeOutputRequests) {
+            if (!info.activeChallengeRequests || !info.activeOutputRequests) {
                 console.warn('Response missing expected structure:', response);
             }
-            return response;
+            return info;
         } catch (error) {
             console.error('Error getting open random requests:', error);
             console.error('Error details:', {

@@ -177,7 +177,7 @@ export const ProviderTable = ({ providers }) => {
                 <td>
                   {loadingRandomCounts ? (
                     <div className="loading-spinner">
-                      <FiLoader className="animate-spin" />
+                      <FiLoader className="animate-spin" size={16} />
                     </div>
                   ) : (
                     providerRandomCounts[provider.provider_id] || 0
@@ -325,12 +325,40 @@ export const ProviderTable = ({ providers }) => {
                       </div>
 
                       <div className="active-requests-section">
-                        <h3>Active Requests</h3>
-                        {loadingRequests[provider.provider_id] ? (
-                          <div className="loading-spinner">
-                            <FiLoader className="animate-spin" />
-                          </div>
-                        ) : activeRequests[provider.provider_id] ? (
+                        <div className="active-requests-header">
+                          <h3>Active Requests</h3>
+                          <button
+                            className={`refresh-button${loadingRequests[provider.provider_id] ? 'loading' : ''}`}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setLoadingRequests(prev => ({ ...prev, [provider.provider_id]: true }));
+                              try {
+                                const response = await aoHelpers.getOpenRandomRequests(provider.provider_id);
+                                setActiveRequests(prev => ({
+                                  ...prev,
+                                  [provider.provider_id]: {
+                                    challengeRequests: response.activeChallengeRequests.request_ids,
+                                    outputRequests: response.activeOutputRequests.request_ids
+                                  }
+                                }));
+                              } catch (error) {
+                                console.error('Error refreshing active requests:', error);
+                              } finally {
+                                setLoadingRequests(prev => ({ ...prev, [provider.provider_id]: false }));
+                              }
+                            }}
+                            disabled={loadingRequests[provider.provider_id]}
+                          >
+                            {loadingRequests[provider.provider_id] ? (
+                              <FiLoader className="animate-spin" size={16} />
+                            ) : (
+                              <svg className="refresh-icon" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                        {activeRequests[provider.provider_id] ? (
                           <div className="requests-container">
                             <div className="request-group">
                               <h4>Challenge Requests ({activeRequests[provider.provider_id].challengeRequests.length})</h4>
