@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { getProviderTotalRandom } from '../../utils/graphQLquery'
 import { FiCircle, FiChevronDown, FiChevronUp, FiGlobe, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
 import { aoHelpers } from '../../utils/ao-helpers'
@@ -15,6 +15,10 @@ export const ProviderTable = ({ providers }) => {
   const [loadingRandomCounts, setLoadingRandomCounts] = useState(true)
   const [activeRequests, setActiveRequests] = useState({})
   const [loadingRequests, setLoadingRequests] = useState({})
+  const [sortConfig, setSortConfig] = useState({
+    key: 'active',
+    direction: 'desc'
+  })
 
   useEffect(() => {
     const fetchRandomCounts = async () => {
@@ -118,26 +122,134 @@ export const ProviderTable = ({ providers }) => {
     })
   }
 
+  const handleSort = (key) => {
+    // Don't sort if clicking on Address or Name
+    if (key === 'address' || key === 'name') return
+
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+    }))
+  }
+
+  const sortedProviders = useMemo(() => {
+    const sortedArray = [...providers]
+    
+    return sortedArray.sort((a, b) => {
+      // First sort by active status
+      if (sortConfig.key === 'active' || a.active !== b.active) {
+        if (a.active === b.active) {
+          // If active status is the same and it's the primary sort key,
+          // sort by total stake then alphabetically by name
+          const aStake = parseFloat(JSON.parse(a.stake || '{"amount":0}').amount || 0)
+          const bStake = parseFloat(JSON.parse(b.stake || '{"amount":0}').amount || 0)
+          
+          if (aStake === bStake) {
+            const aName = JSON.parse(a.provider_details || '{}').name || ''
+            const bName = JSON.parse(b.provider_details || '{}').name || ''
+            return aName.localeCompare(bName)
+          }
+          
+          return bStake - aStake
+        }
+        return b.active - a.active
+      }
+
+      // For other columns
+      let comparison = 0
+      switch (sortConfig.key) {
+        case 'joinDate':
+          comparison = new Date(a.created_at) - new Date(b.created_at)
+          break
+        case 'randomAvailable':
+          comparison = (a.random_balance || 0) - (b.random_balance || 0)
+          break
+        case 'randomProvided':
+          comparison = (providerRandomCounts[a.provider_id] || 0) - (providerRandomCounts[b.provider_id] || 0)
+          break
+        case 'totalStaked':
+          const aStake = parseFloat(JSON.parse(a.stake || '{"amount":0}').amount || 0)
+          const bStake = parseFloat(JSON.parse(b.stake || '{"amount":0}').amount || 0)
+          comparison = aStake - bStake
+          break
+        case 'delegationFee':
+          const aFee = parseFloat(JSON.parse(a.provider_details || '{}').commission || 0)
+          const bFee = parseFloat(JSON.parse(b.provider_details || '{}').commission || 0)
+          comparison = aFee - bFee
+          break
+        case 'randomValueFee':
+          comparison = 0 // Currently all values are 0
+          break
+        default:
+          comparison = 0
+      }
+
+      return sortConfig.direction === 'asc' ? comparison : -comparison
+    })
+  }, [providers, sortConfig, providerRandomCounts])
+
   return (
     <div className="provider-container">
       <div className="provider-table">
         <table>
         <thead>
           <tr>
-            <th>Status</th>
+            <th onClick={() => handleSort('active')} className="sortable">
+              Status {sortConfig.key === 'active' && (
+                <span className="sort-indicator">
+                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </th>
             <th>Name</th>
             <th>Address</th>
-            <th>Join Date</th>
-            <th>Random Available</th>
-            <th>Random Provided</th>
-            <th>Total Staked</th>
-            <th>Delegation Fee</th>
-            <th>Random Value Fee</th>
+            <th onClick={() => handleSort('joinDate')} className="sortable">
+              Join Date {sortConfig.key === 'joinDate' && (
+                <span className="sort-indicator">
+                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleSort('randomAvailable')} className="sortable">
+              Random Available {sortConfig.key === 'randomAvailable' && (
+                <span className="sort-indicator">
+                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleSort('randomProvided')} className="sortable">
+              Random Provided {sortConfig.key === 'randomProvided' && (
+                <span className="sort-indicator">
+                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleSort('totalStaked')} className="sortable">
+              Total Staked {sortConfig.key === 'totalStaked' && (
+                <span className="sort-indicator">
+                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleSort('delegationFee')} className="sortable">
+              Delegation Fee {sortConfig.key === 'delegationFee' && (
+                <span className="sort-indicator">
+                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleSort('randomValueFee')} className="sortable">
+              Random Value Fee {sortConfig.key === 'randomValueFee' && (
+                <span className="sort-indicator">
+                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {providers.map(provider => (
+          {sortedProviders.map(provider => (
             <React.Fragment key={provider.provider_id}>
               <tr
                 className={expandedRows.has(provider.provider_id) ? 'expanded' : ''}
