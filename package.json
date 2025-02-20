@@ -14,7 +14,7 @@
     "@react-three/drei": "^9.121.4",
     "@react-three/fiber": "^8.17.14",
     "@types/three": "^0.173.0",
-    "ao-process-clients": "^3.7.2",
+    "ao-process-clients": "^5.2.0",
     "arweave": "^1.15.5",
     "permaweb-deploy": "^1.1.10",
     "react": "^18.3.1",
