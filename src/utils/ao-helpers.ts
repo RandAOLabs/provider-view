@@ -185,6 +185,7 @@ class AOHelpers {
 
         // Update raffle entry list
         async viewEntrants(userId: string): Promise<ViewEntrantsResponse> {
+            console.log(userId)
             try {
                 return (await this.getRandomRaffleClient()).viewEntrants(userId)
             } catch (error) {

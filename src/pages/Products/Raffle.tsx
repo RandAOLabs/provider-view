@@ -1,29 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { aoHelpers } from '../../utils/ao-helpers';
-import { RafflePull } from 'ao-process-clients/dist/src/clients/miscellaneous/raffle/abstract/types';
+import { ViewPullsResponse, ViewEntrantsResponse } from 'ao-process-clients';
+import { useWallet } from '../../contexts/WalletContext';
 import './Raffle.css';
 
 export const Raffle = () => {
+  const { address: userId } = useWallet();
   const [entrants, setEntrants] = useState('');
   const [inputMode, setInputMode] = useState<'text' | 'json'>('text');
   const [formattedEntrants, setFormattedEntrants] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [pulls, setPulls] = useState<RafflePull[]>([]);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [currentEntrants, setCurrentEntrants] = useState<ViewEntrantsResponse | null>(null);
+  const [userPulls, setUserPulls] = useState<ViewPullsResponse | null>(null);
+  const [hasPendingPulls, setHasPendingPulls] = useState(false);
+
+  const fetchRaffleData = async () => {
+    try {
+      const [entrantsResponse, pullsResponse] = await Promise.all([
+        aoHelpers.viewEntrants(userId),
+        aoHelpers.viewUserPulls(userId)
+      ]);
+      setCurrentEntrants(entrantsResponse);
+      setUserPulls(pullsResponse);
+      
+      // Check if there are any pending pulls (Winner is null or empty)
+      const pendingPulls = pullsResponse?.pulls.some(pull => !pull.Winner);
+      setHasPendingPulls(pendingPulls || false);
+    } catch (error) {
+      console.error('Error fetching raffle data:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchPulls = async () => {
-      try {
-        const result = await aoHelpers.checkRaffle();
-        setPulls(result.pulls || []);
-      } catch (error) {
-        console.error('Error fetching raffle pulls:', error);
-      }
-    };
+    fetchRaffleData();
+  }, [userId]);
 
-    fetchPulls();
-    const interval = setInterval(fetchPulls, 10000); // Refresh every 10 seconds
+  useEffect(() => {
+    if (!hasPendingPulls) return;
+
+    const interval = setInterval(fetchRaffleData, 3000); // Refresh every 3 seconds when there are pending pulls
     return () => clearInterval(interval);
-  }, []);
+  }, [hasPendingPulls, userId]);
 
   const formatEntrants = (input: string, mode: 'text' | 'json'): string[] => {
     try {
@@ -64,23 +81,28 @@ export const Raffle = () => {
 
   const handleUpdateList = async () => {
     try {
-      setLoading(true);
-      await aoHelpers.updateRaffleList(formattedEntrants);
+      setActionLoading(true);
+      await aoHelpers.setRaffleEntrants(formattedEntrants);
+      // Refresh the entrants data after update
+      const entrantsResponse = await aoHelpers.viewEntrants(userId);
+      setCurrentEntrants(entrantsResponse);
     } catch (error) {
       console.error('Error updating raffle list:', error);
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
   const handlePullRaffle = async () => {
     try {
-      setLoading(true);
+      setActionLoading(true);
       await aoHelpers.pullRaffle();
+      // Refresh both entrants and pulls data after pulling
+      await fetchRaffleData();
     } catch (error) {
       console.error('Error pulling raffle:', error);
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -88,70 +110,83 @@ export const Raffle = () => {
     <div className="raffle-container">
       <h1>Raffle</h1>
       
-      <div className="raffle-section">
-        <div className="input-header">
-          <h2>Update Entrants List</h2>
+      <div className="raffle-grid">
+        <div className="raffle-section">
+          <div className="input-header">
+            <h2>Update Entrants List</h2>
+            <button 
+              onClick={handleModeToggle}
+              className="mode-toggle"
+            >
+              Switch to {inputMode === 'text' ? 'JSON' : 'Text'} Mode
+            </button>
+          </div>
+          
+          <textarea
+            value={entrants}
+            onChange={handleInputChange}
+            placeholder={inputMode === 'text' ? 
+              "Enter names (one per line):\nJohn Smith\nMary Johnson" :
+              'Enter JSON array:\n["John Smith", "Mary Johnson"]'
+            }
+            rows={10}
+            disabled={actionLoading}
+          />
+          
+          {formattedEntrants.length > 0 && (
+            <div className="preview-section">
+              <h3>Preview:</h3>
+              <pre>{JSON.stringify(formattedEntrants, null, 2)}</pre>
+            </div>
+          )}
+
           <button 
-            onClick={handleModeToggle}
-            className="mode-toggle"
+            onClick={handleUpdateList}
+            disabled={actionLoading}
+            className="raffle-button update"
           >
-            Switch to {inputMode === 'text' ? 'JSON' : 'Text'} Mode
+            {actionLoading ? 'Updating...' : 'Update List'}
           </button>
         </div>
-        
-        <textarea
-          value={entrants}
-          onChange={handleInputChange}
-          placeholder={inputMode === 'text' ? 
-            "Enter names (one per line):\nJohn Smith\nMary Johnson" :
-            'Enter JSON array:\n["John Smith", "Mary Johnson"]'
-          }
-          rows={10}
-          disabled={loading}
-        />
-        
-        {formattedEntrants.length > 0 && (
-          <div className="preview-section">
-            <h3>Current Entrants:</h3>
-            <pre>{JSON.stringify(formattedEntrants, null, 2)}</pre>
+
+        {currentEntrants && (
+          <div className="raffle-section scrollable">
+            <h2>Current Raffle Entrants</h2>
+            <div className="entrants-list">
+              {Array.from(currentEntrants.entries()).map(([index, entrant]) => (
+                <div key={index} className="entrant-item">
+                  {entrant}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        <button 
-          onClick={handleUpdateList}
-          disabled={loading}
-          className="raffle-button update"
-        >
-          {loading ? 'Updating...' : 'Update List'}
-        </button>
+        {userPulls && userPulls.pulls.length > 0 && (
+          <div className="raffle-section scrollable">
+            <h2>Your Raffle Pulls</h2>
+            <div className="winners-list">
+              {userPulls.pulls.map((pull, index) => (
+                <div key={index} className="winner-item">
+                  <span className="winner-name">{pull.Winner || 'Pending...'}</span>
+                  <span className="winner-id">Pull #{pull.Id}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="raffle-section">
+      <div className="raffle-section full-width">
         <h2>Pull Raffle Winner</h2>
         <button 
           onClick={handlePullRaffle}
-          disabled={loading}
+          disabled={actionLoading}
           className="raffle-button pull"
         >
-          {loading ? 'Pulling...' : 'Pull Winner'}
+          {actionLoading ? 'Pulling...' : 'Pull Winner'}
         </button>
       </div>
-
-      {pulls.length > 0 && (
-        <div className="raffle-section">
-          <h2>Raffle Winners</h2>
-          <div className="winners-list">
-            {pulls.map((pull, index) => (
-              <div key={index} className="winner-item">
-                <span className="winner-name">{pull.Winner || 'Pending...'}</span>
-                <span className="winner-id">
-                  Pull #{pull.Id}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
