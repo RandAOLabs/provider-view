@@ -20,7 +20,9 @@ export const ProviderDetails = ({
   // Parse provider details once and memoize
   const parsedDetails = useMemo(() => {
     try {
-      return provider.provider_details ? JSON.parse(provider.provider_details) : {};
+      return typeof provider.provider_details === 'string' ? 
+        JSON.parse(provider.provider_details || '{}') : 
+        (provider.provider_details || {});
     } catch (err) {
       console.error('Error parsing provider details:', err);
       return {};
@@ -145,12 +147,12 @@ export const ProviderDetails = ({
             </div>
           </div>
 
-          <div className="detail-group">
+          {/* <div className="detail-group">
             <label>Status</label>
             <div className={`status-badge ${provider.active === 1 ? 'active' : 'inactive'}`}>
               {provider.active === 1 ? 'Active' : 'Inactive'}
             </div>
-          </div>
+          </div> */}
 
           <div className="detail-group">
             <label>Join Date</label>
@@ -167,7 +169,9 @@ export const ProviderDetails = ({
             <label>Total Staked</label>
             <div className="stake-group">
               <div className="detail-value">
-                {provider.stake ? (parseFloat(JSON.parse(provider.stake).amount || 0) / Math.pow(10, 18)).toLocaleString('en-US', {
+                {provider.stake ? (parseFloat((typeof provider.stake === 'string' ? 
+                  JSON.parse(provider.stake || '{"amount":"0"}') : 
+                  (provider.stake || {amount: "0"})).amount || "0") / Math.pow(10, 18)).toLocaleString('en-US', {
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 6
                 }) : '0'}

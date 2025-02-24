@@ -1,59 +1,71 @@
-import { ProviderStakingClient, TokenClient, RandomClient, ProviderProfileClient } from 'ao-process-clients';
+import { ProviderStakingClient, TokenClient, RandomClient, ProviderProfileClient, GetOpenRandomRequestsResponse, RaffleClient, ViewPullsResponse, ProviderDetails, ViewEntrantsResponse, ViewRaffleOwnersResponse } from 'ao-process-clients';
+import { Tags } from 'ao-process-clients/dist/src/core';
 
 // Minimum tokens needed to stake for new stakers
 export const MINIMUM_STAKE_AMOUNT = '100000000000000000000';
 export const TOKEN_DECIMALS = 18;
+export const RAFFLEPROCESS ="0zuEwuXXnNBPQ6u-eUTGfMkKbSy1zeHKfxbiocvD_y0"
+
+
+
+
+interface ProviderDetailsInput {
+    name: string;
+    delegationFee: string;
+    description?: string;
+    twitter?: string;
+    discord?: string;
+    telegram?: string;
+    domain?: string;
+}
 
 class AOHelpers {
     private _providerstakingClient: ProviderStakingClient | null = null;
     private _tokenClient: TokenClient | null = null;
     private _randomClient: RandomClient | null = null;
     private _providerProfileClient: ProviderProfileClient | null = null;
+    private _randomRaffleClient: RaffleClient | null = null;
 
-    get stakingClient(): ProviderStakingClient {
+    async getStakingClient(): Promise<ProviderStakingClient> {
         if (!this._providerstakingClient) {
-            this._providerstakingClient = ProviderStakingClient.autoConfiguration();
+            this._providerstakingClient =  ProviderStakingClient.autoConfiguration();
         }
         return this._providerstakingClient;
     }
 
-    get tokenClient(): TokenClient {
+    async getTokenClient(): Promise<TokenClient> {
         if (!this._tokenClient) {
-            this._tokenClient = TokenClient.autoConfiguration();
+            this._tokenClient =  TokenClient.autoConfiguration();
         }
         return this._tokenClient;
     }
 
-    get randomClient(): RandomClient {
+    async getRandomClient(): Promise<RandomClient> {
         if (!this._randomClient) {
-            this._randomClient = RandomClient.autoConfiguration();
+            this._randomClient = await RandomClient.autoConfiguration();
         }
         return this._randomClient;
     }
 
-    get providerProfileClient(): ProviderProfileClient {
+    async getProviderProfileClient(): Promise<ProviderProfileClient> {
         if (!this._providerProfileClient) {
-            this._providerProfileClient = ProviderProfileClient.autoConfiguration();
+            this._providerProfileClient =  ProviderProfileClient.autoConfiguration();
         }
         return this._providerProfileClient;
     }
 
+    async getRandomRaffleClient(): Promise<RaffleClient> {
+        if (!this._randomRaffleClient) {
+            this._randomRaffleClient =  RaffleClient.autoConfiguration();
+        }
+        return this._randomRaffleClient;
+    }
+
     // Get open random requests for a provider
-    async getOpenRandomRequests(providerId?: string): Promise<any> {
+    async getOpenRandomRequests(providerId?: string): Promise<GetOpenRandomRequestsResponse> {
         try {
-            const reply = await this.randomClient.getOpenRandomRequests(providerId||"")
-            return reply;
-            // const tags = [{ name: "Action", value: "Get-Open-Random-Requests" }];
-            // const data = JSON.stringify({ providerId: providerId || await this.stakingClient.getCallingWalletAddress() });
-            // const result = await this.stakingClient.dryrun(data, tags);
-            // const info = this.stakingClient.getFirstMessageDataJson(result);
-            
-            // console.log('Open random requests response:', {
-            //     providerId: info.providerId,
-            //     challengeRequestsCount: info.activeChallengeRequests?.request_ids?.length || 0,
-            //     outputRequestsCount: info.activeOutputRequests?.request_ids?.length || 0
-            // });
-            // return info;
+            const client = await this.getRandomClient();
+            return await client.getOpenRandomRequests(providerId || "");
         } catch (error) {
             console.error('Error getting open random requests:', error);
             throw error;
@@ -63,7 +75,8 @@ class AOHelpers {
     // Get wallet token balance
     async getWalletBalance(walletAddress: string): Promise<string> {
         try {
-            return await this.tokenClient.balance(walletAddress);
+            const client = await this.getTokenClient();
+            return await client.balance(walletAddress);
         } catch (error) {
             console.error('Error getting wallet balance:', error);
             throw error;
@@ -71,25 +84,20 @@ class AOHelpers {
     }
 
     // Update provider details
-    async updateProviderDetails(details: {
-        name: string;
-        delegationFee: string;
-        description?: string;
-        twitter?: string;
-        discord?: string;
-        telegram?: string;
-        domain?: string;
-    }): Promise<any> {
+    async updateProviderDetails(details: ProviderDetailsInput): Promise<boolean> {
         try {
-            return await this.stakingClient.updateDetails({
-                name: details.name,
-                commission: parseFloat(details.delegationFee),
-                description: details.description || '',
-                twitter: details.twitter || '',
-                discord: details.discord || '',
-                telegram: details.telegram || '',
-                domain: details.domain || ''
-            });
+            const client = await this.getStakingClient();
+            const tags: ProviderDetails = {
+                name:  details.name,
+                commission: parseInt(details.delegationFee || '0'),
+                description: details.description || '' ,
+                twitter: details.twitter || '' ,
+                discord: details.discord || '' ,
+                telegram: details.telegram || '' ,
+                domain : details.domain || '' 
+        };
+            // Use stake with 0 amount to update details
+            return await client.stakeWithDetails("0", tags);
         } catch (error) {
             console.error('Error updating provider details:', error);
             throw error;
@@ -97,27 +105,22 @@ class AOHelpers {
     }
 
     // Stake tokens
-    async stakeTokens(amount: string, providerDetails?: {
-        name: string;
-        delegationFee: string;
-        description?: string;
-        twitter?: string;
-        discord?: string;
-        telegram?: string;
-        domain?: string;
-    }): Promise<any> {
+    async stakeTokens(amount: string, providerDetails?: ProviderDetailsInput): Promise<boolean> {
         try {
-            return providerDetails ?
-                await this.stakingClient.stake(amount, {
-                    name: providerDetails.name,
-                    commission: parseFloat(providerDetails.delegationFee),
-                    description: providerDetails.description || '',
-                    twitter: providerDetails.twitter || '',
-                    discord: providerDetails.discord || '',
-                    telegram: providerDetails.telegram || '',
-                    domain: providerDetails.domain || ''
-                }) :
-                await this.stakingClient.stake(amount);
+            const client = await this.getStakingClient();
+            if (providerDetails) {
+                const tags: Tags = [
+                    { name: "Name", value: providerDetails.name },
+                    { name: "Commission", value: providerDetails.delegationFee },
+                    { name: "Description", value: providerDetails.description || '' },
+                    { name: "Twitter", value: providerDetails.twitter || '' },
+                    { name: "Discord", value: providerDetails.discord || '' },
+                    { name: "Telegram", value: providerDetails.telegram || '' },
+                    { name: "Domain", value: providerDetails.domain || '' }
+                ];
+                return await client.stake(amount, tags);
+            }
+            return await client.stake(amount);
         } catch (error) {
             console.error('Error staking tokens:', error);
             throw error;
@@ -127,12 +130,8 @@ class AOHelpers {
     // Get information for all providers
     async getAllProvidersInfo(): Promise<any> {
         try {
-            console.log(await this.providerProfileClient.getAllProvidersInfo())
-            return await this.providerProfileClient.getAllProvidersInfo()
-            // console.log('Fetching all providers info');
-            // const tags = [{ name: "Action", value: "Get-All-Providers-Details" }];
-            // const result = await this.stakingClient.dryrun("", tags);
-            // return this.stakingClient.getFirstMessageDataJson(result);
+            const client = await this.getProviderProfileClient();
+            return await client.getAllProvidersInfo();
         } catch (error) {
             console.error('Error getting all providers info:', error);
             throw error;
@@ -143,25 +142,87 @@ class AOHelpers {
     async getProviderInfo(providerId?: string): Promise<any> {
         try {
             console.log(`Fetching info for provider: ${providerId || 'current user'}`);
-            const tags = [{ name: "Action", value: "Get-Provider-Details" }];
-            const data = JSON.stringify({ providerId: providerId || await this.stakingClient.getCallingWalletAddress() });
-            const result = await this.stakingClient.dryrun(data, tags);
-            return this.stakingClient.getFirstMessageDataJson(result);
+            const client = await this.getProviderProfileClient();
+            return await client.getProviderInfo(providerId);
         } catch (error) {
             console.error('Error getting provider info:', error);
             throw error;
         }
     }
 
+        // Get information for a specific provider
+        async getProviderAvalibleRandom(providerId?: string): Promise<any> {
+            try {
+                console.log(`Fetching info for provider: ${providerId || 'current user'}`);
+                const client = await this.getRandomClient();
+                return (await client.getProviderAvailableValues(providerId||"")).availibleRandomValues;
+            } catch (error) {
+                console.error('Error getting provider info:', error);
+                throw error;
+            }
+        }
+
     // Unstake tokens
-    async unstakeTokens(providerId: string): Promise<any> {
+    async unstakeTokens(providerId: string): Promise<boolean> {
         try {
-            return await this.stakingClient.unstake(providerId);
+            const client = await this.getStakingClient();
+            return await client.unstake(providerId);
         } catch (error) {
             console.error('Error unstaking tokens:', error);
             throw error;
         }
     }
+
+    // Update raffle entry list
+    async setRaffleEntrants(entrants: string[],): Promise<boolean> {
+        try {
+            return (await this.getRandomRaffleClient()).setRaffleEntrants(entrants)
+        } catch (error) {
+            console.error('Error updating raffle list:', error);
+            throw error;
+        }
+    }
+
+        // Update raffle entry list
+        async viewEntrants(userId: string): Promise<ViewEntrantsResponse> {
+            try {
+                return (await this.getRandomRaffleClient()).viewEntrants(userId)
+            } catch (error) {
+                console.error('Error updating raffle list:', error);
+                throw error;
+            }
+        }
+
+    // Pull raffle winner
+    async pullRaffle(): Promise<boolean> {
+        try {
+            return (await this.getRandomRaffleClient()).pullRaffle()
+        } catch (error) {
+            console.error('Error pulling raffle:', error);
+            throw error;
+        }
+    }
+
+        // Pull raffle winner
+        async viewUserPulls(userId:string): Promise<ViewPullsResponse> {
+            try {
+                return (await this.getRandomRaffleClient()).viewUserPulls(userId)
+            } catch (error) {
+                console.error('Error checking raffle pulls:', error);
+                throw error;
+            }
+            }
+
+                    // Pull raffle winner
+        async viewRaffleOwners(): Promise<ViewRaffleOwnersResponse> {
+            try {
+                return (await this.getRandomRaffleClient()).viewRaffleOwners()
+            } catch (error) {
+                console.error('Error checking raffle pulls:', error);
+                throw error;
+            }
+            }
+            
 }
 
 export const aoHelpers = new AOHelpers();

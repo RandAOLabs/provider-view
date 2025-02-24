@@ -7,14 +7,24 @@ import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
 import './ProviderTable.css'
 
-export const ProviderTable = ({ providers }) => {
+interface Provider {
+  active: string | number
+  provider_id: string
+  provider_details: string | { [key: string]: any }
+  stake: string | { amount: string }
+  created_at: number
+  random_balance?: number
+}
+
+export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
   const [expandedRows, setExpandedRows] = useState(new Set())
-  const [stakingProvider, setStakingProvider] = useState(null)
-  const [copiedAddress, setCopiedAddress] = useState(null)
-  const [providerRandomCounts, setProviderRandomCounts] = useState({})
+  const [stakingProvider, setStakingProvider] = useState<Provider | null>(null)
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+  const [providerRandomCounts, setProviderRandomCounts] = useState<{ [key: string]: number }>({})
+  const [providerAvalibleRandomCounts, setProviderAvalibleRandomCounts] = useState<{ [key: string]: number }>({})
   const [loadingRandomCounts, setLoadingRandomCounts] = useState(true)
-  const [activeRequests, setActiveRequests] = useState({})
-  const [loadingRequests, setLoadingRequests] = useState({})
+  const [activeRequests, setActiveRequests] = useState<{ [key: string]: any }>({})
+  const [loadingRequests, setLoadingRequests] = useState<{ [key: string]: boolean }>({})
   const [sortConfig, setSortConfig] = useState({
     key: 'active',
     direction: 'desc'
@@ -24,12 +34,19 @@ export const ProviderTable = ({ providers }) => {
     const fetchRandomCounts = async () => {
       setLoadingRandomCounts(true)
       try {
-        const counts = {}
+        const counts: { [key: string]: number } = {}
+        const avalibleCounts: { [key: string]: number } = {}
         for (const provider of providers) {
           const count = await getProviderTotalRandom(provider.provider_id)
+          console.log(count)
           counts[provider.provider_id] = count
+
+          const avaliblecount = await aoHelpers.getProviderAvalibleRandom(provider.provider_id)
+          console.log(avaliblecount)
+          avalibleCounts[provider.provider_id] = avaliblecount
         }
         setProviderRandomCounts(counts)
+        setProviderAvalibleRandomCounts(avalibleCounts)
       } catch (error) {
         console.error('Error fetching random counts:', error)
       } finally {
@@ -40,12 +57,12 @@ export const ProviderTable = ({ providers }) => {
     fetchRandomCounts()
   }, [providers])
 
-  const truncateAddress = (address) => {
+  const truncateAddress = (address: string) => {
     if (!address) return ''
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
 
-  const copyToClipboard = async (e, address) => {
+  const copyToClipboard = async (e: React.MouseEvent, address: string) => {
     e.stopPropagation()
     try {
       await navigator.clipboard.writeText(address)
@@ -56,9 +73,11 @@ export const ProviderTable = ({ providers }) => {
     }
   }
 
-  const toggleRow = async (id, e) => {
+  const toggleRow = async (id: string, e: React.MouseEvent) => {
     // Prevent toggling if clicking on elements that handle their own clicks
-    if (e.target.closest('.address-cell') || e.target.closest('.stake-button') || e.target.closest('.social-item')) {
+    if ((e.target as HTMLElement).closest('.address-cell') || 
+        (e.target as HTMLElement).closest('.stake-button') || 
+        (e.target as HTMLElement).closest('.social-item')) {
       return;
     }
 
@@ -115,14 +134,14 @@ export const ProviderTable = ({ providers }) => {
     }
   }
 
-  const formatTokenAmount = (amount) => {
-    return (parseFloat(amount) / Math.pow(10, 18)).toLocaleString('en-US', {
+  const formatTokenAmount = (amount: string) => {
+    return (Number(amount) / Math.pow(10, 18)).toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 6
     })
   }
 
-  const handleSort = (key) => {
+  const handleSort = (key: string) => {
     // Don't sort if clicking on Address or Name
     if (key === 'address' || key === 'name') return
 
@@ -141,40 +160,56 @@ export const ProviderTable = ({ providers }) => {
         if (a.active === b.active) {
           // If active status is the same and it's the primary sort key,
           // sort by total stake then alphabetically by name
-          const aStake = parseFloat(JSON.parse(a.stake || '{"amount":0}').amount || 0)
-          const bStake = parseFloat(JSON.parse(b.stake || '{"amount":0}').amount || 0)
+          const aStakeObj = typeof a.stake === 'string' ? JSON.parse(a.stake || '{"amount":"0"}') : (a.stake || {amount: "0"})
+          const bStakeObj = typeof b.stake === 'string' ? JSON.parse(b.stake || '{"amount":"0"}') : (b.stake || {amount: "0"})
+          const aStake = Number(aStakeObj.amount || "0")
+          const bStake = Number(bStakeObj.amount || "0")
           
           if (aStake === bStake) {
-            const aName = JSON.parse(a.provider_details || '{}').name || ''
-            const bName = JSON.parse(b.provider_details || '{}').name || ''
+            const aDetails = typeof a.provider_details === 'string' ? 
+              JSON.parse(a.provider_details || '{}') : 
+              (a.provider_details || {})
+            const bDetails = typeof b.provider_details === 'string' ? 
+              JSON.parse(b.provider_details || '{}') : 
+              (b.provider_details || {})
+            const aName = aDetails.name || ''
+            const bName = bDetails.name || ''
             return aName.localeCompare(bName)
           }
           
-          return bStake - aStake
+          return Number(bStake) - Number(aStake)
         }
-        return b.active - a.active
+        return Number(b.active) - Number(a.active)
       }
 
       // For other columns
       let comparison = 0
       switch (sortConfig.key) {
         case 'joinDate':
-          comparison = new Date(a.created_at) - new Date(b.created_at)
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           break
         case 'randomAvailable':
-          comparison = (a.random_balance || 0) - (b.random_balance || 0)
+          comparison = Number(a.random_balance || 0) - Number(b.random_balance || 0)
           break
         case 'randomProvided':
-          comparison = (providerRandomCounts[a.provider_id] || 0) - (providerRandomCounts[b.provider_id] || 0)
+          comparison = Number(providerRandomCounts[a.provider_id] || 0) - Number(providerRandomCounts[b.provider_id] || 0)
           break
         case 'totalStaked':
-          const aStake = parseFloat(JSON.parse(a.stake || '{"amount":0}').amount || 0)
-          const bStake = parseFloat(JSON.parse(b.stake || '{"amount":0}').amount || 0)
-          comparison = aStake - bStake
+          const aStakeObj = typeof a.stake === 'string' ? JSON.parse(a.stake || '{"amount":"0"}') : (a.stake || {amount: "0"})
+          const bStakeObj = typeof b.stake === 'string' ? JSON.parse(b.stake || '{"amount":"0"}') : (b.stake || {amount: "0"})
+          const aStake = Number(aStakeObj.amount || "0")
+          const bStake = Number(bStakeObj.amount || "0")
+          comparison = Number(aStake) - Number(bStake)
           break
         case 'delegationFee':
-          const aFee = parseFloat(JSON.parse(a.provider_details || '{}').commission || 0)
-          const bFee = parseFloat(JSON.parse(b.provider_details || '{}').commission || 0)
+          const aDetails = typeof a.provider_details === 'string' ? 
+            JSON.parse(a.provider_details || '{}') : 
+            (a.provider_details || {})
+          const bDetails = typeof b.provider_details === 'string' ? 
+            JSON.parse(b.provider_details || '{}') : 
+            (b.provider_details || {})
+          const aFee = Number(aDetails.commission || 0)
+          const bFee = Number(bDetails.commission || 0)
           comparison = aFee - bFee
           break
         case 'randomValueFee':
@@ -257,13 +292,15 @@ export const ProviderTable = ({ providers }) => {
               >
                 <td>
                   <FiCircle 
-                    className={`status-indicator ${provider.active === 1 ? 'online' : 'offline'}`}
+                    className={`status-indicator ${providerAvalibleRandomCounts[provider.provider_id] >1 ? 'online' : 'offline'}`}
                   />
                 </td>
                 <td>
                   {(() => {
                     try {
-                      const details = JSON.parse(provider.provider_details || '{}');
+                      const details = typeof provider.provider_details === 'string' ? 
+                        JSON.parse(provider.provider_details || '{}') : 
+                        (provider.provider_details || {});
                       return details.name || 'N/A';
                     } catch (err) {
                       return 'N/A';
@@ -285,7 +322,7 @@ export const ProviderTable = ({ providers }) => {
                   </div>
                 </td>
                 <td>{new Date(provider.created_at).toISOString().split('T')[0]}</td>
-                <td>{provider.random_balance || 0}</td>
+                <td>{providerAvalibleRandomCounts[provider.provider_id] || 0}</td>
                 <td>
                   {loadingRandomCounts ? (
                     <div className="loading-spinner">
@@ -295,13 +332,17 @@ export const ProviderTable = ({ providers }) => {
                     providerRandomCounts[provider.provider_id] || 0
                   )}
                 </td>
-                <td>{formatTokenAmount(JSON.parse(provider.stake || '{"amount":0}').amount || 0)}</td>
+                <td>{formatTokenAmount((typeof provider.stake === 'string' ? 
+                  JSON.parse(provider.stake || '{"amount":"0"}') : 
+                  (provider.stake || {amount: "0"})).amount || "0")}</td>
                 <td>
                   <div className="delegation-fee">
                     <span>
                       {(() => {
                         try {
-                          const details = JSON.parse(provider.provider_details || '{}');
+                          const details = typeof provider.provider_details === 'string' ? 
+                            JSON.parse(provider.provider_details || '{}') : 
+                            (provider.provider_details || {});
                           return details.commission !== undefined ? `${details.commission}%` : 'N/A';
                         } catch (err) {
                           return 'N/A';
@@ -329,7 +370,7 @@ export const ProviderTable = ({ providers }) => {
               </tr>
               {expandedRows.has(provider.provider_id) && (
                 <tr className="expanded-content">
-                  <td colSpan="10">
+                  <td colSpan={10}>
                     <div className="expanded-details">
                       <div className="provider-grid">
                         <div className="detail-group">
@@ -337,7 +378,9 @@ export const ProviderTable = ({ providers }) => {
                           <div className="detail-value">
                             {(() => {
                               try {
-                                const details = JSON.parse(provider.provider_details || '{}');
+                              const details = typeof provider.provider_details === 'string' ? 
+                                JSON.parse(provider.provider_details || '{}') : 
+                                (provider.provider_details || {});
                                 return details.name || 'N/A';
                               } catch (err) {
                                 return 'N/A';
@@ -346,17 +389,19 @@ export const ProviderTable = ({ providers }) => {
                           </div>
                         </div>
 
-                        <div className="detail-group">
+                        {/* <div className="detail-group">
                           <label>Status</label>
-                          <div className={`status-badge ${provider.active === 1 ? 'active' : 'inactive'}`}>
-                            {provider.active === 1 ? 'Active' : 'Inactive'}
+                          <div className={`status-badge ${Number(provider.active) === 1 ? 'active' : 'inactive'}`}>
+                            {Number(provider.active) === 1 ? 'Active' : 'Inactive'}
                           </div>
-                        </div>
+                        </div> */}
 
                         <div className="detail-group">
                           <label>Total Staked</label>
                           <div className="detail-value">
-                            {formatTokenAmount(JSON.parse(provider.stake || '{"amount":0}').amount || 0)}
+                            {formatTokenAmount((typeof provider.stake === 'string' ? 
+                              JSON.parse(provider.stake || '{"amount":"0"}') : 
+                              (provider.stake || {amount: "0"})).amount || "0")}
                           </div>
                         </div>
 
@@ -365,7 +410,9 @@ export const ProviderTable = ({ providers }) => {
                           <div className="detail-value">
                             {(() => {
                               try {
-                                const details = JSON.parse(provider.provider_details || '{}');
+                            const details = typeof provider.provider_details === 'string' ? 
+                              JSON.parse(provider.provider_details || '{}') : 
+                              (provider.provider_details || {});
                                 return details.commission !== undefined ? `${details.commission}%` : 'N/A';
                               } catch (err) {
                                 return 'N/A';
@@ -380,7 +427,9 @@ export const ProviderTable = ({ providers }) => {
                         <div className="detail-value description">
                           {(() => {
                             try {
-                              const details = JSON.parse(provider.provider_details || '{}');
+                              const details = typeof provider.provider_details === 'string' ? 
+                                JSON.parse(provider.provider_details || '{}') : 
+                                (provider.provider_details || {});
                               return details.description || 'No description available';
                             } catch (err) {
                               return 'No description available';
@@ -392,7 +441,9 @@ export const ProviderTable = ({ providers }) => {
                       <div className="social-group">
                         {(() => {
                           try {
-                            const details = JSON.parse(provider.provider_details || '{}');
+                            const details = typeof provider.provider_details === 'string' ? 
+                              JSON.parse(provider.provider_details || '{}') : 
+                              (provider.provider_details || {});
                             return (
                               <>
                                 {details.twitter && (
@@ -475,7 +526,7 @@ export const ProviderTable = ({ providers }) => {
                             <div className="request-group">
                               <h4>Challenge Requests ({activeRequests[provider.provider_id].challengeRequests.length})</h4>
                               <div className="request-list">
-                                {activeRequests[provider.provider_id].challengeRequests.map((requestId, index) => (
+                                {activeRequests[provider.provider_id].challengeRequests.map((requestId: string, index: number) => (
                                   <div key={index} className="request-item">
                                     {truncateAddress(requestId)}
                                   </div>
@@ -485,7 +536,7 @@ export const ProviderTable = ({ providers }) => {
                             <div className="request-group">
                               <h4>Output Requests ({activeRequests[provider.provider_id].outputRequests.length})</h4>
                               <div className="request-list">
-                                {activeRequests[provider.provider_id].outputRequests.map((requestId, index) => (
+                                {activeRequests[provider.provider_id].outputRequests.map((requestId: string, index: number) => (
                                   <div key={index} className="request-item">
                                     {truncateAddress(requestId)}
                                   </div>

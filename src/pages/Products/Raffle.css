@@ -1,0 +1,154 @@
+.raffle-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.raffle-container h1 {
+  color: #333;
+  margin-bottom: 30px;
+}
+
+.raffle-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.input-header h2 {
+  color: #444;
+  font-size: 1.2em;
+  margin: 0;
+}
+
+.mode-toggle {
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+
+.mode-toggle:hover {
+  background-color: #e0e0e0;
+}
+
+.preview-section {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.preview-section h3 {
+  color: #666;
+  font-size: 0.9em;
+  margin: 0 0 10px 0;
+}
+
+.preview-section pre {
+  margin: 0;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  font-size: 0.9em;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.raffle-section textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.raffle-section textarea:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.raffle-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.raffle-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.raffle-button.update {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.raffle-button.update:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.raffle-button.pull {
+  background-color: #2196F3;
+  color: white;
+}
+
+.raffle-button.pull:hover:not(:disabled) {
+  background-color: #1976D2;
+}
+
+.winners-list {
+  margin-top: 15px;
+}
+
+.winner-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+}
+
+.winner-item:hover {
+  background-color: #e9ecef;
+}
+
+.winner-name {
+  font-weight: 500;
+  color: #2196F3;
+}
+
+.winner-name:contains('Pending...') {
+  color: #757575;
+  font-style: italic;
+}
+
+.winner-id {
+  color: #666;
+  font-size: 0.9em;
+  font-family: monospace;
+}
