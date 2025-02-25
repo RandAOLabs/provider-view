@@ -42,6 +42,73 @@ export async function getTotalProvided() {
   }
 }
 
+export async function raffleRandomResponses() {
+  try {
+    console.log('Fetching raffle random responses...');
+    
+    const queryObject = {
+      query: `{
+        transactions(
+          recipients: ["RQZBPcI-EUVb9rdcbiIN0eggYSJNLgdFuD7G_GztreQ"]
+          sort: HEIGHT_DESC
+          tags: [
+            { name: "Action", values: ["Random-Response"] },
+            { name: "Data-Protocol", values: ["ao"] },
+            { name: "From-Process", values: ["1dnDvaDRQ7Ao6o1ohTr7NNrN5mp1CpsXFrWm3JJFEs8"]}
+          ]
+        ) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }`
+    };
+
+    const response = await arweave.api.post('/graphql', queryObject);
+    console.log('Raffle random responses:', response.data?.data?.transactions?.edges);
+    return response.data?.data?.transactions?.edges || [];
+  } catch (error) {
+    console.error("Error fetching raffle random responses:", error);
+    return [];
+  }
+}
+
+export async function creditNoticeFetcher(callbackId: string) {
+  try {
+    console.log('Fetching credit notice for callback ID:', callbackId);
+    
+    const queryObject = {
+      query: `{
+        transactions(
+          recipients: ["1dnDvaDRQ7Ao6o1ohTr7NNrN5mp1CpsXFrWm3JJFEs8"]
+          sort: HEIGHT_DESC
+          tags: [
+            { name: "Action", values: ["Credit-Notice"] },
+            { name: "Data-Protocol", values: ["ao"] },
+            { name: "From-Process", values: ["5ZR9uegKoEhE9fJMbs-MvWLIztMNCVxgpzfeBVE3vqI"]},
+            { name: "X-CallbackId", values: ["${callbackId}"]}
+          ]
+        ) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }`
+    };
+
+    const response = await arweave.api.post('/graphql', queryObject);
+    console.log('Credit notice response:', response.data?.data?.transactions?.edges);
+    return response.data?.data?.transactions?.edges || [];
+  } catch (error) {
+    console.error("Error fetching credit notice:", error);
+    return [];
+  }
+}
+
 export async function getProviderTotalRandom(provider_id) {
   try {
     console.log('Fetching provider total random count...');

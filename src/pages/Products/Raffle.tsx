@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { aoHelpers } from '../../utils/ao-helpers';
 import { ViewPullsResponse, ViewEntrantsResponse } from 'ao-process-clients';
 import { useWallet } from '../../contexts/WalletContext';
+import { ConnectWallet } from '../../components/common/ConnectWallet';
+import { raffleRandomResponses, creditNoticeFetcher } from '../../utils/graphQLquery';
 import './Raffle.css';
 
 export const Raffle = () => {
@@ -13,6 +15,24 @@ export const Raffle = () => {
   const [currentEntrants, setCurrentEntrants] = useState<ViewEntrantsResponse | null>(null);
   const [userPulls, setUserPulls] = useState<ViewPullsResponse | null>(null);
   const [hasPendingPulls, setHasPendingPulls] = useState(false);
+  const [expandedPulls, setExpandedPulls] = useState<number[]>([]);
+  const [callbackIds, setCallbackIds] = useState<{[key: number]: string}>({});
+  const [creditNotices, setCreditNotices] = useState<{[key: number]: any[]}>({});
+
+  useEffect(() => {
+    // Fetch raffle random responses when component mounts
+    raffleRandomResponses().then(responses => {
+      console.log('Raffle random responses:', responses);
+    });
+  }, []);
+
+  const handleCallbackIdChange = async (pullId: number, value: string) => {
+    setCallbackIds(prev => ({ ...prev, [pullId]: value }));
+    if (value.trim()) {
+      const notices = await creditNoticeFetcher(value.trim());
+      setCreditNotices(prev => ({ ...prev, [pullId]: notices }));
+    }
+  };
 
   const fetchRaffleData = async () => {
     try {
@@ -86,6 +106,9 @@ export const Raffle = () => {
       // Refresh the entrants data after update
       const entrantsResponse = await aoHelpers.viewEntrants(userId);
       setCurrentEntrants(entrantsResponse);
+      // Clear the form and preview
+      setEntrants('');
+      setFormattedEntrants([]);
     } catch (error) {
       console.error('Error updating raffle list:', error);
     } finally {
@@ -108,7 +131,10 @@ export const Raffle = () => {
 
   return (
     <div className="raffle-container">
-      <h1>Raffle</h1>
+      <header className="raffle-header">
+        <h1>Raffle</h1>
+        <ConnectWallet />
+      </header>
       
       <div className="raffle-grid">
         <div className="raffle-section">
@@ -168,8 +194,47 @@ export const Raffle = () => {
             <div className="winners-list">
               {userPulls.pulls.map((pull, index) => (
                 <div key={index} className="winner-item">
-                  <span className="winner-name">{pull.Winner || 'Pending...'}</span>
-                  <span className="winner-id">Pull #{pull.Id}</span>
+                  <div className="winner-main">
+                    <span className="winner-name">{pull.Winner || 'Pending...'}</span>
+                    <span className="winner-id">Pull #{pull.Id}</span>
+                    {pull.Winner && (
+                      <button 
+                        className="expand-button"
+                        onClick={() => {
+                          const expanded = expandedPulls.includes(pull.Id);
+                          if (expanded) {
+                            setExpandedPulls(expandedPulls.filter(id => id !== pull.Id));
+                          } else {
+                            setExpandedPulls([...expandedPulls, pull.Id]);
+                          }
+                        }}
+                      >
+                        {expandedPulls.includes(pull.Id) ? '▼' : '▶'}
+                      </button>
+                    )}
+                  </div>
+                  {pull.Winner && expandedPulls.includes(pull.Id) && (
+                    <div className="winner-details">
+                      <div className="callback-input">
+                        <input
+                          type="text"
+                          placeholder="Enter Callback ID"
+                          value={callbackIds[pull.Id] || ''}
+                          onChange={(e) => handleCallbackIdChange(pull.Id, e.target.value)}
+                        />
+                      </div>
+                      {creditNotices[pull.Id] && (
+                        <div className="credit-notices">
+                          <h4>Credit Notices:</h4>
+                          {creditNotices[pull.Id].map((notice, i) => (
+                            <div key={i} className="notice-item">
+                              Transaction ID: {notice.node.id}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

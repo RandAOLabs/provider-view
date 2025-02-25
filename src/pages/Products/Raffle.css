@@ -4,6 +4,19 @@
   padding: 20px;
 }
 
+.raffle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 0 20px;
+}
+
+.raffle-header h1 {
+  color: #333;
+  margin: 0;
+}
+
 .raffle-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -145,14 +158,20 @@ textarea {
 }
 
 .winner-item {
+  overflow: hidden;
+}
+
+.winner-main {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 
 .winner-name {
   font-weight: 600;
   color: #333;
+  flex-grow: 1;
 }
 
 .winner-id {
@@ -160,10 +179,64 @@ textarea {
   font-size: 0.9em;
 }
 
-h1 {
-  color: #333;
-  margin-bottom: 30px;
-  text-align: center;
+.expand-button {
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4a90e2;
+  font-size: 1.2em;
+  transition: color 0.2s;
+}
+
+.expand-button:hover {
+  color: #357abd;
+}
+
+.winner-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.callback-input {
+  margin-bottom: 10px;
+}
+
+.callback-input input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  transition: border-color 0.2s;
+}
+
+.callback-input input:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.credit-notices {
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.credit-notices h4 {
+  margin: 0 0 10px 0;
+  color: #555;
+  font-size: 0.9em;
+}
+
+.notice-item {
+  padding: 8px;
+  background-color: white;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-family: monospace;
+  font-size: 0.85em;
+  word-break: break-all;
 }
 
 h2 {
