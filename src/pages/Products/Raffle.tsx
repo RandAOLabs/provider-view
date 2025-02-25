@@ -3,7 +3,7 @@ import { aoHelpers } from '../../utils/ao-helpers';
 import { ViewPullsResponse, ViewEntrantsResponse } from 'ao-process-clients';
 import { useWallet } from '../../contexts/WalletContext';
 import { ConnectWallet } from '../../components/common/ConnectWallet';
-import { raffleRandomResponses, creditNoticeFetcher } from '../../utils/graphQLquery';
+import { raffleRandomResponses, pullIdToMessage } from '../../utils/graphQLquery';
 import './Raffle.css';
 
 export const Raffle = () => {
@@ -16,8 +16,7 @@ export const Raffle = () => {
   const [userPulls, setUserPulls] = useState<ViewPullsResponse | null>(null);
   const [hasPendingPulls, setHasPendingPulls] = useState(false);
   const [expandedPulls, setExpandedPulls] = useState<number[]>([]);
-  const [callbackIds, setCallbackIds] = useState<{[key: number]: string}>({});
-  const [creditNotices, setCreditNotices] = useState<{[key: number]: any[]}>({});
+  const [messageIds, setMessageIds] = useState<{[key: number]: string}>({});
 
   useEffect(() => {
     // Fetch raffle random responses when component mounts
@@ -25,14 +24,6 @@ export const Raffle = () => {
       console.log('Raffle random responses:', responses);
     });
   }, []);
-
-  const handleCallbackIdChange = async (pullId: number, value: string) => {
-    setCallbackIds(prev => ({ ...prev, [pullId]: value }));
-    if (value.trim()) {
-      const notices = await creditNoticeFetcher(value.trim());
-      setCreditNotices(prev => ({ ...prev, [pullId]: notices }));
-    }
-  };
 
   const fetchRaffleData = async () => {
     try {
@@ -129,6 +120,22 @@ export const Raffle = () => {
     }
   };
 
+  const handleExpand = async (pullId: number) => {
+    const expanded = expandedPulls.includes(pullId);
+    if (expanded) {
+      setExpandedPulls(expandedPulls.filter(id => id !== pullId));
+    } else {
+      setExpandedPulls([...expandedPulls, pullId]);
+      // Fetch message when expanding
+      const response = await pullIdToMessage(pullId.toString(), userId);
+      if (response.length > 0) {
+        const messageId = response[0].node.id;
+        setMessageIds(prev => ({ ...prev, [pullId]: messageId }));
+        console.log(`Message ID for pull ${pullId}:`, messageId);
+      }
+    }
+  };
+
   return (
     <div className="raffle-container">
       <header className="raffle-header">
@@ -200,14 +207,7 @@ export const Raffle = () => {
                     {pull.Winner && (
                       <button 
                         className="expand-button"
-                        onClick={() => {
-                          const expanded = expandedPulls.includes(pull.Id);
-                          if (expanded) {
-                            setExpandedPulls(expandedPulls.filter(id => id !== pull.Id));
-                          } else {
-                            setExpandedPulls([...expandedPulls, pull.Id]);
-                          }
-                        }}
+                        onClick={() => handleExpand(pull.Id)}
                       >
                         {expandedPulls.includes(pull.Id) ? '▼' : '▶'}
                       </button>
@@ -215,23 +215,15 @@ export const Raffle = () => {
                   </div>
                   {pull.Winner && expandedPulls.includes(pull.Id) && (
                     <div className="winner-details">
-                      <div className="callback-input">
-                        <input
-                          type="text"
-                          placeholder="Enter Callback ID"
-                          value={callbackIds[pull.Id] || ''}
-                          onChange={(e) => handleCallbackIdChange(pull.Id, e.target.value)}
-                        />
-                      </div>
-                      {creditNotices[pull.Id] && (
-                        <div className="credit-notices">
-                          <h4>Credit Notices:</h4>
-                          {creditNotices[pull.Id].map((notice, i) => (
-                            <div key={i} className="notice-item">
-                              Transaction ID: {notice.node.id}
-                            </div>
-                          ))}
-                        </div>
+                      {messageIds[pull.Id] && (
+                        <a 
+                          href={`https://www.ao.link/#/message/${messageIds[pull.Id]}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="message-link"
+                        >
+                          View Message Details
+                        </a>
                       )}
                     </div>
                   )}

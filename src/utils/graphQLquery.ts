@@ -42,6 +42,45 @@ export async function getTotalProvided() {
   }
 }
 
+export async function pullIdToMessage(pullId: string, userid: string) {
+  try {
+    console.log('Fetching message for pull ID:', pullId);
+    
+    const queryObject = {
+      query: `{
+        transactions(
+          recipients: ["${userid}"]
+          sort: HEIGHT_DESC
+          tags: [
+            { name: "Action", values: ["Raffle-Winner"] },
+            { name: "Data-Protocol", values: ["ao"] },
+            { name: "From-Process", values: ["RQZBPcI-EUVb9rdcbiIN0eggYSJNLgdFuD7G_GztreQ"]},
+            { name: "PullId", values: ["${pullId}"]}
+          ]
+        ) {
+          edges {
+            node {
+              id,
+              tags {
+                name
+                value
+              }
+            }
+          }
+        }
+      }`
+    };
+
+    const response = await arweave.api.post('/graphql', queryObject);
+    console.log("response for " + pullId)
+    console.log('Pull ID message response:', response.data?.data?.transactions?.edges);
+    return response.data?.data?.transactions?.edges || [];
+  } catch (error) {
+    console.error("Error fetching pull ID message:", error);
+    return [];
+  }
+}
+
 export async function raffleRandomResponses() {
   try {
     console.log('Fetching raffle random responses...');
