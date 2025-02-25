@@ -4,6 +4,7 @@ import { ViewPullsResponse, ViewEntrantsResponse } from 'ao-process-clients';
 import { useWallet } from '../../contexts/WalletContext';
 import { ConnectWallet } from '../../components/common/ConnectWallet';
 import { raffleRandomResponses, pullIdToMessage } from '../../utils/graphQLquery';
+import { saveAs } from 'file-saver';
 import './Raffle.css';
 
 export const Raffle = () => {
@@ -17,6 +18,7 @@ export const Raffle = () => {
   const [hasPendingPulls, setHasPendingPulls] = useState(false);
   const [expandedPulls, setExpandedPulls] = useState<number[]>([]);
   const [messageIds, setMessageIds] = useState<{[key: number]: string}>({});
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     // Fetch raffle random responses when component mounts
@@ -120,6 +122,39 @@ export const Raffle = () => {
     }
   };
 
+  const handleExportData = async () => {
+    try {
+      setExportLoading(true);
+      
+      // Collect all pull data
+      const exportData = {
+        pulls: userPulls?.pulls || [],
+        messageDetails: {}
+      };
+
+      // Fetch message details for all pulls
+      if (userPulls?.pulls) {
+        for (const pull of userPulls.pulls) {
+          if (pull.Winner) { // Only fetch for completed pulls
+            const response = await pullIdToMessage(pull.Id.toString(), userId);
+            if (response.length > 0) {
+              exportData.messageDetails[pull.Id] = response[0].node;
+            }
+          }
+        }
+      }
+
+      // Create and download file
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'text/plain;charset=utf-8' });
+      saveAs(blob, 'randomdraw-data.txt');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const handleExpand = async (pullId: number) => {
     const expanded = expandedPulls.includes(pullId);
     if (expanded) {
@@ -139,7 +174,7 @@ export const Raffle = () => {
   return (
     <div className="raffle-container">
       <header className="raffle-header">
-        <h1>Raffle</h1>
+        <h1>Random Draw</h1>
         <ConnectWallet />
       </header>
       
@@ -184,7 +219,7 @@ export const Raffle = () => {
 
         {currentEntrants && (
           <div className="raffle-section scrollable">
-            <h2>Current Raffle Entrants</h2>
+            <h2>Current Random Draw Entrants</h2>
             <div className="entrants-list">
               {Array.from(currentEntrants.entries()).map(([index, entrant]) => (
                 <div key={index} className="entrant-item">
@@ -197,13 +232,13 @@ export const Raffle = () => {
 
         {userPulls && userPulls.pulls.length > 0 && (
           <div className="raffle-section scrollable">
-            <h2>Your Raffle Pulls</h2>
+            <h2>Your Random Draws</h2>
             <div className="winners-list">
               {userPulls.pulls.map((pull, index) => (
                 <div key={index} className="winner-item">
                   <div className="winner-main">
                     <span className="winner-name">{pull.Winner || 'Pending...'}</span>
-                    <span className="winner-id">Pull #{pull.Id}</span>
+                    <span className="winner-id">Draw #{pull.Id}</span>
                     {pull.Winner && (
                       <button 
                         className="expand-button"
@@ -235,14 +270,23 @@ export const Raffle = () => {
       </div>
 
       <div className="raffle-section full-width">
-        <h2>Pull Raffle Winner</h2>
-        <button 
-          onClick={handlePullRaffle}
-          disabled={actionLoading}
-          className="raffle-button pull"
-        >
-          {actionLoading ? 'Pulling...' : 'Pull Winner'}
-        </button>
+        <h2>Draw Winner</h2>
+        <div className="button-group">
+          <button 
+            onClick={handlePullRaffle}
+            disabled={actionLoading || exportLoading}
+            className="raffle-button pull"
+          >
+            {actionLoading ? 'Drawing...' : 'Draw Winner'}
+          </button>
+          <button
+            onClick={handleExportData}
+            disabled={actionLoading || exportLoading || !userPulls?.pulls.length}
+            className="raffle-button export"
+          >
+            {exportLoading ? 'Exporting...' : 'Export Data'}
+          </button>
+        </div>
       </div>
     </div>
   );

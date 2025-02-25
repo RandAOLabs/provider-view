@@ -32,7 +32,7 @@ function App() {
             <Route path="/become-provider" element={<BecomeProvider />} />
             <Route path="/products" element={<Products />}>
               <Route index element={<Raffle />} />
-              <Route path="raffle" element={<Raffle />} />
+              <Route path="randomdraw" element={<Raffle />} />
               <Route path="lootbox" element={<Lootbox />} />
               <Route path="criticalstrike" element={<CriticalStrike />} />
               <Route path="lottery" element={<Lottery />} />

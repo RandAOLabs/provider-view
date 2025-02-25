@@ -4,6 +4,7 @@ import Arweave from 'arweave';
 const apiconf = {host: "arweave-search.goldsky.com"}
 const arweave = Arweave.init(apiconf);
 
+const RANDOMPROCCESS = "1dnDvaDRQ7Ao6o1ohTr7NNrN5mp1CpsXFrWm3JJFEs8"
 /**
  * Fetches the total number of matching transactions from Arweave using the count field.
  *
@@ -16,7 +17,7 @@ export async function getTotalProvided() {
     const queryObject = {
       query: `{
         transactions(
-          recipients: ["yKVS1tYE3MajUpZqEIORmW1J8HTke-6o6o6tnlkFOZQ"],
+          recipients: ["${RANDOMPROCCESS}"],
           tags: [
             { name: "Action", values: ["Post-VDF-Output-And-Proof"] },
             { name: "Data-Protocol", values: ["ao"] }
@@ -155,7 +156,7 @@ export async function getProviderTotalRandom(provider_id) {
     const queryObject = {
       query: `{
         transactions(
-          recipients: ["yKVS1tYE3MajUpZqEIORmW1J8HTke-6o6o6tnlkFOZQ"],
+          recipients: ["${RANDOMPROCCESS}"],
           owners: ["${provider_id}"],
           tags: [
             { name: "Action", values: ["Post-VDF-Output-And-Proof"] },

@@ -49,7 +49,7 @@ export const Sidebar = () => {
           <FiUsers />
           Providers
         </Link>
-        <Link to="/products/raffle" className={`nav-item ${location.pathname.startsWith('/products') ? 'active' : ''}`}>
+        <Link to="/products/randomdraw" className={`nav-item ${location.pathname.startsWith('/products') ? 'active' : ''}`}>
           <FiPackage />
           Products
         </Link>

@@ -84,20 +84,10 @@ class AOHelpers {
     }
 
     // Update provider details
-    async updateProviderDetails(details: ProviderDetailsInput): Promise<boolean> {
+    async updateProviderDetails(details: ProviderDetailsInput): Promise<string> {
         try {
-            const client = await this.getStakingClient();
-            const tags: ProviderDetails = {
-                name:  details.name,
-                commission: parseInt(details.delegationFee || '0'),
-                description: details.description || '' ,
-                twitter: details.twitter || '' ,
-                discord: details.discord || '' ,
-                telegram: details.telegram || '' ,
-                domain : details.domain || '' 
-        };
-            // Use stake with 0 amount to update details
-            return await client.stakeWithDetails("0", tags);
+            const client = await this.getProviderProfileClient();
+            return await client.updateDetails(details);
         } catch (error) {
             console.error('Error updating provider details:', error);
             throw error;
@@ -109,16 +99,7 @@ class AOHelpers {
         try {
             const client = await this.getStakingClient();
             if (providerDetails) {
-                const tags: Tags = [
-                    { name: "Name", value: providerDetails.name },
-                    { name: "Commission", value: providerDetails.delegationFee },
-                    { name: "Description", value: providerDetails.description || '' },
-                    { name: "Twitter", value: providerDetails.twitter || '' },
-                    { name: "Discord", value: providerDetails.discord || '' },
-                    { name: "Telegram", value: providerDetails.telegram || '' },
-                    { name: "Domain", value: providerDetails.domain || '' }
-                ];
-                return await client.stake(amount, tags);
+                return await client.stakeWithDetails(amount, providerDetails);
             }
             return await client.stake(amount);
         } catch (error) {
