@@ -4,10 +4,9 @@ import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import './ProductsNav.css';
 
 const products = [
-  { name: 'Raffle', path: '/products/raffle' },
+  { name: 'RandomDraw', path: '/products/randomdraw' },
   { name: 'Lootbox', path: '/products/lootbox' },
   { name: 'Critical Strike', path: '/products/criticalstrike' },
-  { name: 'Lottery', path: '/products/lottery' },
   { name: 'Random Number', path: '/products/randomnumber' }
 ];
 
