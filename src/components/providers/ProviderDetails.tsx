@@ -1,11 +1,21 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { FiEdit2, FiGlobe } from 'react-icons/fi'
+import { FiEdit2, FiGlobe, FiPower } from 'react-icons/fi'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
+import { BiRefresh } from 'react-icons/bi'
 import { aoHelpers } from '../../utils/ao-helpers'
+import { ProviderInfoAggregate } from 'ao-process-clients'
 import './ProviderDetails.css'
 
-export const ProviderDetails = ({ 
+interface ProviderDetailsProps {
+  provider: ProviderInfoAggregate;
+  isEditing?: boolean;
+  onSave?: (formData: any) => Promise<void>;
+  isSubmitting?: boolean;
+  submitLabel?: string;
+}
+
+export const ProviderDetails: React.FC<ProviderDetailsProps> = ({ 
   provider, 
   isEditing: defaultIsEditing,
   onSave,
@@ -16,18 +26,41 @@ export const ProviderDetails = ({
   const [showUnstakeWarning, setShowUnstakeWarning] = useState(false)
   const [changes, setChanges] = useState({})
   const [error, setError] = useState('')
+  const [availableRandom, setAvailableRandom] = useState<number | null>(null)
+  const [isUpdatingRandom, setIsUpdatingRandom] = useState(false)
+  const [randomUpdateSuccess, setRandomUpdateSuccess] = useState(false)
+
+  // Fetch available random values
+  useEffect(() => {
+    const fetchAvailableRandom = async () => {
+      try {
+        if (provider && provider.providerId) {
+          // Get random balance from provider activity
+          const randomValue = provider.providerActivity?.random_balance;
+          console.log('Available random value:', randomValue);
+          // Convert undefined to null for state
+          setAvailableRandom(randomValue !== undefined ? randomValue : null);
+        }
+      } catch (err) {
+        console.error('Error fetching available random:', err);
+        // Default to 0 if there's an error
+        setAvailableRandom(0);
+      }
+    };
+
+    fetchAvailableRandom();
+  }, [provider]);
 
   // Parse provider details once and memoize
   const parsedDetails = useMemo(() => {
     try {
-      return typeof provider.provider_details === 'string' ? 
-        JSON.parse(provider.provider_details || '{}') : 
-        (provider.provider_details || {});
+      // Access provider details from the new structure
+      return provider.providerInfo?.provider_details || {};
     } catch (err) {
       console.error('Error parsing provider details:', err);
       return {};
     }
-  }, [provider.provider_details]);
+  }, [provider.providerInfo?.provider_details]);
 
   const [formData, setFormData] = useState(() => ({
     name: parsedDetails.name || '',
@@ -79,7 +112,12 @@ export const ProviderDetails = ({
       await onSave(formData)
     } else {
       try {
-        await aoHelpers.updateProviderDetails(formData)
+        // Convert delegationFee to string if it's a number
+        const updatedFormData = {
+          ...formData,
+          delegationFee: String(formData.delegationFee)
+        };
+        await aoHelpers.updateProviderDetails(updatedFormData)
         setIsEditing(false)
         setError('')
       } catch (error) {
@@ -91,10 +129,64 @@ export const ProviderDetails = ({
 
   const handleUnstake = async () => {
     try {
-      await aoHelpers.unstakeTokens(provider.provider_id)
+      await aoHelpers.unstakeTokens(provider.providerId)
       window.location.reload() // Refresh to show updated state
     } catch (err) {
       console.error('Error unstaking:', err)
+    }
+  }
+
+  const handleUpdateAvailableRandom = async (value: number) => {
+    setIsUpdatingRandom(true);
+    setRandomUpdateSuccess(false);
+    try {
+      const result = await aoHelpers.updateProviderAvalibleRandom(value);
+      if (result) {
+        setAvailableRandom(value);
+        setRandomUpdateSuccess(true);
+        setTimeout(() => setRandomUpdateSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Error updating available random:', err);
+      setError('Failed to update provider status');
+    } finally {
+      setIsUpdatingRandom(false);
+    }
+  }
+
+  // Get message based on available random value
+  const getRandomStatusMessage = () => {
+    if (availableRandom === -1) {
+      return {
+        message: "Provider has been turned off by user",
+        action: "Click here to turn back on",
+        value: 0,
+        className: "provider-status-user-off"
+      };
+    } else if (availableRandom === -2) {
+      return {
+        message: "Provider has been turned off by random process",
+        subMessage: "Your provider failed to meet requirements. Contact team for more info.",
+        action: "Turn back on",
+        value: 0,
+        className: "provider-status-process-off"
+      };
+    } else if (availableRandom === -3) {
+      return {
+        message: "Provider has been turned off by team",
+        subMessage: "Contact team if you don't know why.",
+        action: "Turn back on",
+        value: 0,
+        className: "provider-status-team-off"
+      };
+    } else {
+      return {
+        message: `Provider is active`,
+        subMessage: `${availableRandom !== null ? `Available random values: ${availableRandom}` : ''}`,
+        action: "Turn off provider",
+        value: -1,
+        className: "provider-status-active"
+      };
     }
   }
 
@@ -139,11 +231,11 @@ export const ProviderDetails = ({
             <div 
               className="detail-value monospace clickable"
               onClick={() => {
-                navigator.clipboard.writeText(provider.provider_id);
+                navigator.clipboard.writeText(provider.providerId);
               }}
               title="Click to copy address"
             >
-              {`${provider.provider_id.slice(0, 4)}...${provider.provider_id.slice(-4)}`}
+              {`${provider.providerId.slice(0, 4)}...${provider.providerId.slice(-4)}`}
             </div>
           </div>
 
@@ -157,7 +249,7 @@ export const ProviderDetails = ({
           <div className="detail-group">
             <label>Join Date</label>
             <div className="detail-value">
-              {provider.created_at ? new Date(provider.created_at).toLocaleDateString('en-US', {
+              {provider.providerInfo?.created_at ? new Date(provider.providerInfo.created_at).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -169,14 +261,12 @@ export const ProviderDetails = ({
             <label>Total Staked</label>
             <div className="stake-group">
               <div className="detail-value">
-                {provider.stake ? (parseFloat((typeof provider.stake === 'string' ? 
-                  JSON.parse(provider.stake || '{"amount":"0"}') : 
-                  (provider.stake || {amount: "0"})).amount || "0") / Math.pow(10, 18)).toLocaleString('en-US', {
+                {provider.providerInfo?.stake ? (parseFloat(provider.providerInfo.stake.amount || "0") / Math.pow(10, 18)).toLocaleString('en-US', {
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 6
                 }) : '0'}
               </div>
-              {isEditing && provider.active === 1 && (
+              {isEditing && (
                 <button 
                   className="unstake-btn-small"
                   onClick={() => setShowUnstakeWarning(true)}
@@ -224,6 +314,43 @@ export const ProviderDetails = ({
             <div className="detail-value description">
               {parsedDetails.description || 'N/A'}
             </div>
+          )}
+        </div>
+
+        {/* Provider Status Section */}
+        <div className="detail-group provider-status-section">
+          <label>Provider Status</label>
+          {availableRandom !== null ? (
+            <div className={`provider-status ${getRandomStatusMessage().className}`}>
+              <div className="status-message">
+                <div>
+                  <p><strong>{getRandomStatusMessage().message}</strong></p>
+                  {getRandomStatusMessage().subMessage && (
+                    <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
+                      {getRandomStatusMessage().subMessage}
+                    </p>
+                  )}
+                </div>
+                <button 
+                  className="status-action-btn"
+                  onClick={() => handleUpdateAvailableRandom(getRandomStatusMessage().value)}
+                  disabled={isUpdatingRandom}
+                >
+                  {isUpdatingRandom ? (
+                    <span className="loading-spinner"><BiRefresh className="spin" /></span>
+                  ) : (
+                    <>
+                      <FiPower /> {getRandomStatusMessage().action}
+                    </>
+                  )}
+                </button>
+                {randomUpdateSuccess && (
+                  <div className="success-message">Provider status updated successfully!</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="detail-value">Loading status...</div>
           )}
         </div>
 

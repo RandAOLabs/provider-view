@@ -10,14 +10,16 @@ import {
     ViewRaffleOwnersResponse, 
     RandAOService, 
     ProviderInfoAggregate, 
-    IRandAOService
+    IRandAOService,
+    Logger,
+    LogLevel
 } from 'ao-process-clients';
 
 // Minimum tokens needed to stake for new stakers
 export const MINIMUM_STAKE_AMOUNT = '100000000000000000000';
 export const TOKEN_DECIMALS = 18;
 export const RAFFLEPROCESS = "0zuEwuXXnNBPQ6u-eUTGfMkKbSy1zeHKfxbiocvD_y0";
-
+// Logger.setLogLevel(LogLevel.DEBUG)
 export interface ProviderDetailsInput {
     name: string;
     delegationFee: string;
@@ -142,29 +144,12 @@ class AOHelpers {
     }
     
     /**
-     * Get a single provider's information from the cache.
-     * This doesn't make a new API call - it uses the cached data from getAllProviderInfo.
-     */
-    getProviderFromCache(providerId: string): ProviderInfoAggregate | undefined {
-        if (!this._providersCache) {
-            console.warn('Cache is empty, cannot get provider from cache');
-            return undefined;
-        }
-        
-        return this._providersCache.find(p => p.providerId === providerId);
-    }
-    
-    /**
      * Legacy compatibility method - maps the new format to the old format.
      * Internal implementation uses the cached data to avoid additional API calls.
      */
-    async getAllProvidersInfo(): Promise<any[]> {
+    async getAllProvidersInfo(): Promise<ProviderInfoAggregate[]> {
         try {
-            // Use the cached data from getAllProviderInfo
-            const aggregateInfo = await this.getAllProviderInfo();
-            
-            // Map the new format to the old format for backward compatibility
-            return aggregateInfo.map(provider => this.convertToLegacyFormat(provider));
+         return await this.getAllProviderInfo();
         } catch (error) {
             console.error('Error in backward compatibility getAllProvidersInfo:', error);
             throw error;
@@ -175,63 +160,11 @@ class AOHelpers {
      * Legacy compatibility method - gets a single provider's info in the old format.
      * Internal implementation uses the cached data to avoid additional API calls.
      */
-    async getProviderInfo(providerId?: string): Promise<any> {
-        if (!providerId) {
-            return null;
-        }
-        
-        // First try to get from cache
-        const cachedProviders = this._providersCache;
-        let provider: ProviderInfoAggregate | undefined;
-        
-        if (cachedProviders) {
-            // Use the cached data if available
-            provider = cachedProviders.find(p => p.providerId === providerId);
-        } else {
-            // If not in cache, fetch all providers (which will update the cache)
-            const allProviders = await this.getAllProviderInfo();
-            provider = allProviders.find(p => p.providerId === providerId);
-        }
-        
-        if (!provider) {
-            return null;
-        }
-        
-        // Convert to legacy format
-        return this.convertToLegacyFormat(provider);
-    }
-    
-    /**
-     * Helper method to convert a ProviderInfoAggregate to the legacy format.
-     * This is used by both getAllProvidersInfo and getProviderInfo for consistency.
-     */
-    private convertToLegacyFormat(provider: ProviderInfoAggregate): any {
-        // Ensure we have the data structures needed
-        const providerInfo = provider.providerInfo || {} as any;
-        
-        // Handle the case where provider_details might be a string or an object
-        let providerDetails: any = providerInfo.provider_details;
-        if (typeof providerDetails === 'string') {
-            try {
-                providerDetails = JSON.parse(providerDetails);
-            } catch (e) {
-                providerDetails = {};
-            }
-        }
-        
-        return {
-            provider_id: provider.providerId,
-            provider_details: {
-                stake: providerInfo.stake || { amount: "0" },
-                provider_details: providerDetails || {},
-                created_at: providerInfo.created_at || Date.now(),
-                provider_id: provider.providerId
-            },
-            stake: providerInfo.stake || { amount: "0" },
-            created_at: providerInfo.created_at || Date.now(),
-            active: (providerInfo as any)?.active ? 1 : 0,
-            random_balance: (provider.providerActivity as any)?.available || 0
-        };
+    async getProviderInfo(providerId: string): Promise<ProviderInfoAggregate> {
+        console.log(providerId)
+        const service = await this.getRandAOService();
+        console.log(providerId)
+        return await service.getAllInfoForProvider(providerId);
     }
 
     // Get open random requests for a provider
@@ -267,6 +200,17 @@ class AOHelpers {
         }
     }
 
+        // Update provider details
+        async updateProviderAvalibleRandom(amount:number): Promise<boolean> {
+            try {
+                const client = await this.getRandomClient();
+                return await client.updateProviderAvailableValues(amount)
+            } catch (error) {
+                console.error('Error updating provider avalible values:', error);
+                throw error;
+            }
+        }
+
     // Stake tokens
     async stakeTokens(amount: string, providerDetails?: ProviderDetailsInput): Promise<boolean> {
         try {
@@ -280,72 +224,6 @@ class AOHelpers {
             throw error;
         }
     }
-
-
-        // Get information for a specific provider
-        private async retryOperation<T>(
-            operation: () => Promise<T>,
-            maxRetries: number = 3,
-            baseDelay: number = 1000,
-            context: string = ''
-        ): Promise<T> {
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                    return await operation();
-                } catch (error) {
-                    const isLastAttempt = attempt === maxRetries;
-                    const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
-
-                    if (error instanceof Error && 
-                        (error.message.includes('CORS') || 
-                         error.message.includes('Failed to fetch') ||
-                         error.message.includes('Network Error'))) {
-                        console.warn(`Attempt ${attempt}/${maxRetries} failed for ${context}: Network/CORS error`);
-                    } else {
-                        console.error(`Attempt ${attempt}/${maxRetries} failed for ${context}:`, error);
-                    }
-
-                    if (isLastAttempt) {
-                        throw error;
-                    }
-
-                    console.log(`Retrying in ${delay}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-            }
-            throw new Error(`Failed after ${maxRetries} attempts`);
-        }
-
-        async getProviderAvalibleRandom(providerId?: string): Promise<any> {
-            try {
-                console.log(`Fetching info for provider: ${providerId || 'current user'}`);
-                const client = await this.getRandomClient();
-                
-                return await this.retryOperation(
-                    async () => {
-                        try {
-                            const result = await client.getProviderAvailableValues(providerId||"");
-                            return result.availibleRandomValues;
-                        } catch (error) {
-                            // If we get a CORS error or network error on the last retry, return 0
-                            if (error instanceof Error && 
-                                (error.message.includes('CORS') || 
-                                 error.message.includes('Failed to fetch') ||
-                                 error.message.includes('Network Error'))) {
-                                return 0;
-                            }
-                            throw error;
-                        }
-                    },
-                    3,
-                    1000,
-                    `getProviderAvalibleRandom for ${providerId}`
-                );
-            } catch (error) {
-                console.error('Error getting provider info:', error);
-                return 0;
-            }
-        }
 
     // Unstake tokens
     async unstakeTokens(providerId: string): Promise<boolean> {

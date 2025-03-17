@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { FiCircle, FiChevronDown, FiChevronUp, FiGlobe, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
 import { aoHelpers } from '../../utils/ao-helpers'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
-import { ProviderInfoAggregate } from 'ao-process-clients'
+import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-process-clients'
 import './ProviderTable.css'
 
-export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
-  // const [providers, setProviders] = useState<ProviderInfoAggregate[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+interface ProviderTableProps {
+  providers: ProviderInfoAggregate[]
+}
+
+export const ProviderTable = ({ providers }: ProviderTableProps) => {
+  const [isLoading, setIsLoading] = useState(false)
   const [expandedRows, setExpandedRows] = useState(new Set<string>())
   const [stakingProvider, setStakingProvider] = useState<ProviderInfoAggregate | null>(null)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
@@ -20,26 +23,6 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
     key: 'active',
     direction: 'desc'
   })
-
-  // Fetch all provider info on component mount - uses cached data when available
-  // useEffect(() => {
-  //   const fetchProviders = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       // The getAllProviderInfo method has built-in caching to prevent redundant API calls
-  //       console.log("really runs not much")
-  //       // Since the providers data doesn't change often, no need to refetch on every render
-  //       const providerInfoList = await aoHelpers.getAllProviderInfo();
-  //       setProviders(providerInfoList);
-  //     } catch (error) {
-  //       console.error("Error fetching provider information:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-    
-  //   fetchProviders();
-  // }, []);
 
   const truncateAddress = (address: string) => {
     if (!address) return ''
@@ -144,8 +127,8 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
     
     return sortedArray.sort((a, b) => {
       // Check if both providers have providerInfo
-      const aActive = (a.providerInfo as any)?.active ? 1 : 0;
-      const bActive = (b.providerInfo as any)?.active ? 1 : 0;
+      const aActive = (a.providerActivity as ProviderActivity ).active ? 1 : 0;
+      const bActive = (b.providerActivity as ProviderActivity ).active ? 1 : 0;
       
       // First sort by active status
       if (sortConfig.key === 'active' || aActive !== bActive) {
@@ -156,8 +139,8 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
           
           if (aStake === bStake) {
-          const aName = (a.providerInfo as any)?.name || '';
-          const bName = (b.providerInfo as any)?.name || '';
+          const aName = (a.providerInfo as ProviderInfo ).provider_details?.name || '';
+          const bName = (b.providerInfo as ProviderInfo ).provider_details?.name || '';
             return aName.localeCompare(bName);
           }
           
@@ -175,8 +158,8 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
                       new Date(b.providerInfo?.created_at || 0).getTime();
           break;
         case 'randomAvailable':
-          comparison = Number((a.providerActivity as any)?.available || 0) - 
-                      Number((b.providerActivity as any)?.available || 0);
+          comparison = Number((a.providerActivity as ProviderActivity ).random_balance || 0) - 
+                      Number((b.providerActivity as ProviderActivity ).random_balance || 0);
           break;
         case 'randomProvided':
           comparison = Number(a.totalFullfullilled || 0) - 
@@ -187,8 +170,8 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
           comparison = aStake - bStake;
           break;
-        case 'delegationFee':
-          const aFee = Number((a.providerInfo as any)?.commission || 0);
+        case 'delegationFee': //TODO THIS IS DEFUNCT
+          const aFee = Number((a.providerActivity as any)?.commission || 0);
           const bFee = Number((b.providerInfo as any)?.commission || 0);
           comparison = aFee - bFee;
           break;
@@ -272,11 +255,11 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
               >
                 <td>
                   <FiCircle 
-                    className={`status-indicator ${((provider.providerActivity as any)?.available || 0) > 1 ? 'online' : 'offline'}`}
+                    className={`status-indicator ${((provider.providerActivity as ProviderActivity ).random_balance || 0) > 1 ? 'online' : 'offline'}`}
                   />
                 </td>
                 <td>
-                  {(provider.providerInfo as any)?.name || 'N/A'}
+                  {(provider.providerInfo as ProviderInfo ).provider_details?.name || 'N/A'}
                 </td>
                 <td>
                   <div 
@@ -292,14 +275,14 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
                     )}
                   </div>
                 </td>
-                <td>{(provider.providerInfo as any)?.created_at ? new Date((provider.providerInfo as any).created_at).toISOString().split('T')[0] : 'N/A'}</td>
+                <td>{(provider.providerInfo as ProviderInfo)?.created_at ? new Date((provider.providerInfo as ProviderInfo ).created_at).toISOString().split('T')[0] : 'N/A'}</td>
                 <td>
                   {isLoading ? (
                     <div className="loading-spinner">
                       <FiLoader className="animate-spin" size={16} />
                     </div>
                   ) : (
-                    (provider.providerActivity as any)?.available || 0
+                    (provider.providerActivity as ProviderActivity).random_balance || 0
                   )}
                 </td>
                 <td>
@@ -311,7 +294,7 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
                     provider.totalFullfullilled || 0
                   )}
                 </td>
-                <td>{formatTokenAmount((provider.providerInfo as any)?.stake?.amount || "0")}</td>
+                <td>{formatTokenAmount((provider.providerInfo as ProviderInfo )?.stake?.amount || "0")}</td>
                 <td>
                   <div className="delegation-fee">
                     <span>
@@ -353,21 +336,13 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
                         <div className="detail-group">
                           <label>Name</label>
                           <div className="detail-value">
-                            {(provider.providerInfo as any)?.name || 'N/A'}
+                            {(provider.providerInfo as ProviderInfo).provider_details?.name || 'N/A'}
                           </div>
                         </div>
-
-                        {/* <div className="detail-group">
-                          <label>Status</label>
-                          <div className={`status-badge ${Number(provider.active) === 1 ? 'active' : 'inactive'}`}>
-                            {Number(provider.active) === 1 ? 'Active' : 'Inactive'}
-                          </div>
-                        </div> */}
-
                         <div className="detail-group">
                           <label>Total Staked</label>
                           <div className="detail-value">
-                            {formatTokenAmount((provider.providerInfo as any)?.stake?.amount || "0")}
+                            {formatTokenAmount((provider.providerInfo as ProviderInfo )?.stake?.amount || "0")}
                           </div>
                         </div>
 
@@ -398,14 +373,14 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
                               <span>{(provider.providerInfo as any).twitter}</span>
                             </a>
                           )}
-                          {(provider.providerInfo as any)?.discord && (
+                          {(provider.providerInfo as ProviderInfo ).provider_details?.discord && (
                             <div className="social-item">
                               <FaDiscord className="social-icon discord" />
                               <span>{(provider.providerInfo as any).discord}</span>
                             </div>
                           )}
                           {(provider.providerInfo as any)?.telegram && (
-                            <a href={`https://t.me/${(provider.providerInfo as any).telegram.replace('@', '')}`}
+                            <a href={`https://t.me/${(provider.providerInfo as ProviderInfo ).provider_details?.telegram?.replace('@', '')}`}
                                target="_blank" 
                                rel="noopener noreferrer" 
                                className="social-item">
@@ -413,13 +388,13 @@ export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
                               <span>{(provider.providerInfo as any).telegram}</span>
                             </a>
                           )}
-                          {(provider.providerInfo as any)?.domain && (
-                            <a href={`https://${(provider.providerInfo as any).domain}`}
+                          {(provider.providerInfo as ProviderInfo ).provider_details?.domain && (
+                            <a href={`https://${(provider.providerInfo as ProviderInfo).provider_details?.domain}`}
                                target="_blank"
                                rel="noopener noreferrer"
                                className="social-item">
                               <FiGlobe className="social-icon website" />
-                              <span>{(provider.providerInfo as any).domain}</span>
+                              <span>{(provider.providerInfo as ProviderInfo).provider_details?.domain}</span>
                             </a>
                           )}
                         </>

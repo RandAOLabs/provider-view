@@ -18,8 +18,11 @@ export const Sidebar = () => {
       if (isConnected) {
         try {
           //TODO FIX THESE
-          //const providers = await aoHelpers.getAllProvidersInfo()
-          //setIsProvider(providers.some(p => p.provider_id === connectedAddress))
+          const provider = await aoHelpers.getProviderInfo(connectedAddress)
+          console.log("user data")
+          console.log(provider)
+          console.log((parseInt(provider.providerInfo?.stake.amount || '0')))
+          setIsProvider((parseInt(provider.providerInfo?.stake.amount || '0')) >=1)
           setFinishedLoading(true)
         } catch (err) {
           console.error('Error checking provider status:', err)

@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ProviderTable } from '../components/providers/ProviderTable'
 import { StartProvider } from '../components/providers/StartProvider'
 import { ConnectWallet } from '../components/common/ConnectWallet'
 import { Spinner } from '../components/common/Spinner'
 import { aoHelpers } from '../utils/ao-helpers'
 import { useWallet } from '../contexts/WalletContext'
+import { ProviderInfoAggregate } from 'ao-process-clients'
 import './Providers.css'
 
 export default function Providers() {
-  const [providers, setProviders] = useState([])
+  const [providers, setProviders] = useState<ProviderInfoAggregate[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const { address: connectedAddress, isConnecting, isReady } = useWallet()
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function Providers() {
             <>
               {isReady && !isConnecting && (
                 <StartProvider 
-                  currentProvider={providers.find(p => p.provider_id === connectedAddress)}
+                  currentProvider={providers.find(p => p.providerId === connectedAddress)}
                 />
               )}
               <ProviderTable providers={providers} />

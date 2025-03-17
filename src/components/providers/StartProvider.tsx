@@ -1,14 +1,20 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { ProviderDetails } from './ProviderDetails'
 import { Spinner } from '../common/Spinner'
+import { ProviderInfoAggregate } from 'ao-process-clients'
 import './StartProvider.css'
 
-export const StartProvider = ({ currentProvider }) => {
+interface StartProviderProps {
+  currentProvider: ProviderInfoAggregate | undefined;
+}
+
+export const StartProvider: React.FC<StartProviderProps> = ({ currentProvider }) => {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
-  const [provider, setProvider] = useState(null)
-  const [error, setError] = useState(null)
+  const [provider, setProvider] = useState<ProviderInfoAggregate | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let mounted = true;
@@ -51,7 +57,7 @@ export const StartProvider = ({ currentProvider }) => {
 
   // Show provider details if they are a provider
   if (provider) {
-    return <ProviderDetails provider={provider} onEdit={() => {}} />
+    return <ProviderDetails provider={provider} />
   }
 
   // Only show become a provider if we've confirmed they are not a provider
