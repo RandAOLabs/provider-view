@@ -1,28 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { getProviderTotalRandom } from '../../utils/graphQLquery'
 import { FiCircle, FiChevronDown, FiChevronUp, FiGlobe, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
 import { aoHelpers } from '../../utils/ao-helpers'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
+import { ProviderInfoAggregate } from 'ao-process-clients'
 import './ProviderTable.css'
 
-interface Provider {
-  active: string | number
-  provider_id: string
-  provider_details: string | { [key: string]: any }
-  stake: string | { amount: string }
-  created_at: number
-  random_balance?: number
-}
-
-export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
-  const [expandedRows, setExpandedRows] = useState(new Set())
-  const [stakingProvider, setStakingProvider] = useState<Provider | null>(null)
+export const ProviderTable = (providers: ProviderInfoAggregate[]) => {
+  // const [providers, setProviders] = useState<ProviderInfoAggregate[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [expandedRows, setExpandedRows] = useState(new Set<string>())
+  const [stakingProvider, setStakingProvider] = useState<ProviderInfoAggregate | null>(null)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
-  const [providerRandomCounts, setProviderRandomCounts] = useState<{ [key: string]: number }>({})
-  const [providerAvalibleRandomCounts, setProviderAvalibleRandomCounts] = useState<{ [key: string]: number }>({})
-  const [loadingRandomCounts, setLoadingRandomCounts] = useState(true)
+  const [isRandomFeeLoading, setIsRandomFeeLoading] = useState(false)
   const [activeRequests, setActiveRequests] = useState<{ [key: string]: any }>({})
   const [loadingRequests, setLoadingRequests] = useState<{ [key: string]: boolean }>({})
   const [sortConfig, setSortConfig] = useState({
@@ -30,32 +21,25 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
     direction: 'desc'
   })
 
-  useEffect(() => {
-    const fetchRandomCounts = async () => {
-      setLoadingRandomCounts(true)
-      try {
-        const counts: { [key: string]: number } = {}
-        const avalibleCounts: { [key: string]: number } = {}
-        for (const provider of providers) {
-          const count = await getProviderTotalRandom(provider.provider_id)
-          console.log(count)
-          counts[provider.provider_id] = count
-
-          const avaliblecount = await aoHelpers.getProviderAvalibleRandom(provider.provider_id)
-          console.log(avaliblecount)
-          avalibleCounts[provider.provider_id] = avaliblecount
-        }
-        setProviderRandomCounts(counts)
-        setProviderAvalibleRandomCounts(avalibleCounts)
-      } catch (error) {
-        console.error('Error fetching random counts:', error)
-      } finally {
-        setLoadingRandomCounts(false)
-      }
-    }
+  // Fetch all provider info on component mount - uses cached data when available
+  // useEffect(() => {
+  //   const fetchProviders = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       // The getAllProviderInfo method has built-in caching to prevent redundant API calls
+  //       console.log("really runs not much")
+  //       // Since the providers data doesn't change often, no need to refetch on every render
+  //       const providerInfoList = await aoHelpers.getAllProviderInfo();
+  //       setProviders(providerInfoList);
+  //     } catch (error) {
+  //       console.error("Error fetching provider information:", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
     
-    fetchRandomCounts()
-  }, [providers])
+  //   fetchProviders();
+  // }, []);
 
   const truncateAddress = (address: string) => {
     if (!address) return ''
@@ -152,76 +136,72 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
   }
 
   const sortedProviders = useMemo(() => {
+    if (isLoading || providers.length === 0) {
+      return [];
+    }
+    
     const sortedArray = [...providers]
     
     return sortedArray.sort((a, b) => {
+      // Check if both providers have providerInfo
+      const aActive = (a.providerInfo as any)?.active ? 1 : 0;
+      const bActive = (b.providerInfo as any)?.active ? 1 : 0;
+      
       // First sort by active status
-      if (sortConfig.key === 'active' || a.active !== b.active) {
-        if (a.active === b.active) {
+      if (sortConfig.key === 'active' || aActive !== bActive) {
+        if (aActive === bActive) {
           // If active status is the same and it's the primary sort key,
           // sort by total stake then alphabetically by name
-          const aStakeObj = typeof a.stake === 'string' ? JSON.parse(a.stake || '{"amount":"0"}') : (a.stake || {amount: "0"})
-          const bStakeObj = typeof b.stake === 'string' ? JSON.parse(b.stake || '{"amount":"0"}') : (b.stake || {amount: "0"})
-          const aStake = Number(aStakeObj.amount || "0")
-          const bStake = Number(bStakeObj.amount || "0")
+          const aStake = Number(a.providerInfo?.stake?.amount || "0");
+          const bStake = Number(b.providerInfo?.stake?.amount || "0");
           
           if (aStake === bStake) {
-            const aDetails = typeof a.provider_details === 'string' ? 
-              JSON.parse(a.provider_details || '{}') : 
-              (a.provider_details || {})
-            const bDetails = typeof b.provider_details === 'string' ? 
-              JSON.parse(b.provider_details || '{}') : 
-              (b.provider_details || {})
-            const aName = aDetails.name || ''
-            const bName = bDetails.name || ''
-            return aName.localeCompare(bName)
+          const aName = (a.providerInfo as any)?.name || '';
+          const bName = (b.providerInfo as any)?.name || '';
+            return aName.localeCompare(bName);
           }
           
-          return Number(bStake) - Number(aStake)
+          return bStake - aStake;
         }
-        return Number(b.active) - Number(a.active)
+        // Active providers first
+        return Number(bActive) - Number(aActive);
       }
 
       // For other columns
-      let comparison = 0
+      let comparison = 0;
       switch (sortConfig.key) {
         case 'joinDate':
-          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          break
+          comparison = new Date(a.providerInfo?.created_at || 0).getTime() - 
+                      new Date(b.providerInfo?.created_at || 0).getTime();
+          break;
         case 'randomAvailable':
-          comparison = Number(a.random_balance || 0) - Number(b.random_balance || 0)
-          break
+          comparison = Number((a.providerActivity as any)?.available || 0) - 
+                      Number((b.providerActivity as any)?.available || 0);
+          break;
         case 'randomProvided':
-          comparison = Number(providerRandomCounts[a.provider_id] || 0) - Number(providerRandomCounts[b.provider_id] || 0)
-          break
+          comparison = Number(a.totalFullfullilled || 0) - 
+                      Number(b.totalFullfullilled || 0);
+          break;
         case 'totalStaked':
-          const aStakeObj = typeof a.stake === 'string' ? JSON.parse(a.stake || '{"amount":"0"}') : (a.stake || {amount: "0"})
-          const bStakeObj = typeof b.stake === 'string' ? JSON.parse(b.stake || '{"amount":"0"}') : (b.stake || {amount: "0"})
-          const aStake = Number(aStakeObj.amount || "0")
-          const bStake = Number(bStakeObj.amount || "0")
-          comparison = Number(aStake) - Number(bStake)
-          break
+          const aStake = Number(a.providerInfo?.stake?.amount || "0");
+          const bStake = Number(b.providerInfo?.stake?.amount || "0");
+          comparison = aStake - bStake;
+          break;
         case 'delegationFee':
-          const aDetails = typeof a.provider_details === 'string' ? 
-            JSON.parse(a.provider_details || '{}') : 
-            (a.provider_details || {})
-          const bDetails = typeof b.provider_details === 'string' ? 
-            JSON.parse(b.provider_details || '{}') : 
-            (b.provider_details || {})
-          const aFee = Number(aDetails.commission || 0)
-          const bFee = Number(bDetails.commission || 0)
-          comparison = aFee - bFee
-          break
+          const aFee = Number((a.providerInfo as any)?.commission || 0);
+          const bFee = Number((b.providerInfo as any)?.commission || 0);
+          comparison = aFee - bFee;
+          break;
         case 'randomValueFee':
-          comparison = 0 // Currently all values are 0
-          break
+          comparison = 0; // Currently all values are 0
+          break;
         default:
-          comparison = 0
+          comparison = 0;
       }
 
-      return sortConfig.direction === 'asc' ? comparison : -comparison
-    })
-  }, [providers, sortConfig, providerRandomCounts])
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+  }, [providers, sortConfig, isLoading]);
 
   return (
     <div className="provider-container">
@@ -285,69 +265,58 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
         </thead>
         <tbody>
           {sortedProviders.map(provider => (
-            <React.Fragment key={provider.provider_id}>
+            <React.Fragment key={provider.providerId}>
               <tr
-                className={expandedRows.has(provider.provider_id) ? 'expanded' : ''}
-                onClick={(e) => toggleRow(provider.provider_id, e)}
+                className={expandedRows.has(provider.providerId) ? 'expanded' : ''}
+                onClick={(e) => toggleRow(provider.providerId, e)}
               >
                 <td>
                   <FiCircle 
-                    className={`status-indicator ${providerAvalibleRandomCounts[provider.provider_id] >1 ? 'online' : 'offline'}`}
+                    className={`status-indicator ${((provider.providerActivity as any)?.available || 0) > 1 ? 'online' : 'offline'}`}
                   />
                 </td>
                 <td>
-                  {(() => {
-                    try {
-                      const details = typeof provider.provider_details === 'string' ? 
-                        JSON.parse(provider.provider_details || '{}') : 
-                        (provider.provider_details || {});
-                      return details.name || 'N/A';
-                    } catch (err) {
-                      return 'N/A';
-                    }
-                  })()}
+                  {(provider.providerInfo as any)?.name || 'N/A'}
                 </td>
                 <td>
                   <div 
                     className="address-cell"
-                    onClick={(e) => copyToClipboard(e, provider.provider_id)}
+                    onClick={(e) => copyToClipboard(e, provider.providerId)}
                     title="Click to copy address"
                   >
-                    <span>{truncateAddress(provider.provider_id)}</span>
-                    {copiedAddress === provider.provider_id ? (
+                    <span>{truncateAddress(provider.providerId)}</span>
+                    {copiedAddress === provider.providerId ? (
                       <FiCheck className="copy-icon success" />
                     ) : (
                       <FiCopy className="copy-icon" />
                     )}
                   </div>
                 </td>
-                <td>{new Date(provider.created_at).toISOString().split('T')[0]}</td>
-                <td>{providerAvalibleRandomCounts[provider.provider_id] || 0}</td>
+                <td>{(provider.providerInfo as any)?.created_at ? new Date((provider.providerInfo as any).created_at).toISOString().split('T')[0] : 'N/A'}</td>
                 <td>
-                  {loadingRandomCounts ? (
+                  {isLoading ? (
                     <div className="loading-spinner">
                       <FiLoader className="animate-spin" size={16} />
                     </div>
                   ) : (
-                    providerRandomCounts[provider.provider_id] || 0
+                    (provider.providerActivity as any)?.available || 0
                   )}
                 </td>
-                <td>{formatTokenAmount((typeof provider.stake === 'string' ? 
-                  JSON.parse(provider.stake || '{"amount":"0"}') : 
-                  (provider.stake || {amount: "0"})).amount || "0")}</td>
+                <td>
+                  {isLoading ? (
+                    <div className="loading-spinner">
+                      <FiLoader className="animate-spin" size={16} />
+                    </div>
+                  ) : (
+                    provider.totalFullfullilled || 0
+                  )}
+                </td>
+                <td>{formatTokenAmount((provider.providerInfo as any)?.stake?.amount || "0")}</td>
                 <td>
                   <div className="delegation-fee">
                     <span>
-                      {(() => {
-                        try {
-                          const details = typeof provider.provider_details === 'string' ? 
-                            JSON.parse(provider.provider_details || '{}') : 
-                            (provider.provider_details || {});
-                          return details.commission !== undefined ? `${details.commission}%` : 'N/A';
-                        } catch (err) {
-                          return 'N/A';
-                        }
-                      })()}
+                      {(provider.providerInfo as any)?.commission !== undefined ? 
+                        `${(provider.providerInfo as any).commission}%` : 'N/A'}
                     </span>
                     <button 
                       className="stake-button" 
@@ -360,15 +329,23 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
                     </button>
                   </div>
                 </td>
-                <td>0</td>
                 <td>
-                  {expandedRows.has(provider.provider_id) ? 
+                  {isRandomFeeLoading ? (
+                    <div className="loading-spinner">
+                      <FiLoader className="animate-spin" size={16} />
+                    </div>
+                  ) : (
+                    0
+                  )}
+                </td>
+                <td>
+                  {expandedRows.has(provider.providerId) ? 
                     <FiChevronUp className="expand-icon" /> : 
                     <FiChevronDown className="expand-icon" />
                   }
                 </td>
               </tr>
-              {expandedRows.has(provider.provider_id) && (
+              {expandedRows.has(provider.providerId) && (
                 <tr className="expanded-content">
                   <td colSpan={10}>
                     <div className="expanded-details">
@@ -376,16 +353,7 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
                         <div className="detail-group">
                           <label>Name</label>
                           <div className="detail-value">
-                            {(() => {
-                              try {
-                              const details = typeof provider.provider_details === 'string' ? 
-                                JSON.parse(provider.provider_details || '{}') : 
-                                (provider.provider_details || {});
-                                return details.name || 'N/A';
-                              } catch (err) {
-                                return 'N/A';
-                              }
-                            })()}
+                            {(provider.providerInfo as any)?.name || 'N/A'}
                           </div>
                         </div>
 
@@ -399,25 +367,15 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
                         <div className="detail-group">
                           <label>Total Staked</label>
                           <div className="detail-value">
-                            {formatTokenAmount((typeof provider.stake === 'string' ? 
-                              JSON.parse(provider.stake || '{"amount":"0"}') : 
-                              (provider.stake || {amount: "0"})).amount || "0")}
+                            {formatTokenAmount((provider.providerInfo as any)?.stake?.amount || "0")}
                           </div>
                         </div>
 
                         <div className="detail-group">
                           <label>Delegation Fee</label>
                           <div className="detail-value">
-                            {(() => {
-                              try {
-                            const details = typeof provider.provider_details === 'string' ? 
-                              JSON.parse(provider.provider_details || '{}') : 
-                              (provider.provider_details || {});
-                                return details.commission !== undefined ? `${details.commission}%` : 'N/A';
-                              } catch (err) {
-                                return 'N/A';
-                              }
-                            })()}
+                            {(provider.providerInfo as any)?.commission !== undefined ? 
+                              `${(provider.providerInfo as any).commission}%` : 'N/A'}
                           </div>
                         </div>
                       </div>
@@ -425,81 +383,61 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
                       <div className="detail-group">
                         <label>Description</label>
                         <div className="detail-value description">
-                          {(() => {
-                            try {
-                              const details = typeof provider.provider_details === 'string' ? 
-                                JSON.parse(provider.provider_details || '{}') : 
-                                (provider.provider_details || {});
-                              return details.description || 'No description available';
-                            } catch (err) {
-                              return 'No description available';
-                            }
-                          })()}
+                          {(provider.providerInfo as any)?.description || 'No description available'}
                         </div>
                       </div>
 
                       <div className="social-group">
-                        {(() => {
-                          try {
-                            const details = typeof provider.provider_details === 'string' ? 
-                              JSON.parse(provider.provider_details || '{}') : 
-                              (provider.provider_details || {});
-                            return (
-                              <>
-                                {details.twitter && (
-                                  <a href={`https://twitter.com/${details.twitter.replace('@', '')}`} 
-                                     target="_blank" 
-                                     rel="noopener noreferrer" 
-                                     className="social-item">
-                                    <FaTwitter className="social-icon twitter" />
-                                    <span>{details.twitter}</span>
-                                  </a>
-                                )}
-                                {details.discord && (
-                                  <div className="social-item">
-                                    <FaDiscord className="social-icon discord" />
-                                    <span>{details.discord}</span>
-                                  </div>
-                                )}
-                                {details.telegram && (
-                                  <a href={`https://t.me/${details.telegram.replace('@', '')}`}
-                                     target="_blank" 
-                                     rel="noopener noreferrer" 
-                                     className="social-item">
-                                    <FaTelegram className="social-icon telegram" />
-                                    <span>{details.telegram}</span>
-                                  </a>
-                                )}
-                                {details.domain && (
-                                  <a href={`https://${details.domain}`}
-                                     target="_blank"
-                                     rel="noopener noreferrer"
-                                     className="social-item">
-                                    <FiGlobe className="social-icon website" />
-                                    <span>{details.domain}</span>
-                                  </a>
-                                )}
-                              </>
-                            );
-                          } catch (err) {
-                            return null;
-                          }
-                        })()}
+                        <>
+                          {(provider.providerInfo as any)?.twitter && (
+                            <a href={`https://twitter.com/${(provider.providerInfo as any).twitter.replace('@', '')}`} 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               className="social-item">
+                              <FaTwitter className="social-icon twitter" />
+                              <span>{(provider.providerInfo as any).twitter}</span>
+                            </a>
+                          )}
+                          {(provider.providerInfo as any)?.discord && (
+                            <div className="social-item">
+                              <FaDiscord className="social-icon discord" />
+                              <span>{(provider.providerInfo as any).discord}</span>
+                            </div>
+                          )}
+                          {(provider.providerInfo as any)?.telegram && (
+                            <a href={`https://t.me/${(provider.providerInfo as any).telegram.replace('@', '')}`}
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               className="social-item">
+                              <FaTelegram className="social-icon telegram" />
+                              <span>{(provider.providerInfo as any).telegram}</span>
+                            </a>
+                          )}
+                          {(provider.providerInfo as any)?.domain && (
+                            <a href={`https://${(provider.providerInfo as any).domain}`}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="social-item">
+                              <FiGlobe className="social-icon website" />
+                              <span>{(provider.providerInfo as any).domain}</span>
+                            </a>
+                          )}
+                        </>
                       </div>
 
                       <div className="active-requests-section">
                         <div className="active-requests-header">
                           <h3>Active Requests</h3>
                           <button
-                            className={`refresh-button${loadingRequests[provider.provider_id] ? 'loading' : ''}`}
+                            className={`refresh-button${loadingRequests[provider.providerId] ? 'loading' : ''}`}
                             onClick={async (e) => {
                               e.stopPropagation();
-                              setLoadingRequests(prev => ({ ...prev, [provider.provider_id]: true }));
+                              setLoadingRequests(prev => ({ ...prev, [provider.providerId]: true }));
                               try {
-                                const response = await aoHelpers.getOpenRandomRequests(provider.provider_id);
+                                const response = await aoHelpers.getOpenRandomRequests(provider.providerId);
                                 setActiveRequests(prev => ({
                                   ...prev,
-                                  [provider.provider_id]: {
+                                  [provider.providerId]: {
                                     challengeRequests: response.activeChallengeRequests.request_ids,
                                     outputRequests: response.activeOutputRequests.request_ids
                                   }
@@ -507,12 +445,12 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
                               } catch (error) {
                                 console.error('Error refreshing active requests:', error);
                               } finally {
-                                setLoadingRequests(prev => ({ ...prev, [provider.provider_id]: false }));
+                                setLoadingRequests(prev => ({ ...prev, [provider.providerId]: false }));
                               }
                             }}
-                            disabled={loadingRequests[provider.provider_id]}
+                            disabled={loadingRequests[provider.providerId]}
                           >
-                            {loadingRequests[provider.provider_id] ? (
+                            {loadingRequests[provider.providerId] ? (
                               <FiLoader className="animate-spin" size={16} />
                             ) : (
                               <svg className="refresh-icon" viewBox="0 0 24 24" width="16" height="16">
@@ -521,12 +459,12 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
                             )}
                           </button>
                         </div>
-                        {activeRequests[provider.provider_id] ? (
+                        {activeRequests[provider.providerId] ? (
                           <div className="requests-container">
                             <div className="request-group">
-                              <h4>Challenge Requests ({activeRequests[provider.provider_id].challengeRequests.length})</h4>
+                              <h4>Challenge Requests ({activeRequests[provider.providerId].challengeRequests.length})</h4>
                               <div className="request-list">
-                                {activeRequests[provider.provider_id].challengeRequests.map((requestId: string, index: number) => (
+                                {activeRequests[provider.providerId].challengeRequests.map((requestId: string, index: number) => (
                                   <div key={index} className="request-item">
                                     {truncateAddress(requestId)}
                                   </div>
@@ -534,9 +472,9 @@ export const ProviderTable = ({ providers }: { providers: Provider[] }) => {
                               </div>
                             </div>
                             <div className="request-group">
-                              <h4>Output Requests ({activeRequests[provider.provider_id].outputRequests.length})</h4>
+                              <h4>Output Requests ({activeRequests[provider.providerId].outputRequests.length})</h4>
                               <div className="request-list">
-                                {activeRequests[provider.provider_id].outputRequests.map((requestId: string, index: number) => (
+                                {activeRequests[provider.providerId].outputRequests.map((requestId: string, index: number) => (
                                   <div key={index} className="request-item">
                                     {truncateAddress(requestId)}
                                   </div>

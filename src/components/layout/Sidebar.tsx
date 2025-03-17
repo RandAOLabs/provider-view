@@ -17,8 +17,9 @@ export const Sidebar = () => {
     const checkIfProvider = async () => {
       if (isConnected) {
         try {
-          const providers = await aoHelpers.getAllProvidersInfo()
-          setIsProvider(providers.some(p => p.provider_id === connectedAddress))
+          //TODO FIX THESE
+          //const providers = await aoHelpers.getAllProvidersInfo()
+          //setIsProvider(providers.some(p => p.provider_id === connectedAddress))
           setFinishedLoading(true)
         } catch (err) {
           console.error('Error checking provider status:', err)

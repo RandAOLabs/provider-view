@@ -17,39 +17,33 @@ export default function Providers() {
     let mounted = true;
 
     const fetchProviders = async () => {
-      try {
-        // Don't fetch until wallet is ready
-        if (!isReady || isConnecting) {
-          return;
-        }
+      if (!isReady || isConnecting) return;
 
-        console.log('Starting to fetch providers data...');
-        const providers = await aoHelpers.getAllProvidersInfo();
-        console.log('All providers data:', providers);
+      setLoading(true);
+      setError(null);
+
+      try {
+        console.log('Fetching providers data...');
+        const fetchedProviders = await aoHelpers.getAllProvidersInfo();
+        console.log('All providers data:', fetchedProviders);
+
         if (mounted) {
-          setProviders(providers);
-          setError(null);
+          setProviders(fetchedProviders);
         }
       } catch (err) {
         console.error('Error fetching providers:', err);
-        if (mounted) {
-          setError('Failed to load providers. Please try again later.');
-        }
+        if (mounted) setError('Failed to load providers. Please try again later.');
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
-    // Reset loading state when wallet connection status changes
-    setLoading(true);
     fetchProviders();
 
     return () => {
       mounted = false;
     };
-  }, [isConnecting, isReady]); // Re-run when wallet status changes
+  }, [isReady, isConnecting]); // Fetch providers only when wallet is ready
 
   return (
     <div className="providers-page">
@@ -63,9 +57,8 @@ export default function Providers() {
             <Spinner text="Loading providers..." />
           ) : error ? (
             <div className="error">{error}</div>
-          ) : (
+          ) : providers.length > 0 ? (
             <>
-              {/* Only render StartProvider after loading is complete */}
               {isReady && !isConnecting && (
                 <StartProvider 
                   currentProvider={providers.find(p => p.provider_id === connectedAddress)}
@@ -73,6 +66,8 @@ export default function Providers() {
               )}
               <ProviderTable providers={providers} />
             </>
+          ) : (
+            <p>No providers available.</p>
           )}
         </div>
       </main>
