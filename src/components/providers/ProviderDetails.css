@@ -130,17 +130,28 @@
 
 .edit-input {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
+  padding: 0.5rem;
+  border: 1px solid #eee;
   border-radius: 4px;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
+  color: #212529; /* Match the text color of detail-value */
+  background-color: #f8f9fa;
+  font-family: inherit;
+  line-height: 1.5;
 }
 
 .edit-input:focus {
   outline: none;
   border-color: #0066cc;
   box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+  background-color: #ffffff;
+}
+
+.social-item .edit-input {
+  background-color: transparent;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
 }
 
 textarea.edit-input {
