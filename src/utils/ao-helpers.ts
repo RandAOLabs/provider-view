@@ -164,7 +164,9 @@ class AOHelpers {
         console.log(providerId)
         const service = await this.getRandAOService();
         console.log(providerId)
-        return await service.getAllInfoForProvider(providerId);
+        const returnvalue = await service.getAllInfoForProvider(providerId);
+        console.log(returnvalue)
+        return returnvalue;
     }
 
     // Get open random requests for a provider
