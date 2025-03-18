@@ -130,15 +130,20 @@
 
 .edit-input {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #eee;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid transparent;
   border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s;
   color: #212529; /* Match the text color of detail-value */
-  background-color: #f8f9fa;
+  background-color: rgba(248, 249, 250, 0.5);
   font-family: inherit;
   line-height: 1.5;
+}
+
+.edit-input:hover {
+  border-color: #dee2e6;
+  background-color: rgba(248, 249, 250, 0.8);
 }
 
 .edit-input:focus {
@@ -152,6 +157,16 @@
   background-color: transparent;
   font-size: 0.9rem;
   padding: 0.25rem 0.5rem;
+}
+
+input[type="number"].edit-input {
+  appearance: textfield;
+}
+
+input[type="number"].edit-input::-webkit-outer-spin-button,
+input[type="number"].edit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 textarea.edit-input {

@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { FiEdit2, FiGlobe, FiPower, FiLoader, FiCheck, FiCopy } from 'react-icons/fi'
+import { FiEdit2, FiGlobe, FiPower, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { BiRefresh } from 'react-icons/bi'
 import { aoHelpers } from '../../utils/ao-helpers'
 import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-process-clients'
+import { ActiveRequests } from './ActiveRequests'
 import './ProviderDetails.css'
 
 interface ProviderDetailsProps {
@@ -33,7 +34,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const [loadingRequests, setLoadingRequests] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
 
-  // Fetch available random values and active requests
+  // Fetch available random values
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -43,9 +44,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
           console.log('Available random value:', randomValue);
           // Convert undefined to null for state
           setAvailableRandom(randomValue !== undefined ? randomValue : null);
-          
-          // Fetch active requests
-          fetchActiveRequests();
         }
       } catch (err) {
         console.error('Error fetching provider data:', err);
@@ -56,42 +54,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
     fetchData();
   }, [provider]);
-  
-  const fetchActiveRequests = async () => {
-    if (!provider || !provider.providerId) return;
-    
-    setLoadingRequests(true);
-    try {
-      console.log(`Fetching active requests for provider: ${provider.providerId}`);
-      const response = await aoHelpers.getOpenRandomRequests(provider.providerId);
-      console.log('Processing active requests response:', {
-        providerId: provider.providerId,
-        hasResponse: !!response,
-        hasChallengeRequests: !!response?.activeChallengeRequests,
-        hasOutputRequests: !!response?.activeOutputRequests
-      });
-      
-      if (!response?.activeChallengeRequests?.request_ids || !response?.activeOutputRequests?.request_ids) {
-        console.error('Invalid response structure:', response);
-        throw new Error('Invalid response structure from getOpenRandomRequests');
-      }
-
-      setActiveRequests({
-        challengeRequests: response.activeChallengeRequests.request_ids,
-        outputRequests: response.activeOutputRequests.request_ids
-      });
-      console.log('Successfully updated active requests state');
-    } catch (error) {
-      console.error('Error fetching active requests:', error);
-      // Set empty requests on error
-      setActiveRequests({
-        challengeRequests: [],
-        outputRequests: []
-      });
-    } finally {
-      setLoadingRequests(false);
-    }
-  };
   
   const copyToClipboard = async (address: string) => {
     try {
@@ -431,60 +393,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         </div>
 
         {/* Active Requests Section */}
-        <div className="detail-group active-requests-section">
-          <div className="active-requests-header">
-            <label>Active Requests</label>
-            <button
-              className={`refresh-button${loadingRequests ? ' loading' : ''}`}
-              onClick={fetchActiveRequests}
-              disabled={loadingRequests}
-            >
-              {loadingRequests ? (
-                <FiLoader className="animate-spin" size={16} />
-              ) : (
-                <svg className="refresh-icon" viewBox="0 0 24 24" width="16" height="16">
-                  <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                </svg>
-              )}
-            </button>
-          </div>
-          
-          {activeRequests ? (
-            <div className="requests-container">
-              <div className="request-group">
-                <h4>Challenge Requests ({activeRequests.challengeRequests.length})</h4>
-                <div className="request-list">
-                  {activeRequests.challengeRequests.length > 0 ? (
-                    activeRequests.challengeRequests.map((requestId, index) => (
-                      <div key={index} className="request-item">
-                        {truncateAddress(requestId)}
-                      </div>
-                    ))
-                  ) : (
-                    <div>No active challenge requests</div>
-                  )}
-                </div>
-              </div>
-              <div className="request-group">
-                <h4>Output Requests ({activeRequests.outputRequests.length})</h4>
-                <div className="request-list">
-                  {activeRequests.outputRequests.length > 0 ? (
-                    activeRequests.outputRequests.map((requestId, index) => (
-                      <div key={index} className="request-item">
-                        {truncateAddress(requestId)}
-                      </div>
-                    ))
-                  ) : (
-                    <div>No active output requests</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="loading-spinner">
-              <FiLoader className="animate-spin" size={24} />
-            </div>
-          )}
+        <div className="detail-group">
+          <ActiveRequests providerId={provider.providerId} />
         </div>
 
         <div className="social-group">

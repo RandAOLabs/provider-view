@@ -4,6 +4,7 @@ import { aoHelpers } from '../../utils/ao-helpers'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
+import { ActiveRequests } from './ActiveRequests'
 import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-process-clients'
 import './ProviderTable.css'
 
@@ -455,67 +456,7 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                         </>
                       </div>
 
-                      <div className="active-requests-section">
-                        <div className="active-requests-header">
-                          <h3>Active Requests</h3>
-                          <button
-                            className={`refresh-button${loadingRequests[provider.providerId] ? 'loading' : ''}`}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              setLoadingRequests(prev => ({ ...prev, [provider.providerId]: true }));
-                              try {
-                                const response = await aoHelpers.getOpenRandomRequests(provider.providerId);
-                                setActiveRequests(prev => ({
-                                  ...prev,
-                                  [provider.providerId]: {
-                                    challengeRequests: response.activeChallengeRequests.request_ids,
-                                    outputRequests: response.activeOutputRequests.request_ids
-                                  }
-                                }));
-                              } catch (error) {
-                                console.error('Error refreshing active requests:', error);
-                              } finally {
-                                setLoadingRequests(prev => ({ ...prev, [provider.providerId]: false }));
-                              }
-                            }}
-                            disabled={loadingRequests[provider.providerId]}
-                          >
-                            {loadingRequests[provider.providerId] ? (
-                              <FiLoader className="animate-spin" size={16} />
-                            ) : (
-                              <svg className="refresh-icon" viewBox="0 0 24 24" width="16" height="16">
-                                <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                        {activeRequests[provider.providerId] ? (
-                          <div className="requests-container">
-                            <div className="request-group">
-                              <h4>Challenge Requests ({activeRequests[provider.providerId].challengeRequests.length})</h4>
-                              <div className="request-list">
-                                {activeRequests[provider.providerId].challengeRequests.map((requestId: string, index: number) => (
-                                  <div key={index} className="request-item">
-                                    {truncateAddress(requestId)}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="request-group">
-                              <h4>Output Requests ({activeRequests[provider.providerId].outputRequests.length})</h4>
-                              <div className="request-list">
-                                {activeRequests[provider.providerId].outputRequests.map((requestId: string, index: number) => (
-                                  <div key={index} className="request-item">
-                                    {truncateAddress(requestId)}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div>No active requests</div>
-                        )}
-                      </div>
+                      <ActiveRequests providerId={provider.providerId} />
                     </div>
                   </td>
                 </tr>
