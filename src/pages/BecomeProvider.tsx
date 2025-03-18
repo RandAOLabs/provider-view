@@ -51,6 +51,7 @@ export default function BecomeProvider() {
         
         // Then try to fetch wallet balance
         try {
+          console.log(address)
           const balance: string = await aoHelpers.getWalletBalance(address);
           setWalletBalance(balance);
         } catch (err) {
@@ -107,7 +108,7 @@ export default function BecomeProvider() {
       {isLoading && <div className="loading-message">Loading provider details...</div>}
       
       {/* Debug information */}
-      <div className="debug-info" style={{ padding: '10px', margin: '10px 0', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5' }}>
+      {/* <div className="debug-info" style={{ padding: '10px', margin: '10px 0', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f5f5f5' }}>
         <h3>Debug Information</h3>
         <p>Wallet Address: {address || 'Not connected'}</p>
         <p>Provider Detected: {provider ? 'Yes' : 'No'}</p>
@@ -119,7 +120,7 @@ export default function BecomeProvider() {
             {provider ? JSON.stringify(provider, null, 2) : 'No provider data'}
           </pre>
         </details>
-      </div>
+      </div> */}
 
       <div className="content-container">
         {!address ? (

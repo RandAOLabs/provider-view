@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { FiEdit2, FiGlobe, FiPower } from 'react-icons/fi'
+import { FiEdit2, FiGlobe, FiPower, FiLoader, FiCheck, FiCopy } from 'react-icons/fi'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { BiRefresh } from 'react-icons/bi'
 import { aoHelpers } from '../../utils/ao-helpers'
-import { ProviderInfoAggregate } from 'ao-process-clients'
+import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-process-clients'
 import './ProviderDetails.css'
 
 interface ProviderDetailsProps {
@@ -29,10 +29,13 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const [availableRandom, setAvailableRandom] = useState<number | null>(null)
   const [isUpdatingRandom, setIsUpdatingRandom] = useState(false)
   const [randomUpdateSuccess, setRandomUpdateSuccess] = useState(false)
+  const [activeRequests, setActiveRequests] = useState<{ challengeRequests: string[], outputRequests: string[] } | null>(null)
+  const [loadingRequests, setLoadingRequests] = useState(false)
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
 
-  // Fetch available random values
+  // Fetch available random values and active requests
   useEffect(() => {
-    const fetchAvailableRandom = async () => {
+    const fetchData = async () => {
       try {
         if (provider && provider.providerId) {
           // Get random balance from provider activity
@@ -40,16 +43,70 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
           console.log('Available random value:', randomValue);
           // Convert undefined to null for state
           setAvailableRandom(randomValue !== undefined ? randomValue : null);
+          
+          // Fetch active requests
+          fetchActiveRequests();
         }
       } catch (err) {
-        console.error('Error fetching available random:', err);
+        console.error('Error fetching provider data:', err);
         // Default to 0 if there's an error
         setAvailableRandom(0);
       }
     };
 
-    fetchAvailableRandom();
+    fetchData();
   }, [provider]);
+  
+  const fetchActiveRequests = async () => {
+    if (!provider || !provider.providerId) return;
+    
+    setLoadingRequests(true);
+    try {
+      console.log(`Fetching active requests for provider: ${provider.providerId}`);
+      const response = await aoHelpers.getOpenRandomRequests(provider.providerId);
+      console.log('Processing active requests response:', {
+        providerId: provider.providerId,
+        hasResponse: !!response,
+        hasChallengeRequests: !!response?.activeChallengeRequests,
+        hasOutputRequests: !!response?.activeOutputRequests
+      });
+      
+      if (!response?.activeChallengeRequests?.request_ids || !response?.activeOutputRequests?.request_ids) {
+        console.error('Invalid response structure:', response);
+        throw new Error('Invalid response structure from getOpenRandomRequests');
+      }
+
+      setActiveRequests({
+        challengeRequests: response.activeChallengeRequests.request_ids,
+        outputRequests: response.activeOutputRequests.request_ids
+      });
+      console.log('Successfully updated active requests state');
+    } catch (error) {
+      console.error('Error fetching active requests:', error);
+      // Set empty requests on error
+      setActiveRequests({
+        challengeRequests: [],
+        outputRequests: []
+      });
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+  
+  const copyToClipboard = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddress(address);
+      setTimeout(() => setCopiedAddress(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
+    }
+  };
+  
+  const truncateAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
 
   // Parse provider details once and memoize
   const parsedDetails = useMemo(() => {
@@ -230,21 +287,17 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             <label>Provider ID</label>
             <div 
               className="detail-value monospace clickable"
-              onClick={() => {
-                navigator.clipboard.writeText(provider.providerId);
-              }}
+              onClick={() => copyToClipboard(provider.providerId)}
               title="Click to copy address"
             >
-              {`${provider.providerId.slice(0, 4)}...${provider.providerId.slice(-4)}`}
+              {truncateAddress(provider.providerId)}
+              {copiedAddress === provider.providerId ? (
+                <FiCheck className="copy-icon success" />
+              ) : (
+                <FiCopy className="copy-icon" />
+              )}
             </div>
           </div>
-
-          {/* <div className="detail-group">
-            <label>Status</label>
-            <div className={`status-badge ${provider.active === 1 ? 'active' : 'inactive'}`}>
-              {provider.active === 1 ? 'Active' : 'Inactive'}
-            </div>
-          </div> */}
 
           <div className="detail-group">
             <label>Join Date</label>
@@ -296,6 +349,29 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                 {parsedDetails.commission !== undefined ? `${parsedDetails.commission}%` : 'N/A'}
               </div>
             )}
+          </div>
+          
+          <div className="detail-group">
+            <label>Random Available</label>
+            <div className="detail-value">
+              {provider.providerActivity?.random_balance !== undefined ? 
+                provider.providerActivity.random_balance : 'N/A'}
+            </div>
+          </div>
+          
+          <div className="detail-group">
+            <label>Random Provided</label>
+            <div className="detail-value">
+              {provider.totalFullfullilled !== undefined ? 
+                provider.totalFullfullilled : '0'}
+            </div>
+          </div>
+          
+          <div className="detail-group">
+            <label>Random Value Fee</label>
+            <div className="detail-value">
+              0
+            </div>
           </div>
         </div>
 
@@ -351,6 +427,63 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             </div>
           ) : (
             <div className="detail-value">Loading status...</div>
+          )}
+        </div>
+
+        {/* Active Requests Section */}
+        <div className="detail-group active-requests-section">
+          <div className="active-requests-header">
+            <label>Active Requests</label>
+            <button
+              className={`refresh-button${loadingRequests ? ' loading' : ''}`}
+              onClick={fetchActiveRequests}
+              disabled={loadingRequests}
+            >
+              {loadingRequests ? (
+                <FiLoader className="animate-spin" size={16} />
+              ) : (
+                <svg className="refresh-icon" viewBox="0 0 24 24" width="16" height="16">
+                  <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+              )}
+            </button>
+          </div>
+          
+          {activeRequests ? (
+            <div className="requests-container">
+              <div className="request-group">
+                <h4>Challenge Requests ({activeRequests.challengeRequests.length})</h4>
+                <div className="request-list">
+                  {activeRequests.challengeRequests.length > 0 ? (
+                    activeRequests.challengeRequests.map((requestId, index) => (
+                      <div key={index} className="request-item">
+                        {truncateAddress(requestId)}
+                      </div>
+                    ))
+                  ) : (
+                    <div>No active challenge requests</div>
+                  )}
+                </div>
+              </div>
+              <div className="request-group">
+                <h4>Output Requests ({activeRequests.outputRequests.length})</h4>
+                <div className="request-list">
+                  {activeRequests.outputRequests.length > 0 ? (
+                    activeRequests.outputRequests.map((requestId, index) => (
+                      <div key={index} className="request-item">
+                        {truncateAddress(requestId)}
+                      </div>
+                    ))
+                  ) : (
+                    <div>No active output requests</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="loading-spinner">
+              <FiLoader className="animate-spin" size={24} />
+            </div>
           )}
         </div>
 

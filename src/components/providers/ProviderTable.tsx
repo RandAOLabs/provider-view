@@ -339,6 +339,38 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                             {(provider.providerInfo as ProviderInfo).provider_details?.name || 'N/A'}
                           </div>
                         </div>
+                        
+                        <div className="detail-group">
+                          <label>Provider ID</label>
+                          <div 
+                            className="detail-value monospace clickable"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(e, provider.providerId);
+                            }}
+                            title="Click to copy address"
+                          >
+                            {truncateAddress(provider.providerId)}
+                            {copiedAddress === provider.providerId ? (
+                              <FiCheck className="copy-icon success" />
+                            ) : (
+                              <FiCopy className="copy-icon" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="detail-group">
+                          <label>Join Date</label>
+                          <div className="detail-value">
+                            {(provider.providerInfo as ProviderInfo)?.created_at ? 
+                              new Date((provider.providerInfo as ProviderInfo).created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              }) : 'N/A'}
+                          </div>
+                        </div>
+                        
                         <div className="detail-group">
                           <label>Total Staked</label>
                           <div className="detail-value">
@@ -351,6 +383,29 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                           <div className="detail-value">
                             {(provider.providerInfo as any)?.commission !== undefined ? 
                               `${(provider.providerInfo as any).commission}%` : 'N/A'}
+                          </div>
+                        </div>
+                        
+                        <div className="detail-group">
+                          <label>Random Available</label>
+                          <div className="detail-value">
+                            {(provider.providerActivity as ProviderActivity)?.random_balance !== undefined ? 
+                              (provider.providerActivity as ProviderActivity).random_balance : 'N/A'}
+                          </div>
+                        </div>
+                        
+                        <div className="detail-group">
+                          <label>Random Provided</label>
+                          <div className="detail-value">
+                            {provider.totalFullfullilled !== undefined ? 
+                              provider.totalFullfullilled : '0'}
+                          </div>
+                        </div>
+                        
+                        <div className="detail-group">
+                          <label>Random Value Fee</label>
+                          <div className="detail-value">
+                            0
                           </div>
                         </div>
                       </div>
