@@ -55,7 +55,9 @@ export default function Providers() {
         </header>
         <div className="content">
           {loading ? (
-            <Spinner text="Loading providers..." />
+            <div className="providers-spinner-wrapper">
+              <Spinner text="Loading providers..." />
+            </div>
           ) : error ? (
             <div className="error">{error}</div>
           ) : providers.length > 0 ? (

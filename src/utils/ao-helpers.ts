@@ -12,8 +12,10 @@ import {
     ProviderInfoAggregate, 
     IRandAOService,
     Logger,
-    LogLevel
+    LogLevel,
+    BaseClientConfigBuilder
 } from 'ao-process-clients';
+import { RNG_TOKEN_PROCESS_ID } from 'ao-process-clients/dist/src/processes_ids';
 
 // Minimum tokens needed to stake for new stakers
 export const MINIMUM_STAKE_AMOUNT = '100000000000000000000';
@@ -71,10 +73,7 @@ class AOHelpers {
     }
 
     async getTokenClient(): Promise<TokenClient> {
-        this._tokenClient = await this.initializeClient<TokenClient>(
-            this._tokenClient,
-            TokenClient
-        );
+        this._tokenClient = new TokenClient(new BaseClientConfigBuilder().withProcessId(RNG_TOKEN_PROCESS_ID).build());
         return this._tokenClient;
     }
 
