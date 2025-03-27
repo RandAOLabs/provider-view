@@ -69,7 +69,7 @@ export default function About() {
   const STATS = [
     { label: "Total Providers", value: providerCount.toString() },
     { 
-      label: "Total Random Requests", 
+      label: "Total Random Provided", 
       value: loadingTransactions ? (
         <div className="loading-spinner">
           <FiLoader className="animate-spin" />

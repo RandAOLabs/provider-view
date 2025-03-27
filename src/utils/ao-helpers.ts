@@ -117,7 +117,7 @@ class AOHelpers {
      * Get all provider information in one call with caching.
      * This is the primary method for getting provider data - use this whenever possible.
      */
-    async getAllProviderInfo(): Promise<ProviderInfoAggregate[]> {
+    async getAllProvidersInfo(): Promise<ProviderInfoAggregate[]> {
         try {
             // Check if we have a valid cache
             const now = Date.now();
@@ -142,18 +142,18 @@ class AOHelpers {
         }
     }
     
-    /**
-     * Legacy compatibility method - maps the new format to the old format.
-     * Internal implementation uses the cached data to avoid additional API calls.
-     */
-    async getAllProvidersInfo(): Promise<ProviderInfoAggregate[]> {
-        try {
-         return await this.getAllProviderInfo();
-        } catch (error) {
-            console.error('Error in backward compatibility getAllProvidersInfo:', error);
-            throw error;
-        }
-    }
+    // /**
+    //  * Legacy compatibility method - maps the new format to the old format.
+    //  * Internal implementation uses the cached data to avoid additional API calls.
+    //  */
+    // async getAllProvidersInfo(): Promise<ProviderInfoAggregate[]> {
+    //     try {
+    //      return await this.getAllProviderInfo();
+    //     } catch (error) {
+    //         console.error('Error in backward compatibility getAllProvidersInfo:', error);
+    //         throw error;
+    //     }
+    // }
     
     /**
      * Legacy compatibility method - gets a single provider's info in the old format.

@@ -4,44 +4,56 @@ import Arweave from 'arweave';
 const apiconf = {host: "arweave-search.goldsky.com"}
 const arweave = Arweave.init(apiconf);
 
-const RANDOMPROCCESS = "XAYnAxAEFhVRwhUyFKZmkeTiazIZClQIELLw6h44Ngc"
+const RANDOMPROCCESS = [
+  "BPafv2apbvSU0SRZEksMULFtKQQb0KvS7PBTPadFVSQ",
+  "XAYnAxAEFhVRwhUyFKZmkeTiazIZClQIELLw6h44Ngc",
+  "1dnDvaDRQ7Ao6o1ohTr7NNrN5mp1CpsXFrWm3JJFEs8",
+];
+
 /**
  * Fetches the total number of matching transactions from Arweave using the count field.
  *
- * @returns {Promise<number>} The total count of matching transactions.
+ * @returns {Promise<number>} The total count of matching transactions across all RANDOMPROCCESS values.
  */
 export async function getTotalProvided() {
   try {
-    console.log('Fetching total transaction count...');
-    
-    const queryObject = {
-      query: `{
-        transactions(
-          recipients: ["${RANDOMPROCCESS}"],
-          tags: [
-            { name: "Action", values: ["Post-VDF-Output-And-Proof"] },
-            { name: "Data-Protocol", values: ["ao"] }
-          ]
-        ) {
-           count
-        }
-      }`
-    };
+    console.log('Fetching total transaction count for multiple addresses...');
 
-    const response = await arweave.api.post('/graphql', queryObject);
-    const count = response.data?.data?.transactions?.count || 0;
-    console.log('Total transactions count:', count);
-    return count;
-  } catch (error) {
-    console.error("Error fetching transaction count:", error);
-    console.error("Error details:", {
-      message: error.message,
-      response: error.response,
-      stack: error.stack
+    const queries = RANDOMPROCCESS.map(async (address) => {
+      const queryObject = {
+        query: `{
+          transactions(
+            recipients: ["${address}"],
+            tags: [
+              { name: "Action", values: ["Post-VDF-Output-And-Proof"] },
+              { name: "Data-Protocol", values: ["ao"] }
+            ]
+          ) {
+            count
+          }
+        }`
+      };
+
+      try {
+        const response = await arweave.api.post('/graphql', queryObject);
+        return response.data?.data?.transactions?.count || 0;
+      } catch (error) {
+        console.error(`Error fetching transaction count for ${address}:`, error);
+        return 0;
+      }
     });
+
+    const results = await Promise.all(queries);
+    const total = results.reduce((sum, count) => sum + count, 0);
+
+    console.log('Total transactions count:', total);
+    return total;
+  } catch (error) {
+    console.error("Error in fetching total transaction count:", error);
     return 0;
   }
 }
+
 
 export async function pullIdToMessage(pullId: string, userid: string) {
   try {
