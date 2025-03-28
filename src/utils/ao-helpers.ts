@@ -111,11 +111,15 @@ class AOHelpers {
     // Cache for getAllProviderInfo to prevent redundant API calls
     private _providersCache: ProviderInfoAggregate[] | null = null;
     private _providersCacheTimestamp: number = 0;
-    private readonly CACHE_LIFETIME_MS = 30000; // 30 seconds cache lifetime
+    private _providersPromise: Promise<ProviderInfoAggregate[]> | null = null;
+    private readonly CACHE_LIFETIME_MS = 300000; // 5 minutes cache lifetime
     
     /**
-     * Get all provider information in one call with caching.
+     * Get all provider information in one call with promise memoization and caching.
      * This is the primary method for getting provider data - use this whenever possible.
+     * - Returns cached data if available and not expired
+     * - Returns the same promise for concurrent calls to avoid duplicate queries
+     * - Caches the result for future calls
      */
     async getAllProvidersInfo(): Promise<ProviderInfoAggregate[]> {
         try {
@@ -126,16 +130,35 @@ class AOHelpers {
                 return this._providersCache;
             }
             
+            // If there's an in-flight request, return that promise instead of starting a new one
+            if (this._providersPromise) {
+                console.log('Joining existing provider information request');
+                return this._providersPromise;
+            }
+            
             console.log('Fetching fresh provider information');
-            const service = await this.getRandAOService();
-            const providers = await service.getAllProviderInfo();
-            console.log(providers)
             
-            // Update cache
-            this._providersCache = providers;
-            this._providersCacheTimestamp = now;
+            // Create and store the promise
+            this._providersPromise = (async () => {
+                try {
+                    const service = await this.getRandAOService();
+                    const providers = await service.getAllProviderInfo();
+                    console.log(providers);
+                    
+                    // Update cache
+                    this._providersCache = providers;
+                    this._providersCacheTimestamp = now;
+                    
+                    return providers;
+                } finally {
+                    // Clear the promise reference when done (success or failure)
+                    // This allows a retry on the next call if this one failed
+                    this._providersPromise = null;
+                }
+            })();
             
-            return providers;
+            // Return the promise
+            return this._providersPromise;
         } catch (error) {
             console.error('Error getting all provider info:', error);
             throw error;
@@ -156,16 +179,31 @@ class AOHelpers {
     // }
     
     /**
-     * Legacy compatibility method - gets a single provider's info in the old format.
-     * Internal implementation uses the cached data to avoid additional API calls.
+     * Legacy compatibility method - gets a single provider's info.
+     * Uses the cached data from getAllProvidersInfo when possible to avoid additional API calls.
      */
     async getProviderInfo(providerId: string): Promise<ProviderInfoAggregate> {
-        console.log(providerId)
-        const service = await this.getRandAOService();
-        console.log(providerId)
-        const returnvalue = await service.getAllInfoForProvider(providerId);
-        console.log(returnvalue)
-        return returnvalue;
+        console.log(`Getting provider info for: ${providerId}`);
+        
+        try {
+            // First try to find the provider in the cached data
+            const allProviders = await this.getAllProvidersInfo();
+            const provider = allProviders.find(p => p.providerId === providerId);
+            
+            if (provider) {
+                console.log('Provider found in cached data');
+                return provider;
+            }
+            
+            // If not found in cache, fall back to direct API call
+            console.log('Provider not found in cache, making direct API call');
+            const service = await this.getRandAOService();
+            const returnvalue = await service.getAllInfoForProvider(providerId);
+            return returnvalue;
+        } catch (error) {
+            console.error('Error in getProviderInfo:', error);
+            throw error;
+        }
     }
 
     // Get open random requests for a provider

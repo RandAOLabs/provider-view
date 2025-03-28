@@ -123,57 +123,51 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
     if (isLoading || providers.length === 0) {
       return [];
     }
-    
-    const sortedArray = [...providers]
-    
-    return sortedArray.sort((a, b) => {
-      // Check if both providers have providerInfo
-      const aActive = (a.providerActivity as ProviderActivity ).active ? 1 : 0;
-      const bActive = (b.providerActivity as ProviderActivity ).active ? 1 : 0;
-      
-      // First sort by active status
+  
+    return [...providers].sort((a, b) => {
+      const aActive = a.providerActivity?.active ? 1 : 0;
+      const bActive = b.providerActivity?.active ? 1 : 0;
+  
       if (sortConfig.key === 'active' || aActive !== bActive) {
         if (aActive === bActive) {
-          // If active status is the same and it's the primary sort key,
-          // sort by total stake then alphabetically by name
           const aStake = Number(a.providerInfo?.stake?.amount || "0");
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
-          
+  
           if (aStake === bStake) {
-          const aName = (a.providerInfo as ProviderInfo ).provider_details?.name || '';
-          const bName = (b.providerInfo as ProviderInfo ).provider_details?.name || '';
+            const aName = a.providerInfo?.provider_details?.name || '';
+            const bName = b.providerInfo?.provider_details?.name || '';
             return aName.localeCompare(bName);
           }
-          
+  
           return bStake - aStake;
         }
-        // Active providers first
-        return Number(bActive) - Number(aActive);
+  
+        return bActive - aActive;
       }
-
-      // For other columns
+  
       let comparison = 0;
       switch (sortConfig.key) {
         case 'joinDate':
-          comparison = new Date(a.providerInfo?.created_at || 0).getTime() - 
-                      new Date(b.providerInfo?.created_at || 0).getTime();
+          comparison =
+            new Date(a.providerInfo?.created_at || 0).getTime() -
+            new Date(b.providerInfo?.created_at || 0).getTime();
           break;
         case 'randomAvailable':
-          comparison = Number((a.providerActivity as ProviderActivity ).random_balance || 0) - 
-                      Number((b.providerActivity as ProviderActivity ).random_balance || 0);
+          comparison =
+            (a.providerActivity?.random_balance || 0) -
+            (b.providerActivity?.random_balance || 0);
           break;
         case 'randomProvided':
-          comparison = Number(a.totalFullfullilled || 0) - 
-                      Number(b.totalFullfullilled || 0);
+          comparison = (a.totalFullfullilled || 0) - (b.totalFullfullilled || 0);
           break;
         case 'totalStaked':
           const aStake = Number(a.providerInfo?.stake?.amount || "0");
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
           comparison = aStake - bStake;
           break;
-        case 'delegationFee': //TODO THIS IS DEFUNCT
-          const aFee = Number((a.providerActivity as any)?.commission || 0);
-          const bFee = Number((b.providerInfo as any)?.commission || 0);
+        case 'delegationFee'://TODO change
+          const aFee = Number(a.providerInfo?.stake || 0);
+          const bFee = Number(b.providerInfo?.stake || 0);
           comparison = aFee - bFee;
           break;
         case 'randomValueFee':
@@ -182,10 +176,11 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
         default:
           comparison = 0;
       }
-
+  
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
   }, [providers, sortConfig, isLoading]);
+  
 
   return (
     <div className="provider-container">
@@ -254,11 +249,12 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 className={expandedRows.has(provider.providerId) ? 'expanded' : ''}
                 onClick={(e) => toggleRow(provider.providerId, e)}
               >
-                <td>
-                  <FiCircle 
-                    className={`status-indicator ${((provider.providerActivity as ProviderActivity ).random_balance || 0) > 1 ? 'online' : 'offline'}`}
-                  />
-                </td>
+<td>
+  <FiCircle 
+    className={`status-indicator ${(provider.providerActivity?.random_balance || 0) > 1 ? 'online' : 'offline'}`}
+  />
+</td>
+
                 <td>
                   {(provider.providerInfo as ProviderInfo ).provider_details?.name || 'N/A'}
                 </td>
@@ -278,14 +274,15 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 </td>
                 <td>{(provider.providerInfo as ProviderInfo)?.created_at ? new Date((provider.providerInfo as ProviderInfo ).created_at).toISOString().split('T')[0] : 'N/A'}</td>
                 <td>
-                  {isLoading ? (
-                    <div className="loading-spinner">
-                      <FiLoader className="animate-spin" size={16} />
-                    </div>
-                  ) : (
-                    (provider.providerActivity as ProviderActivity).random_balance || 0
-                  )}
-                </td>
+  {isLoading ? (
+    <div className="loading-spinner">
+      <FiLoader className="animate-spin" size={16} />
+    </div>
+  ) : (
+    provider.providerActivity?.random_balance || 0
+  )}
+</td>
+
                 <td>
                   {isLoading ? (
                     <div className="loading-spinner">

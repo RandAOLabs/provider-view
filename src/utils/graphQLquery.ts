@@ -8,8 +8,8 @@ const RANDOMPROCCESS = [
   "BPafv2apbvSU0SRZEksMULFtKQQb0KvS7PBTPadFVSQ",
   "XAYnAxAEFhVRwhUyFKZmkeTiazIZClQIELLw6h44Ngc",
   "1dnDvaDRQ7Ao6o1ohTr7NNrN5mp1CpsXFrWm3JJFEs8",
+  "2ExUldxQ5NA_hnElSWYq0_lCBgeQQPxPhFbWDFihDEY",
 ];
-
 /**
  * Fetches the total number of matching transactions from Arweave using the count field.
  *
@@ -19,13 +19,14 @@ export async function getTotalProvided() {
   try {
     console.log('Fetching total transaction count for multiple addresses...');
 
+    //TODO MAKE WORK WITHrandom-responses
     const queries = RANDOMPROCCESS.map(async (address) => {
       const queryObject = {
         query: `{
           transactions(
             recipients: ["${address}"],
             tags: [
-              { name: "Action", values: ["Post-VDF-Output-And-Proof"] },
+              { name: "Action", values: ["Reveal-Puzzle-Params"] },
               { name: "Data-Protocol", values: ["ao"] }
             ]
           ) {

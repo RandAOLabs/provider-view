@@ -17,12 +17,18 @@ export const Sidebar = () => {
     const checkIfProvider = async () => {
       if (isConnected) {
         try {
-          //TODO FIX THESE
-          const provider = await aoHelpers.getProviderInfo(connectedAddress)
+          // Get all providers info from the cached function instead of making separate API call
+          const allProviders = await aoHelpers.getAllProvidersInfo()
+          
+          // Find the provider that matches the connected address
+          const currentProvider = allProviders.find(p => p.providerId === connectedAddress)
+          
           console.log("user data")
-          console.log(provider)
-          console.log((parseInt(provider.providerInfo?.stake.amount || '0')))
-          setIsProvider((parseInt(provider.providerInfo?.stake.amount || '0')) >=1)
+          console.log(currentProvider)
+          console.log((parseInt(currentProvider?.providerInfo?.stake.amount || '0')))
+          
+          // Set provider status based on stake amount
+          setIsProvider((parseInt(currentProvider?.providerInfo?.stake.amount || '0')) >= 1)
           setFinishedLoading(true)
         } catch (err) {
           console.error('Error checking provider status:', err)
