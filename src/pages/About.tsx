@@ -1,10 +1,10 @@
+import React, { useState, useEffect } from 'react'
 import { FiGithub, FiGlobe, FiLoader } from 'react-icons/fi'
 import { FaXTwitter } from 'react-icons/fa6'
 import { FaTelegram } from 'react-icons/fa'
 import { ConnectWallet } from '../components/common/ConnectWallet'
 import { aoHelpers } from '../utils/ao-helpers'
 import { getTotalProvided } from '../utils/graphQLquery'
-import { useState, useEffect } from 'react'
 import './About.css'
 
 const TEAM_MEMBERS = [
@@ -33,41 +33,57 @@ const TEAM_MEMBERS = [
 
 const STATIC_STATS = [
   { label: "Network Uptime", value: "99.99%" },
-  { label: "Random Numbers Generated", value: "1M+" },
   { label: "Community Members", value: "5,000+" }
 ]
 
 export default function About() {
   const [providerCount, setProviderCount] = useState(0)
   const [transactionCount, setTransactionCount] = useState(0)
+  const [loadingProviders, setLoadingProviders] = useState(true)
   const [loadingTransactions, setLoadingTransactions] = useState(true)
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoadingTransactions(true)
+    // Fetch providers count independently
+    const fetchProviders = async () => {
       try {
-        console.log('Starting data fetch...');
-        const [providers, totalTransactions] = await Promise.all([
-          aoHelpers.getAllProvidersInfo(),
-          getTotalProvided()
-        ])
+        console.log('Fetching providers...');
+        const providers = await aoHelpers.getAllProvidersInfo();
         console.log('Providers fetched:', providers.length);
-        console.log('Total transactions fetched:', totalTransactions);
-        setProviderCount(providers.length)
-        setTransactionCount(totalTransactions)
+        setProviderCount(providers.length);
       } catch (err) {
-        console.error('Error fetching data:', err)
-        console.error('Error details:', err.message)
+        console.error('Error fetching providers:', err);
       } finally {
-        setLoadingTransactions(false)
+        setLoadingProviders(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [])
+    // Fetch transaction count independently
+    const fetchTransactions = async () => {
+      try {
+        console.log('Fetching transactions...');
+        const totalTransactions = await getTotalProvided();
+        console.log('Total transactions fetched:', totalTransactions);
+        setTransactionCount(totalTransactions);
+      } catch (err) {
+        console.error('Error fetching transactions:', err);
+      } finally {
+        setLoadingTransactions(false);
+      }
+    };
+
+    fetchProviders();
+    fetchTransactions();
+  }, []);
 
   const STATS = [
-    { label: "Total Providers", value: providerCount.toString() },
+    { 
+      label: "Total Providers", 
+      value: loadingProviders ? (
+        <div className="loading-spinner">
+          <FiLoader className="animate-spin" />
+        </div>
+      ) : providerCount.toString() 
+    },
     { 
       label: "Total Random Provided", 
       value: loadingTransactions ? (
