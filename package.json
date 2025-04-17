@@ -16,7 +16,7 @@
     "@react-three/fiber": "^8.17.14",
     "@types/file-saver": "^2.0.7",
     "@types/three": "^0.173.0",
-    "ao-process-clients": "^5.4.17",
+    "ao-process-clients": "^6.0.18",
     "arweave": "^1.15.5",
     "file-saver": "^2.0.5",
     "permaweb-deploy": "^1.1.10",

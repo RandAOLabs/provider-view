@@ -9,7 +9,13 @@ const RANDOMPROCCESS = [
   "XAYnAxAEFhVRwhUyFKZmkeTiazIZClQIELLw6h44Ngc",
   "1dnDvaDRQ7Ao6o1ohTr7NNrN5mp1CpsXFrWm3JJFEs8",
   "2ExUldxQ5NA_hnElSWYq0_lCBgeQQPxPhFbWDFihDEY",
-  "5ZR9uegKoEhE9fJMbs-MvWLIztMNCVxgpzfeBVE3vqI",
+  "KhD1NI6t4dbv0S3-7z2YSQnvpI5jxS9pTRL46AlC5FE",
+  "FOarjI5mCtPUUYZ2pRTTNX0erBik0O1g-0I1R4WTl-U",
+  "9ZXTvznyUo266uIU8nHPMsAtI8NntFdmsET3M3Hv_FA",
+  "yqlD760syDGXBQkC4ccpZFslFLv7uJ8haBMbPtr--Go",
+  "UujLOtCfyo3uoKfuozS7cQfTe11BdvWR3Slb65zrR7k",
+  "aeu3pyFhfNvw3yWjb3o_WnWBh4f4W-BzWxDqPAbCJjk",
+  "ZBSQD_GeGUdQAiixxKy9Ag1rgJvJ_yFUGExwjW6mA7E"
 ];
 /**
  * Fetches the total number of matching transactions from Arweave using the count field.

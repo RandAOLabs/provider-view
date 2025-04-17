@@ -15,7 +15,6 @@ import {
     LogLevel,
     BaseClientConfigBuilder
 } from 'ao-process-clients';
-import { RNG_TOKEN_PROCESS_ID } from 'ao-process-clients/dist/src/processes_ids';
 
 // Minimum tokens needed to stake for new stakers
 export const MINIMUM_STAKE_AMOUNT = '100000000000000000000';
@@ -73,7 +72,14 @@ class AOHelpers {
     }
 
     async getTokenClient(): Promise<TokenClient> {
-        this._tokenClient = new TokenClient(new BaseClientConfigBuilder().withProcessId(RNG_TOKEN_PROCESS_ID).build());
+        this._tokenClient = new TokenClient(new BaseClientConfigBuilder()
+        .withProcessId("rPpsRk9Rm8_SJ1JF8m9_zjTalkv9Soaa_5U0tYUloeY")
+        .build())
+        // .withAOConfig({
+        //     CU_URL: "https://cu.randao.net", // Primary CU
+        //    MU_URL: "https://mu.randao.net", 
+        //     MODE: 'legacy'
+        // }).build());
         return this._tokenClient;
     }
 
