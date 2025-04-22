@@ -15,7 +15,7 @@ const RANDOMPROCCESS = [
   "yqlD760syDGXBQkC4ccpZFslFLv7uJ8haBMbPtr--Go",
   "UujLOtCfyo3uoKfuozS7cQfTe11BdvWR3Slb65zrR7k",
   "aeu3pyFhfNvw3yWjb3o_WnWBh4f4W-BzWxDqPAbCJjk",
-  "ZBSQD_GeGUdQAiixxKy9Ag1rgJvJ_yFUGExwjW6mA7E"
+  "ZBSQD_GeGUdQAiixxKy9Ag1rgJvJ_yFUGExwjW6mA7E",
 ];
 /**
  * Fetches the total number of matching transactions from Arweave using the count field.
