@@ -1,15 +1,25 @@
 import React, { useState, useMemo } from 'react'
-import { FiCircle, FiChevronDown, FiChevronUp, FiGlobe, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
+import { FiCircle, FiChevronDown, FiChevronUp, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
 import { aoHelpers } from '../../utils/ao-helpers'
-import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
-import { ActiveRequests } from './ActiveRequests'
+import { ProviderExpandedDetails } from './ProviderExpandedDetails'
 import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-process-clients'
 import './ProviderTable.css'
 
 interface ProviderTableProps {
   providers: ProviderInfoAggregate[]
+}
+
+// Interface for extended provider details
+interface ExtendedProviderDetails {
+  name?: string;
+  delegationFee?: string;
+  description?: string;
+  twitter?: string;
+  discord?: string;
+  telegram?: string;
+  domain?: string;
 }
 
 export const ProviderTable = ({ providers }: ProviderTableProps) => {
@@ -165,9 +175,13 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
           comparison = aStake - bStake;
           break;
-        case 'delegationFee'://TODO change
-          const aFee = Number(a.providerInfo?.stake || 0);
-          const bFee = Number(b.providerInfo?.stake || 0);
+        case 'delegationFee':
+          const aFee = Number(
+            (a.providerInfo?.provider_details as ExtendedProviderDetails)?.delegationFee || "0"
+          );
+          const bFee = Number(
+            (b.providerInfo?.provider_details as ExtendedProviderDetails)?.delegationFee || "0"
+          );
           comparison = aFee - bFee;
           break;
         case 'randomValueFee':
@@ -249,14 +263,14 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 className={expandedRows.has(provider.providerId) ? 'expanded' : ''}
                 onClick={(e) => toggleRow(provider.providerId, e)}
               >
-<td>
-  <FiCircle 
-    className={`status-indicator ${(provider.providerActivity?.random_balance || 0) > 1 ? 'online' : 'offline'}`}
-  />
-</td>
+                <td>
+                  <FiCircle 
+                    className={`status-indicator ${(provider.providerActivity?.random_balance || 0) > 1 ? 'online' : 'offline'}`}
+                  />
+                </td>
 
                 <td>
-                  {(provider.providerInfo as ProviderInfo ).provider_details?.name || 'N/A'}
+                  {(provider.providerInfo as ProviderInfo).provider_details?.name || 'N/A'}
                 </td>
                 <td>
                   <div 
@@ -272,16 +286,16 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                     )}
                   </div>
                 </td>
-                <td>{(provider.providerInfo as ProviderInfo)?.created_at ? new Date((provider.providerInfo as ProviderInfo ).created_at).toISOString().split('T')[0] : 'N/A'}</td>
+                <td>{(provider.providerInfo as ProviderInfo)?.created_at ? new Date((provider.providerInfo as ProviderInfo).created_at).toISOString().split('T')[0] : 'N/A'}</td>
                 <td>
-  {isLoading ? (
-    <div className="loading-spinner">
-      <FiLoader className="animate-spin" size={16} />
-    </div>
-  ) : (
-    provider.providerActivity?.random_balance || 0
-  )}
-</td>
+                  {isLoading ? (
+                    <div className="loading-spinner">
+                      <FiLoader className="animate-spin" size={16} />
+                    </div>
+                  ) : (
+                    provider.providerActivity?.random_balance || 0
+                  )}
+                </td>
 
                 <td>
                   {isLoading ? (
@@ -292,12 +306,12 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                     provider.totalFullfullilled || 0
                   )}
                 </td>
-                <td>{formatTokenAmount((provider.providerInfo as ProviderInfo )?.stake?.amount || "0")}</td>
+                <td>{formatTokenAmount((provider.providerInfo as ProviderInfo)?.stake?.amount || "0")}</td>
                 <td>
                   <div className="delegation-fee">
                     <span>
-                      {(provider.providerInfo as any)?.commission !== undefined ? 
-                        `${(provider.providerInfo as any).commission}%` : 'N/A'}
+                      {(provider.providerInfo?.provider_details as ExtendedProviderDetails)?.delegationFee !== undefined ? 
+                        `${(provider.providerInfo?.provider_details as ExtendedProviderDetails).delegationFee}%` : 'N/A'}
                     </span>
                     <button 
                       className="stake-button" 
@@ -327,136 +341,13 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 </td>
               </tr>
               {expandedRows.has(provider.providerId) && (
-                <tr className="expanded-content">
-                  <td colSpan={10}>
-                    <div className="expanded-details">
-                      <div className="provider-grid">
-                        <div className="detail-group">
-                          <label>Name</label>
-                          <div className="detail-value">
-                            {(provider.providerInfo as ProviderInfo).provider_details?.name || 'N/A'}
-                          </div>
-                        </div>
-                        
-                        <div className="detail-group">
-                          <label>Provider ID</label>
-                          <div 
-                            className="detail-value monospace clickable"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyToClipboard(e, provider.providerId);
-                            }}
-                            title="Click to copy address"
-                          >
-                            {truncateAddress(provider.providerId)}
-                            {copiedAddress === provider.providerId ? (
-                              <FiCheck className="copy-icon success" />
-                            ) : (
-                              <FiCopy className="copy-icon" />
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="detail-group">
-                          <label>Join Date</label>
-                          <div className="detail-value">
-                            {(provider.providerInfo as ProviderInfo)?.created_at ? 
-                              new Date((provider.providerInfo as ProviderInfo).created_at).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              }) : 'N/A'}
-                          </div>
-                        </div>
-                        
-                        <div className="detail-group">
-                          <label>Total Staked</label>
-                          <div className="detail-value">
-                            {formatTokenAmount((provider.providerInfo as ProviderInfo )?.stake?.amount || "0")}
-                          </div>
-                        </div>
-
-                        <div className="detail-group">
-                          <label>Delegation Fee</label>
-                          <div className="detail-value">
-                            {(provider.providerInfo as any)?.commission !== undefined ? 
-                              `${(provider.providerInfo as any).commission}%` : 'N/A'}
-                          </div>
-                        </div>
-                        
-                        <div className="detail-group">
-                          <label>Random Available</label>
-                          <div className="detail-value">
-                            {(provider.providerActivity as ProviderActivity)?.random_balance !== undefined ? 
-                              (provider.providerActivity as ProviderActivity).random_balance : 'N/A'}
-                          </div>
-                        </div>
-                        
-                        <div className="detail-group">
-                          <label>Random Provided</label>
-                          <div className="detail-value">
-                            {provider.totalFullfullilled !== undefined ? 
-                              provider.totalFullfullilled : '0'}
-                          </div>
-                        </div>
-                        
-                        <div className="detail-group">
-                          <label>Random Value Fee</label>
-                          <div className="detail-value">
-                            0
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="detail-group">
-                        <label>Description</label>
-                        <div className="detail-value description">
-                          {(provider.providerInfo as any)?.description || 'No description available'}
-                        </div>
-                      </div>
-
-                      <div className="social-group">
-                        <>
-                          {(provider.providerInfo as any)?.twitter && (
-                            <a href={`https://twitter.com/${(provider.providerInfo as any).twitter.replace('@', '')}`} 
-                               target="_blank" 
-                               rel="noopener noreferrer" 
-                               className="social-item">
-                              <FaTwitter className="social-icon twitter" />
-                              <span>{(provider.providerInfo as any).twitter}</span>
-                            </a>
-                          )}
-                          {(provider.providerInfo as ProviderInfo ).provider_details?.discord && (
-                            <div className="social-item">
-                              <FaDiscord className="social-icon discord" />
-                              <span>{(provider.providerInfo as any).discord}</span>
-                            </div>
-                          )}
-                          {(provider.providerInfo as any)?.telegram && (
-                            <a href={`https://t.me/${(provider.providerInfo as ProviderInfo ).provider_details?.telegram?.replace('@', '')}`}
-                               target="_blank" 
-                               rel="noopener noreferrer" 
-                               className="social-item">
-                              <FaTelegram className="social-icon telegram" />
-                              <span>{(provider.providerInfo as any).telegram}</span>
-                            </a>
-                          )}
-                          {(provider.providerInfo as ProviderInfo ).provider_details?.domain && (
-                            <a href={`https://${(provider.providerInfo as ProviderInfo).provider_details?.domain}`}
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               className="social-item">
-                              <FiGlobe className="social-icon website" />
-                              <span>{(provider.providerInfo as ProviderInfo).provider_details?.domain}</span>
-                            </a>
-                          )}
-                        </>
-                      </div>
-
-                      <ActiveRequests providerId={provider.providerId} />
-                    </div>
-                  </td>
-                </tr>
+                <ProviderExpandedDetails
+                  provider={provider}
+                  copiedAddress={copiedAddress}
+                  copyToClipboard={copyToClipboard}
+                  formatTokenAmount={formatTokenAmount}
+                  truncateAddress={truncateAddress}
+                />
               )}
             </React.Fragment>
           ))}
