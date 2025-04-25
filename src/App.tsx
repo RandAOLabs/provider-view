@@ -8,11 +8,13 @@ import { Raffle, Lootbox, CriticalStrike, Lottery, RandomNumber } from './pages/
 // import Docs from './pages/Docs'
 import About from './pages/About'
 import BecomeProvider from './pages/BecomeProvider'
+import InfoHow from './pages/InfoHow'
 import { WalletProvider } from './contexts/WalletContext'
 import './App.css'
 import './pages/Providers.css'
 // import './pages/Docs.css'  // Documentation CSS temporarily commented out
 import './pages/About.css'
+import './pages/InfoHow.css'
 import './pages/Products/Raffle.css'
 
 function App() {
@@ -30,6 +32,7 @@ function App() {
             */}
             <Route path="/about" element={<About />} />
             <Route path="/become-provider" element={<BecomeProvider />} />
+            <Route path="/info/how" element={<InfoHow />} />
             <Route path="/products" element={<Products />}>
               <Route index element={<Raffle />} />
               <Route path="randomdraw" element={<Raffle />} />

@@ -1,5 +1,5 @@
 import React from 'react'
-import { FiBook, FiInfo, FiFileText, FiUserPlus, FiUsers, FiPackage } from 'react-icons/fi'
+import { FiBook, FiInfo, FiFileText, FiUserPlus, FiUsers, FiPackage, FiHelpCircle } from 'react-icons/fi'
 import { FaTelegram, FaGithub, FaXTwitter } from 'react-icons/fa6'
 import { Link, useLocation } from 'react-router-dom'
 import { useWallet } from '../../contexts/WalletContext'
@@ -58,6 +58,10 @@ export const Sidebar = () => {
         <Link to="/providers" className={`nav-item ${isActive('/providers') ? 'active' : ''}`}>
           <FiUsers />
           Providers
+        </Link>
+        <Link to="/info/how" className={`nav-item ${isActive('/info/how') ? 'active' : ''}`}>
+          <FiHelpCircle />
+          How To
         </Link>
         {/* <Link to="/products/randomdraw" className={`nav-item ${location.pathname.startsWith('/products') ? 'active' : ''}`}>
           <FiPackage />
