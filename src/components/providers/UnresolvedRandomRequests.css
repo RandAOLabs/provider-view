@@ -1,4 +1,5 @@
 .unresolved-random-section {
+  min-width: 70dvw;
   margin-top: 2rem;
   padding: 1.5rem;
   background-color: #f8f9fa;
@@ -192,16 +193,23 @@
 .refresh-container {
   display: flex;
   justify-content: center;
-  margin-top: 1.5rem;
+  margin: 1rem 0 1.5rem;
 }
 
 .refresh-button {
   background-color: #f8f9fa;
   border: 1px solid #ddd;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.5rem;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #495057;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
 }
 
 .refresh-button:hover:not(:disabled) {
@@ -215,6 +223,84 @@
 
 .refresh-button.loading {
   background-color: #e9ecef;
+}
+
+.refresh-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Information dropdown styles */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.section-title-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  color: #333;
+}
+
+.info-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.info-icon {
+  background-color: #f0f4f8;
+  color: #4a6fa5;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.info-icon:hover {
+  background-color: #e0e7ef;
+}
+
+.info-content {
+  position: absolute;
+  top: 30px;
+  left: -10px;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 1rem;
+  width: 300px;
+  z-index: 10;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #333;
+  display: none;
+}
+
+.info-content.active {
+  display: block;
+}
+
+.info-content p {
+  margin: 0 0 0.75rem;
+}
+
+.info-content p:last-child {
+  margin-bottom: 0;
 }
 
 /* Custom scrollbar styling for the request lists */

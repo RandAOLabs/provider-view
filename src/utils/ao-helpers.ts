@@ -13,7 +13,8 @@ import {
     IRandAOService,
     Logger,
     LogLevel,
-    BaseClientConfigBuilder
+    BaseClientConfigBuilder,
+    ProviderActivity,
 } from 'ao-process-clients';
 
 // Minimum tokens needed to stake for new stakers
@@ -148,13 +149,104 @@ class AOHelpers {
             this._providersPromise = (async () => {
                 try {
                     const service = await this.getRandAOService();
+                    const randclient = await this.getRandomClient();
                     const providers = await service.getAllProviderInfo();
+                    const providersactivity = await randclient.getAllProviderActivity();
                     console.log(providers);
+                    console.log(providersactivity);
+                    
+                    // Map provider activity to providers and clean up request_ids format
+                    if (Array.isArray(providersactivity) && providersactivity.length > 0) {
+                        // Debug the entire providersactivity list
+                        console.log('Full providersactivity structure:', JSON.stringify(providersactivity[0], null, 2));
+                        
+                        providers.forEach(provider => {
+                            const activity = providersactivity.find(
+                                activity => activity.provider_id === provider.providerId
+                            );
+                            
+                            if (activity) {
+                                // Fix challenge requests - need careful handling for nested JSON
+                                if (activity.active_challenge_requests) {
+                                    // If it's a string, parse it to get the actual request_ids structure
+                                    if (typeof activity.active_challenge_requests === 'string') {
+                                        try {
+                                            // Parse the string to get the object with request_ids
+                                            const parsedObj = JSON.parse(activity.active_challenge_requests);
+                                            console.log(`Parsed challenge requests for ${provider.providerId}:`, parsedObj);
+                                            
+                                            // Replace the string with the parsed object
+                                            activity.active_challenge_requests = parsedObj;
+                                        } catch (e) {
+                                            console.error(`Failed to parse challenge requests for ${provider.providerId}:`, e);
+                                            // Create a placeholder object with empty array
+                                            activity.active_challenge_requests = { request_ids: [] };
+                                        }
+                                    } else if (typeof activity.active_challenge_requests === 'object') {
+                                        // It's already an object, but may have string request_ids property
+                                        if (typeof activity.active_challenge_requests.request_ids === 'string') {
+                                            try {
+                                                activity.active_challenge_requests.request_ids = 
+                                                    JSON.parse(activity.active_challenge_requests.request_ids);
+                                            } catch (e) {
+                                                console.error(`Failed to parse challenge request_ids for ${provider.providerId}:`, e);
+                                                activity.active_challenge_requests.request_ids = [];
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Ensure request_ids exists
+                                    activity.active_challenge_requests = { request_ids: [] };
+                                }
+                                
+                                // Fix output requests - similar approach
+                                if (activity.active_output_requests) {
+                                    // If it's a string, parse it to get the actual request_ids structure
+                                    if (typeof activity.active_output_requests === 'string') {
+                                        try {
+                                            // Parse the string to get the object with request_ids
+                                            const parsedObj = JSON.parse(activity.active_output_requests);
+                                            console.log(`Parsed output requests for ${provider.providerId}:`, parsedObj);
+                                            
+                                            // Replace the string with the parsed object
+                                            activity.active_output_requests = parsedObj;
+                                        } catch (e) {
+                                            console.error(`Failed to parse output requests for ${provider.providerId}:`, e);
+                                            // Create a placeholder object with empty array
+                                            activity.active_output_requests = { request_ids: [] };
+                                        }
+                                    } else if (typeof activity.active_output_requests === 'object') {
+                                        // It's already an object, but may have string request_ids property
+                                        if (typeof activity.active_output_requests.request_ids === 'string') {
+                                            try {
+                                                activity.active_output_requests.request_ids = 
+                                                    JSON.parse(activity.active_output_requests.request_ids);
+                                            } catch (e) {
+                                                console.error(`Failed to parse output request_ids for ${provider.providerId}:`, e);
+                                                activity.active_output_requests.request_ids = [];
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Ensure request_ids exists
+                                    activity.active_output_requests = { request_ids: [] };
+                                }
+                                
+                                // Log the processed data for debugging
+                                console.log(`Processed activity for ${provider.providerId}:`, {
+                                    challenge_count: activity.active_challenge_requests.request_ids.length,
+                                    output_count: activity.active_output_requests.request_ids.length
+                                });
+                                
+                                provider.providerActivity = activity;
+                            }
+                        });
+                    }
                     
                     // Update cache
                     this._providersCache = providers;
                     this._providersCacheTimestamp = now;
-                    
+                    console.log(providers);
                     return providers;
                 } finally {
                     // Clear the promise reference when done (success or failure)

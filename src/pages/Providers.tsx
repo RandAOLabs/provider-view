@@ -3,6 +3,7 @@ import { ProviderTable } from '../components/providers/ProviderTable'
 import { StartProvider } from '../components/providers/StartProvider'
 import { ConnectWallet } from '../components/common/ConnectWallet'
 import { Spinner } from '../components/common/Spinner'
+import { UnresolvedRandomRequests } from '../components/providers/UnresolvedRandomRequests'
 import { aoHelpers } from '../utils/ao-helpers'
 import { useWallet } from '../contexts/WalletContext'
 import { ProviderInfoAggregate } from 'ao-process-clients'
@@ -68,6 +69,7 @@ export default function Providers() {
                 />
               )}
               <ProviderTable providers={providers} />
+              <UnresolvedRandomRequests providers={providers} />
             </>
           ) : (
             <p>No providers available.</p>

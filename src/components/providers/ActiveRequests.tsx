@@ -7,42 +7,77 @@ interface ActiveRequestsProps {
   providerId: string;
 }
 
-export const ActiveRequests: React.FC<ActiveRequestsProps> = ({ providerId }) => {
+export const ActiveRequests = ({ providerId }: ActiveRequestsProps) => {
   const [activeRequests, setActiveRequests] = useState<{ challengeRequests: string[], outputRequests: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (providerId) {
-      fetchActiveRequests();
+      // Use cached data from providers instead of making a new API call
+      getProviderActivityFromCache();
     }
   }, [providerId]);
 
-  const fetchActiveRequests = async () => {
+  const getProviderActivityFromCache = async () => {
     if (!providerId) return;
     
     setIsLoading(true);
     try {
-      console.log(`Fetching active requests for provider: ${providerId}`);
-      const response = await aoHelpers.getOpenRandomRequests(providerId);
-      console.log('Processing active requests response:', {
-        providerId,
-        hasResponse: !!response,
-        hasChallengeRequests: !!response?.activeChallengeRequests,
-        hasOutputRequests: !!response?.activeOutputRequests
-      });
+      // Get all providers data from cache to find this provider's activity
+      const providers = await aoHelpers.getAllProvidersInfo();
+      const provider = providers.find(p => p.providerId === providerId);
       
-      if (!response?.activeChallengeRequests?.request_ids || !response?.activeOutputRequests?.request_ids) {
-        console.error('Invalid response structure:', response);
-        throw new Error('Invalid response structure from getOpenRandomRequests');
+      if (provider?.providerActivity) {
+        console.log(`Using cached provider activity for: ${providerId}`);
+        
+        // Extract and process the request_ids arrays
+        const activity = provider.providerActivity;
+        
+        // Get challenge requests, ensuring it's an array
+        let challengeRequests: string[] = [];
+        if (activity.active_challenge_requests?.request_ids) {
+          challengeRequests = Array.isArray(activity.active_challenge_requests.request_ids) ?
+            activity.active_challenge_requests.request_ids :
+            [];
+        }
+        
+        // Get output requests, ensuring it's an array
+        let outputRequests: string[] = [];
+        if (activity.active_output_requests?.request_ids) {
+          outputRequests = Array.isArray(activity.active_output_requests.request_ids) ?
+            activity.active_output_requests.request_ids :
+            [];
+        }
+        
+        setActiveRequests({
+          challengeRequests,
+          outputRequests
+        });
+        console.log('Successfully updated active requests from cache');
+      } else {
+        // Fallback to API call if no cached activity data is found
+        console.log(`No cached activity found, fetching for: ${providerId}`);
+        const response = await aoHelpers.getOpenRandomRequests(providerId);
+        
+        if (response?.activeChallengeRequests?.request_ids && response?.activeOutputRequests?.request_ids) {
+          // Ensure we have arrays for the request_ids
+          const challengeRequests = Array.isArray(response.activeChallengeRequests.request_ids) ?
+            response.activeChallengeRequests.request_ids : [];
+          
+          const outputRequests = Array.isArray(response.activeOutputRequests.request_ids) ?
+            response.activeOutputRequests.request_ids : [];
+          
+          setActiveRequests({
+            challengeRequests,
+            outputRequests
+          });
+          console.log('Successfully updated active requests from API');
+        } else {
+          throw new Error('Invalid response structure from getOpenRandomRequests');
+        }
       }
-
-      setActiveRequests({
-        challengeRequests: response.activeChallengeRequests.request_ids,
-        outputRequests: response.activeOutputRequests.request_ids
-      });
-      console.log('Successfully updated active requests state');
     } catch (error) {
-      console.error('Error fetching active requests:', error);
+      console.error('Error getting active requests:', error);
       // Set empty requests on error
       setActiveRequests({
         challengeRequests: [],
@@ -51,7 +86,7 @@ export const ActiveRequests: React.FC<ActiveRequestsProps> = ({ providerId }) =>
     } finally {
       setIsLoading(false);
     }
-  };
+  }
   
   const truncateAddress = (address: string) => {
     if (!address) return '';
@@ -64,7 +99,7 @@ export const ActiveRequests: React.FC<ActiveRequestsProps> = ({ providerId }) =>
         <label>Active Requests</label>
         <button
           className={`refresh-button${isLoading ? ' loading' : ''}`}
-          onClick={fetchActiveRequests}
+          onClick={getProviderActivityFromCache}
           disabled={isLoading}
         >
           <div className="button-content">
