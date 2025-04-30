@@ -214,13 +214,9 @@
 
 .faq-header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   margin-bottom: 2rem;
-}
-
-.faq-icon {
-  font-size: 1.5rem;
-  margin-right: 1rem;
 }
 
 .faq-header h2 {
@@ -228,6 +224,61 @@
   color: #000000;
   font-weight: 600;
   margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.faq-header .faq-icon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  color: #000000;
+}
+
+.faq-header .faq-note {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: rgba(0, 0, 0, 0.6);
+  font-style: italic;
+}
+
+.no-faq-message {
+  padding: 1.5rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Debug Information Styling */
+.debug-info {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.debug-info p {
+  margin: 0.5rem 0;
+}
+
+.debug-details {
+  margin-top: 1rem;
+}
+
+.debug-details summary {
+  cursor: pointer;
+  color: #555;
+  font-weight: bold;
+}
+
+.debug-content {
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  background-color: #f0f0f0;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  overflow: auto;
+  max-height: 300px;
 }
 
 .faq-container {
@@ -236,18 +287,30 @@
   gap: 1rem;
 }
 
+/* FAQ Item Styling with details/summary elements */
 .faq-item {
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   overflow: hidden;
   background-color: #ffffff;
   transition: all 0.3s ease;
+  margin-bottom: 0.8rem;
 }
 
 .faq-item:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Remove default details marker */
+.faq-item summary {
+  list-style: none;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Style the summary/question area */
 .faq-question {
   display: flex;
   justify-content: space-between;
@@ -256,6 +319,7 @@
   cursor: pointer;
   background-color: #f8f9fa;
   transition: background-color 0.3s ease;
+  outline: none;
 }
 
 .faq-question:hover {
@@ -274,18 +338,74 @@
   font-size: 1.2rem;
   margin-left: 1rem;
   color: rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
 }
 
+/* Style the answer area */
 .faq-answer {
-  padding: 1rem 1.2rem;
+  padding: 1.2rem;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   background-color: #ffffff;
 }
 
+/* Add animation for smooth opening/closing */
+.faq-item[open] summary ~ * {
+  animation: slide-down 0.3s ease-in-out;
+}
+
+.faq-item:not([open]) summary ~ * {
+  animation: slide-up 0.3s ease-in-out;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
 .faq-answer p {
-  margin: 0;
+  margin: 0 0 1rem 0;
   line-height: 1.6;
   color: rgba(0, 0, 0, 0.8);
+}
+
+.faq-answer p:last-child {
+  margin-bottom: 0;
+}
+
+.faq-answer ul, 
+.faq-answer ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.faq-answer li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.faq-answer code {
+  background-color: #f4f4f4;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
 }
 
 .placeholder-answer {
@@ -321,5 +441,9 @@
   
   .faq-section {
     padding: 1.5rem;
+  }
+  
+  .faq-question h3 {
+    font-size: 0.95rem;
   }
 }
