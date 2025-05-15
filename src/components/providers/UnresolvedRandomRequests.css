@@ -17,8 +17,16 @@
 
 .unresolved-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
+}
+
+/* Fixed size for provider cards */
+.provider-requests-card {
+  height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .provider-requests-card {
@@ -89,14 +97,27 @@
 
 .request-summary {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex: 1;
+  overflow-y: auto;
 }
 
-.request-type h4 {
+.request-type {
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
   color: #555;
+  width: calc(50% - 0.5rem);
+  min-width: 120px;
+}
+
+.request-type.challenges {
+  order: 1; /* Always on the left */
+}
+
+.request-type.output {
+  order: 2; /* Always on the right */
 }
 
 .request-list {
@@ -107,7 +128,7 @@
 
 /* Styling for the scrollable request list */
 .request-list.scrollable {
-  max-height: 100px; /* Set a fixed height for scrollable area */
+  max-height: 80px; /* Set a fixed height for scrollable area */
   overflow-y: auto; /* Add vertical scrolling */
   padding-right: 5px; /* Add some padding for scrollbar */
   flex-wrap: nowrap;
@@ -120,6 +141,274 @@
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.85rem;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Animation classes for request items */
+
+/* New requests: fade in green */
+.request-item.new-request {
+  animation: fadeInGreen 2s ease-in-out;
+  animation-fill-mode: both;
+  transform-origin: center;
+  z-index: 10;
+}
+
+/* Apply the animations */
+.fade-in-green {
+  animation: fadeInGreen 2s ease-out;
+  z-index: 10; /* Ensure animated items are on top */
+}
+
+.flash-red {
+  animation: flashRed 2s ease-in-out;
+  z-index: 10;
+}
+
+.fade-out-purple {
+  animation: fadeOutPurple 2s ease-out forwards;
+  z-index: 10;
+}
+
+.fade-in-purple {
+  animation: fadeInPurple 2s ease-in;
+  z-index: 10;
+}
+
+.flash-gold-disappear {
+  animation: flashGoldAndDisappear 2s ease-in-out forwards;
+  z-index: 10;
+}
+
+/* Base styles */
+.request-item {
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  background-color: #f0f0f0;
+  position: relative;
+  border: none;
+}
+
+/* Animation indicators */
+.animation-indicator {
+  font-weight: bold;
+  padding-left: 5px;
+}
+
+/* Animation status text at start of each item */
+.new-indicator::before {
+  content: "NEW! ";
+  color: #28a745;
+  font-weight: bold;
+}
+
+.existing-indicator::before {
+  content: "UNCHANGED ";
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.moving-out-indicator::before {
+  content: "MOVING OUT ";
+  color: #9966CC;
+  font-weight: bold;
+}
+
+.moving-in-indicator::before {
+  content: "MOVING IN ";
+  color: #9966CC;
+  font-weight: bold;
+}
+
+.disappearing-indicator::before {
+  content: "DISAPPEARING ";
+  color: #FFD700;
+  font-weight: bold;
+}
+
+/* Background colors */
+.bg-green {
+  background-color: #d4edda !important;
+}
+
+.bg-red {
+  background-color: #f8d7da !important;
+}
+
+.bg-purple {
+  background-color: #e6e6fa !important;
+}
+
+.bg-gold {
+  background-color: #fff9c4 !important;
+}
+
+/* Green fade in animation for new requests - MUCH more visible */
+@keyframes fadeInGreen {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    background-color: transparent;
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.1);
+    background-color: #d4edda;
+    border: 3px solid #28a745;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.9);
+  }
+  60% {
+    transform: scale(1.05);
+    background-color: #d4edda;
+    border: 3px solid #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    background-color: #f0f0f0;
+    border: 3px solid transparent;
+    box-shadow: none;
+  }
+}
+
+/* Red flash animation for existing requests - MUCH more visible */
+@keyframes flashRed {
+  0% {
+    background-color: #f0f0f0;
+    transform: scale(1);
+  }
+  25% {
+    background-color: #f8d7da;
+    border: 3px solid #dc3545;
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(220, 53, 69, 0.8);
+  }
+  50% {
+    background-color: #f0f0f0;
+    transform: scale(1);
+  }
+  75% {
+    background-color: #f8d7da;
+    border: 3px solid #dc3545;
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(220, 53, 69, 0.8);
+  }
+  100% {
+    background-color: #f0f0f0;
+    transform: scale(1);
+    border: 3px solid transparent;
+  }
+}
+
+/* Purple fade out animation for requests moving from challenges - MUCH more visible */
+@keyframes fadeOutPurple {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: #f0f0f0;
+  }
+  30% {
+    opacity: 0.9;
+    transform: translateY(5px) scale(1.05);
+    background-color: #e6e6fa;
+    border: 3px solid #9966CC;
+    box-shadow: 0 0 15px rgba(128, 0, 128, 0.8);
+  }
+  70% {
+    opacity: 0.6;
+    transform: translateY(10px) scale(0.95);
+    background-color: #e6e6fa;
+    border: 3px solid #9966CC;
+    box-shadow: 0 0 8px rgba(128, 0, 128, 0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(15px) scale(0.9);
+    background-color: #e6e6fa;
+    border: 3px solid #9966CC;
+  }
+}
+
+/* Purple fade in animation for requests moving to outputs - MUCH more visible */
+@keyframes fadeInPurple {
+  0% {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.9);
+    background-color: #e6e6fa;
+    border: 3px solid #9966CC;
+  }
+  30% {
+    opacity: 0.7;
+    transform: translateY(-8px) scale(1.05);
+    background-color: #e6e6fa;
+    border: 3px solid #9966CC;
+    box-shadow: 0 0 15px rgba(128, 0, 128, 0.8);
+  }
+  70% {
+    opacity: 0.9;
+    transform: translateY(-3px) scale(1.02);
+    background-color: #e6e6fa;
+    border: 3px solid #9966CC;
+    box-shadow: 0 0 10px rgba(128, 0, 128, 0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    background-color: #f0f0f0;
+    border: 3px solid transparent;
+    box-shadow: none;
+  }
+}
+
+/* Gold flash and disappear animation - MUCH more visible */
+@keyframes flashGoldAndDisappear {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    background-color: #f0f0f0;
+    border: 3px solid transparent;
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.1);
+    background-color: #fff9c4;
+    border: 3px solid #FFD700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.9);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.05);
+    background-color: #f0f0f0;
+    border: 3px solid transparent;
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.1);
+    background-color: #fff9c4;
+    border: 3px solid #FFD700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.9);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateY(5px) scale(1);
+    background-color: #fff9c4;
+    border: 3px solid #FFD700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+  }
+  80% {
+    opacity: 0.4;
+    transform: translateY(10px) scale(0.95);
+    background-color: #fff9c4;
+    border: 3px solid #FFD700;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(15px) scale(0.9);
+    background-color: #fff9c4;
+    border: 3px solid transparent;
+  }
 }
 
 /* Style for "more" indicator */
@@ -190,58 +479,166 @@
   border-radius: 6px;
 }
 
-.refresh-container {
+.refresh-controls {
   display: flex;
   justify-content: center;
   margin: 1rem 0 1.5rem;
+  gap: 1rem;
+  align-items: center;
+}
+
+.refresh-container {
+  display: inline-flex;
+  align-items: center;
 }
 
 .refresh-button {
   background-color: #f8f9fa;
-  border: 1px solid #ddd;
-  padding: 0.5rem;
+  border: 1px solid #ced4da;
   border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #495057;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   width: 36px;
   height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 5px;
+  transition: all 0.2s;
 }
 
-.refresh-button:hover:not(:disabled) {
+.refresh-button:hover {
   background-color: #e9ecef;
 }
 
-.refresh-button:disabled {
-  opacity: 0.6;
+.refresh-button.auto-on {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.refresh-button.loading {
+  opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Debug controls styles */
+.debug-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 10px;
+  padding: 5px 10px;
+  border-left: 1px solid #ddd;
+}
+
+.debug-button {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin: 4px 0;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  width: 160px;
+  text-align: center;
+}
+
+.debug-button:hover {
+  background-color: #e9ecef;
+}
+
+.debug-button.active {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.test-animations-button {
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.visual-indicators-button {
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.visual-indicators-button.active {
+  background-color: #cce5ff;
+  border-color: #b8daff;
+  color: #004085;
 }
 
 .refresh-button.loading {
   background-color: #e9ecef;
 }
 
+.refresh-button.refreshing .refresh-icon {
+  animation: refreshSpin 0.8s ease-in-out;
+}
+
+@keyframes refreshSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.unresolved-container {
+  position: relative;
+}
+
+.provider-requests-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  background-color: #fff;
+  transition: all 0.3s ease-in-out;
+}
+
+.provider-requests-card.refreshing {
+  animation: highlightCard 1s ease;
+}
+
+@keyframes highlightCard {
+  0% { background-color: #fff; }
+  50% { background-color: #e6f2ff; box-shadow: 0 0 8px rgba(66, 153, 225, 0.4); }
+  100% { background-color: #fff; }
+}
+
 .refresh-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+}
+
+.refresh-icon.auto-refreshing {
+  color: #1890ff;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 /* Information dropdown styles */
 .section-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   margin-bottom: 1rem;
+  position: relative;
+  text-align: center;
+  width: 100%;
 }
 
 .section-title-container {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .section-title {
@@ -272,7 +669,8 @@
 }
 
 .info-icon:hover {
-  background-color: #e0e7ef;
+  border-color: #ccc;
+  border: 2px solid #ccc;
 }
 
 .info-content {

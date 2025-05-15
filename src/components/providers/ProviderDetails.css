@@ -1,19 +1,21 @@
 /* Provider Details Component */
 .provider-details {
+  width: 70dvw;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-  margin: 2rem auto;
+  padding: 1.5rem;
+  margin: 1rem auto;
   border: 1px solid rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 .provider-details-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #eee;
 }
 
@@ -53,32 +55,78 @@
 }
 
 .provider-details-content {
-  min-width: 75rem;
+  width: 100%;
   margin-top: 1rem;
+  box-sizing: border-box;
 }
 
 .provider-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
 }
 
+.social-item span,
+.social-item input {
+  word-break: break-word;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.description-group {
+  grid-column: span 2;
+}
+
+.description-group .detail-value.description,
+.description-group textarea.edit-input {
+  max-height: 100px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+@media (max-width: 640px) {
+  .description-group {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Detail groups - common styling across all states */
 .detail-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.detail-group:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .detail-group label {
   display: block;
   font-weight: 600;
   color: #495057;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
 }
 
-.detail-value {
-  color: #212529;
+/* Make values and inputs visually similar */
+.detail-value,
+.edit-input {
+  color: #000000;
   font-size: 1rem;
   line-height: 1.5;
+  padding: 0.5rem;
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .detail-value.description {
@@ -96,6 +144,9 @@
 .detail-value.clickable {
   cursor: pointer;
   transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .detail-value.clickable:hover {
@@ -128,22 +179,57 @@
   background: rgba(220, 53, 69, 0.1);
 }
 
+/* Staking Information Styles */
+.staking-info-compact {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.staking-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #f0f4f8;
+  border-radius: 50%;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.stake-icon {
+  font-size: 1.5rem;
+  color: #0066cc;
+}
+
+.staking-info-content {
+  display: flex;
+  align-items: center;
+}
+
+.staking-info-value {
+  font-size: 1.1rem;
+  color: #000000;
+  font-weight: 500;
+}
+
+/* Edit input styles - visually similar to detail-value for consistency */
 .edit-input {
-  width: 100%;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: all 0.2s;
-  color: #212529; /* Match the text color of detail-value */
-  background-color: rgba(248, 249, 250, 0.5);
+  /* Basic styles are now inherited from the shared .detail-value, .edit-input selector above */
   font-family: inherit;
-  line-height: 1.5;
+  box-sizing: border-box;
+  border: 1px solid #dee2e6;
+  transition: all 0.2s;
 }
 
 .edit-input:hover {
-  border-color: #dee2e6;
-  background-color: rgba(248, 249, 250, 0.8);
+  border-color: #ced4da;
+  background-color: #ffffff;
 }
 
 .edit-input:focus {
@@ -154,9 +240,8 @@
 }
 
 .social-item .edit-input {
-  background-color: transparent;
   font-size: 0.9rem;
-  padding: 0.25rem 0.5rem;
+  background-color: #ffffff;
 }
 
 input[type="number"].edit-input {
@@ -170,10 +255,11 @@ input[type="number"].edit-input::-webkit-inner-spin-button {
 }
 
 textarea.edit-input {
-  min-height: 100px;
+  min-height: 80px;
   resize: vertical;
 }
 
+/* Social Groups - uniform styling for all states */
 .social-group {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -182,6 +268,7 @@ textarea.edit-input {
   background: #f8f9fa;
   border-radius: 8px;
   padding: 1rem;
+  border: 1px solid #e9ecef;
 }
 
 .social-item {
@@ -189,12 +276,13 @@ textarea.edit-input {
   align-items: center;
   gap: 0.5rem;
   color: #495057;
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem;
   border-radius: 4px;
   transition: all 0.2s;
   background: white;
-  border: 1px solid #eee;
+  border: 1px solid #e9ecef;
   font-size: 0.9rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .social-item:hover {
@@ -205,6 +293,7 @@ textarea.edit-input {
 .social-item svg {
   font-size: 1.1rem;
   flex-shrink: 0;
+  color: #0066cc;
 }
 
 .save-btn {
@@ -292,53 +381,60 @@ textarea.edit-input {
   background: #c82333;
 }
 
-/* Provider Status Section */
+/* Provider Status Section - consistent styling across all states */
 .provider-status-section {
-  margin: 1.5rem 0;
-  border-top: 1px solid #eee;
-  padding-top: 1.5rem;
+  margin: 1rem 0;
+  padding-top: 0;
 }
 
 .provider-status {
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 6px;
   margin-top: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid #e9ecef;
+  background-color: #ffffff;
 }
 
 .provider-status:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Color indicators for status - subtle but distinct */
 .provider-status-active {
-  background-color: rgba(0, 200, 83, 0.1);
-  border: 1px solid rgba(0, 200, 83, 0.3);
+  border-left: 4px solid #28a745;
 }
 
 .provider-status-user-off {
-  background-color: rgba(255, 152, 0, 0.1);
-  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-left: 4px solid #ffc107;
 }
 
 .provider-status-process-off,
 .provider-status-team-off {
-  background-color: rgba(244, 67, 54, 0.1);
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-left: 4px solid #dc3545;
 }
 
+/* Status message styling - consistent across all states */
 .status-message {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  padding: 0.75rem;
+  background-color: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
 }
 
 .status-message > div {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column; /* Changed to column for better readability */
+  gap: 0.25rem;
 }
 
 .status-message p {
@@ -346,20 +442,15 @@ textarea.edit-input {
   font-weight: 500;
   line-height: 1.4;
   font-size: 0.9rem;
+  color: #212529;
 }
 
 .status-message p strong {
   font-size: 1rem;
-  display: inline;
-  margin-right: 0.25rem;
+  font-weight: 600;
 }
 
-.status-message p:last-child {
-  margin-left: 0.5rem;
-  opacity: 0.9;
-  font-size: 0.85rem;
-}
-
+/* Standardized action button across all states */
 .status-action-btn {
   display: inline-flex;
   align-items: center;
@@ -367,30 +458,36 @@ textarea.edit-input {
   gap: 0.5rem;
   padding: 0.6rem 1rem;
   background-color: #ffffff;
-  border: 1px solid #ddd;
+  border: 1px solid #dee2e6;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
-  max-width: fit-content;
   font-size: 0.85rem;
-  color: #333;
+  white-space: nowrap;
 }
 
+/* Color coded action buttons based on status */
 .provider-status-active .status-action-btn {
-  color: #d32f2f;
-  border-color: #d32f2f;
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.provider-status-active .status-action-btn:hover {
+  background-color: rgba(220, 53, 69, 0.1);
 }
 
 .provider-status-user-off .status-action-btn,
 .provider-status-process-off .status-action-btn,
 .provider-status-team-off .status-action-btn {
-  color: #2e7d32;
-  border-color: #2e7d32;
+  color: #28a745;
+  border-color: #28a745;
 }
 
-.status-action-btn:hover {
-  background-color: #f5f5f5;
+.provider-status-user-off .status-action-btn:hover,
+.provider-status-process-off .status-action-btn:hover,
+.provider-status-team-off .status-action-btn:hover {
+  background-color: rgba(40, 167, 69, 0.1);
 }
 
 .status-action-btn:focus {
@@ -402,7 +499,9 @@ textarea.edit-input {
   display: inline-block;
 }
 
-.spin {
+/* Animation styles */
+.spin,
+.animate-spin {
   animation: spin 1s linear infinite;
 }
 
@@ -411,14 +510,16 @@ textarea.edit-input {
   100% { transform: rotate(360deg); }
 }
 
+/* Success and notification messages */
 .success-message {
-  color: #00c853;
+  color: #28a745;
   font-weight: 500;
-  margin-top: 10px;
-  padding: 8px;
-  background-color: rgba(0, 200, 83, 0.1);
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: rgba(40, 167, 69, 0.1);
   border-radius: 4px;
   text-align: center;
+  border: 1px solid rgba(40, 167, 69, 0.2);
 }
 
 /* Active Requests Section */
@@ -508,4 +609,36 @@ textarea.edit-input {
 
 .copy-icon.success {
   color: #28a745;
+}
+
+/* Fix inconsistencies between active, inactive and editing states */
+.provider-form .provider-details,
+.content-container .provider-details {
+  padding: 1.5rem;
+  margin: 0;
+  max-width: none;
+  width: 100%;
+  box-shadow: none;
+  border: none;
+}
+
+/* Make the provider details consistent in active and inactive states */
+.provider-form .provider-details-content,
+.content-container .provider-details-content {
+  width: 100% !important;
+  min-width: auto !important;
+}
+
+/* Consistent provider status section */
+.provider-status-section {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Fix welcome message */
+.welcome-message {
+  margin-bottom: 1rem;
+  padding: 1rem;
 }

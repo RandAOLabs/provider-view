@@ -113,9 +113,9 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
   }
 
   const formatTokenAmount = (amount: string) => {
-    return (Number(amount) / Math.pow(10, 18)).toLocaleString('en-US', {
+    return (Number(amount) / Math.pow(10, 9)).toLocaleString('en-US', {
       minimumFractionDigits: 0,
-      maximumFractionDigits: 6
+      maximumFractionDigits: 2
     })
   }
 
@@ -264,9 +264,24 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 onClick={(e) => toggleRow(provider.providerId, e)}
               >
                 <td>
-                  <FiCircle 
-                    className={`status-indicator ${(provider.providerActivity?.random_balance || 0) > 1 ? 'online' : 'offline'}`}
-                  />
+                  <div className="status-container">
+                    <FiCircle 
+                      className={`status-indicator ${(provider.providerActivity?.random_balance || 0) > 1 ? 'online' : 'offline'}`}
+                    />
+                    {provider.providerActivity?.provider_info && (
+                      <span className="provider-version">
+                        {(() => {
+                          try {
+                            const providerInfo = JSON.parse(provider.providerActivity.provider_info);
+                            return providerInfo.providerVersion ? `v${providerInfo.providerVersion}` : '';
+                          } catch (e) {
+                            console.error('Error parsing provider info:', e);
+                            return '';
+                          }
+                        })()}
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 <td>

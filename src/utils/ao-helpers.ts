@@ -16,10 +16,11 @@ import {
     BaseClientConfigBuilder,
     ProviderActivity,
 } from 'ao-process-clients';
+import { connect, createDataItemSigner, dryrun, message } from "@permaweb/aoconnect";
 
-// Minimum tokens needed to stake for new stakers
-export const MINIMUM_STAKE_AMOUNT = '100000000000000000000';
-export const TOKEN_DECIMALS = 18;
+// Minimum tokens needed to stake for new stakers - 10000 tokens with 9 decimals
+export const MINIMUM_STAKE_AMOUNT = '10000000000000';
+export const TOKEN_DECIMALS = 9;
 export const RAFFLEPROCESS = "0zuEwuXXnNBPQ6u-eUTGfMkKbSy1zeHKfxbiocvD_y0";
 // Logger.setLogLevel(LogLevel.DEBUG)
 export interface ProviderDetailsInput {
@@ -423,7 +424,53 @@ class AOHelpers {
                 throw error;
             }
             }
+
+    /**
+     * Reinitialize a provider by sending a message to the RandAO process
+     * Only providers with value -2 can be reinitialized and will be set to 0
+     * @param providerId The provider ID to reinitialize
+     * @param wallet The wallet to use for signing
+     * @param processId The process ID to send the message to
+     * @returns The message ID
+     */
+    async reinitProvider(providerId: string, wallet: any, processId: string): Promise<string> {
+        // Check if this provider has a random_balance of -2 before proceeding
+        try {
+            const providerInfo = await this.getProviderInfo(providerId);
+            const randomBalance = providerInfo?.providerActivity?.random_balance;
             
+            // Only allow reinitialization of providers with value -2
+            if (randomBalance !== -2) {
+                throw new Error(`Provider ${providerId} has a value of ${randomBalance} which is not eligible for reinitialization. Only providers with value -2 can be reinitialized.`);
+            }
+            
+            // Use connect with the proper RandAO URLs to ensure we're hitting the right endpoint
+            const { message: configuredMessage } = connect({
+                MU_URL: "https://ur-mu.randao.net",
+                CU_URL: "https://ur-cu.randao.net",
+                GATEWAY_URL: "https://arweave.net",
+                MODE: "legacy"
+            });
+            
+            // Include target value of 0 to explicitly set the provider to this state
+            let tags = [
+                { name: "Action", value: "Reinitialize-Provider" },
+                { name: "ProviderId", value: providerId },
+                { name: "Target-Value", value: "0" },  // Explicitly set to 0
+            ];
+
+            let id = await configuredMessage({
+                process: processId,
+                tags,
+                signer: createDataItemSigner(wallet),
+            });
+            
+            return id;
+        } catch (error) {
+            console.error(`Error reinitializing provider ${providerId}:`, error);
+            throw error;
+        }
+    }
 }
 
 export const aoHelpers = new AOHelpers();

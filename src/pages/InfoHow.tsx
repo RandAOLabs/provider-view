@@ -170,10 +170,9 @@ export default function InfoHow() {
         }
         
         // Create a version of the README without the FAQ section for the main display
-        const contentWithoutFAQ = content.replace(
-          faqSectionRaw, 
-          '## Frequently Asked Questions\n\n*See the FAQ section below for answers to common questions.*\n\n'
-        )
+        // Completely remove the FAQ section (including heading) from the main content
+        // since we'll show it in a dedicated section below
+        const contentWithoutFAQ = content.replace(faqSectionRaw, '')
         setReadmeWithoutFAQ(contentWithoutFAQ)
         
         // Check if there are any question headings

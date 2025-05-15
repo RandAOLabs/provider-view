@@ -3,7 +3,7 @@ import { FiEdit2, FiGlobe, FiPower, FiCheck, FiCopy, FiLoader } from 'react-icon
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { BiRefresh } from 'react-icons/bi'
-import { aoHelpers } from '../../utils/ao-helpers'
+import { aoHelpers, TOKEN_DECIMALS } from '../../utils/ao-helpers'
 import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-process-clients'
 import { ActiveRequests } from './ActiveRequests'
 import './ProviderDetails.css'
@@ -14,6 +14,8 @@ interface ProviderDetailsProps {
   onSave?: (formData: any) => Promise<void>;
   isSubmitting?: boolean;
   submitLabel?: string;
+  walletBalance?: string | null;
+  onCancel?: () => void;
 }
 
 export const ProviderDetails: React.FC<ProviderDetailsProps> = ({ 
@@ -21,7 +23,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   isEditing: defaultIsEditing,
   onSave,
   isSubmitting,
-  submitLabel = 'Save Changes'
+  submitLabel = 'Save Changes',
+  walletBalance,
+  onCancel
 }) => {
   const [isEditing, setIsEditing] = useState(defaultIsEditing || false)
   const [showUnstakeWarning, setShowUnstakeWarning] = useState(false)
@@ -215,9 +219,13 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     <div className="provider-details">
       <div className="provider-details-header">
         <h2>Provider Details</h2>
-        {!defaultIsEditing && (
+        {!defaultIsEditing ? (
           <button className="edit-btn" onClick={() => setIsEditing(!isEditing)}>
             <FiEdit2 /> {isEditing ? 'Cancel Edit' : 'Edit Provider'}
+          </button>
+        ) : isEditing && onCancel && (
+          <button className="edit-btn" onClick={onCancel}>
+            <FiEdit2 /> Cancel
           </button>
         )}
       </div>
@@ -276,7 +284,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             <label>Total Staked</label>
             <div className="stake-group">
               <div className="detail-value">
-                {provider.providerInfo?.stake ? (parseFloat(provider.providerInfo.stake.amount || "0") / Math.pow(10, 18)).toLocaleString('en-US', {
+                {provider.providerInfo?.stake ? (parseFloat(provider.providerInfo.stake.amount || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', {
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 6
                 }) : '0'}
@@ -291,6 +299,24 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
               )}
             </div>
           </div>
+          
+          {defaultIsEditing && (
+            <div className="detail-group wallet-status">
+              <label>Staking Information</label>
+              <div className="staking-info-compact">
+                <div className="staking-info-icon">
+                  <GiTwoCoins className="stake-icon" />
+                </div>
+                <div className="staking-info-content">
+                  <span className="staking-info-value">
+                    {walletBalance !== null ? 
+                      `${(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : 
+                      "0"} / 10,000 tokens
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="detail-group">
             <label>Delegation Fee *</label>
@@ -335,24 +361,25 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
               0
             </div>
           </div>
-        </div>
-
-        <div className="detail-group">
-          <label>Description *</label>
-          {isEditing ? (
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="edit-input"
-              placeholder="Enter description (required)"
-              required
-            />
-          ) : (
-            <div className="detail-value description">
-              {parsedDetails.description || 'N/A'}
-            </div>
-          )}
+          
+          {/* Description moved next to random value fee */}
+          <div className="detail-group description-group">
+            <label>Description *</label>
+            {isEditing ? (
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="edit-input"
+                placeholder="Enter description (required)"
+                required
+              />
+            ) : (
+              <div className="detail-value description">
+                {parsedDetails.description || 'N/A'}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Provider Status Section */}

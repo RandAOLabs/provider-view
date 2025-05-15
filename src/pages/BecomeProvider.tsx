@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { ConnectWallet } from '../components/common/ConnectWallet';
 import { ProviderDetails } from '../components/providers/ProviderDetails';
-import { aoHelpers, MINIMUM_STAKE_AMOUNT } from '../utils/ao-helpers';
+import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../utils/ao-helpers';
 import './BecomeProvider.css';
 import { ProviderInfoAggregate } from 'ao-process-clients';
 
@@ -133,17 +133,12 @@ export default function BecomeProvider() {
               <h2>Welcome to the Network!</h2>
               <p>You are already a provider. You can view and edit your details below.</p>
             </div>
-            <ProviderDetails provider={provider} />
+            <ProviderDetails provider={provider} walletBalance={walletBalance} />
           </>
         ) : (
           <div className="provider-form">
-            <div className="wallet-info">
-              <p>Minimum stake required: {parseInt(MINIMUM_STAKE_AMOUNT) / 1e18} tokens</p>
-              {walletBalance !== null && (
-                <p>Your wallet balance: {parseInt(walletBalance) / 1e18} tokens</p>
-              )}
-            </div>
             <ProviderDetails 
+              walletBalance={walletBalance}
               provider={{
                 providerId: address,
                 providerInfo: {

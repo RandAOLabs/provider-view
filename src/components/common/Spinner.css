@@ -29,3 +29,19 @@
   color: #666;
   font-size: 16px;
 }
+
+/* Button Spinner */
+.button-spinner-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-spinner {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 2px solid #3498db;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}

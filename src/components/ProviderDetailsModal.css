@@ -1,0 +1,283 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.modal-container {
+  background-color: #1a1a2e;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  position: relative;
+  color: #e6e6e6;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #2a2a42;
+  position: sticky;
+  top: 0;
+  background-color: #1a1a2e;
+  z-index: 1;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #fff;
+  flex-grow: 1;
+}
+
+.provider-version {
+  background-color: #2d4059;
+  color: #83c5be;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-right: 15px;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #a2a2c3;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-button:hover {
+  color: #fff;
+}
+
+.modal-content {
+  padding: 15px;
+}
+
+.modal-section {
+  margin-bottom: 15px;
+  background-color: #212135;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.modal-section h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #83c5be;
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+}
+
+.section-icon {
+  margin-right: 8px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  color: #a2a2c3;
+  margin-bottom: 4px;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  color: #e6e6e6; /* Improved contrast from white */
+  word-break: break-word;
+}
+
+.step-timing-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.step-timing-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-name {
+  width: 60px;
+  font-size: 0.85rem;
+  color: #a2a2c3;
+}
+
+.step-time {
+  width: 70px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: #e6e6e6; /* Improved contrast from white */
+}
+
+.step-bar-container {
+  flex-grow: 1;
+  height: 8px;
+  background-color: #2d2d44;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.step-bar {
+  height: 100%;
+  background-color: #4cc9f0;
+  border-radius: 4px;
+}
+
+.health-section {
+  margin-bottom: 0;
+}
+
+.health-detail-item {
+  display: flex;
+  flex-direction: column;
+  background-color: #282842;
+  padding: 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.health-detail-item:hover {
+  background-color: #2d2d4a;
+}
+
+.health-status {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  gap: 8px;
+}
+
+.status-healthy {
+  background-color: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.status-warning {
+  background-color: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.status-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+/* Provider status section for toggle inside modal */
+.provider-status-section {
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  background-color: #212135;
+  border-radius: 6px;
+}
+
+.provider-status {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 6px;
+  margin-top: 0;
+}
+
+.provider-status .status-message {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.status-action-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e6e6e6;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.status-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.provider-status-active {
+  background-color: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.provider-status-user-off,
+.provider-status-process-off,
+.provider-status-team-off {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-healthy .status-indicator {
+  background-color: #34d399;
+}
+
+.status-warning .status-indicator {
+  background-color: #fbbf24;
+}
+
+.status-error .status-indicator {
+  background-color: #ef4444;
+}
+
+.status-text {
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.error-count {
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 40px 0;
+  color: #a2a2c3;
+  font-style: italic;
+}

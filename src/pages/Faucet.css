@@ -1,0 +1,145 @@
+.faucet-container {
+  padding: 4rem 2rem;
+  width: 100%;
+  background: #ffffff;
+}
+
+.faucet-container h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: #000000;
+  font-weight: 600;
+}
+
+.faucet-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  max-width: 800px;
+  margin: 0 auto;
+  transition: transform 0.3s ease;
+}
+
+.faucet-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.faucet-info {
+  margin-bottom: 2rem;
+}
+
+.faucet-info h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #000000;
+  font-weight: 600;
+}
+
+.faucet-info p, .faucet-info ul {
+  margin-bottom: 1.5rem;
+  color: rgba(0, 0, 0, 0.7);
+  line-height: 1.6;
+}
+
+.faucet-info ul {
+  padding-left: 1.5rem;
+  list-style-type: disc;
+}
+
+.faucet-info li {
+  margin-bottom: 0.5rem;
+}
+
+.exchange-rate {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.token-exchange {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.token-amount {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #000000;
+}
+
+.exchange-arrow {
+  font-size: 2rem;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.connect-wallet-button, .faucet-button {
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.connect-wallet-button:hover, .faucet-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.faucet-button.loading {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  color: #856404;
+  border-radius: 8px;
+}
+
+.success-message {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  color: #155724;
+  border-radius: 8px;
+}
+
+.success-message h3 {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #155724;
+}
+
+.tx-hash {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-family: monospace;
+  word-break: break-all;
+  margin: 0.75rem 0;
+}
+
+.tx-hash span {
+  color: #212529;
+  font-size: 0.9rem;
+}
