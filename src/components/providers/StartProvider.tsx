@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { ProviderDetails } from './ProviderDetails'
 import { ProviderInfoAggregate } from 'ao-process-clients'
 import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
+import { useWallet } from '../../contexts/WalletContext'
 import './StartProvider.css'
 
 interface StartProviderProps {
@@ -10,6 +11,7 @@ interface StartProviderProps {
 }
 
 export const StartProvider: React.FC<StartProviderProps> = ({ currentProvider }) => {
+  const { address: walletAddress } = useWallet()
   const [isLoading, setIsLoading] = useState(true)
   const [provider, setProvider] = useState<ProviderInfoAggregate | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -83,10 +85,12 @@ export const StartProvider: React.FC<StartProviderProps> = ({ currentProvider })
 
   // Fetch wallet balance if we're showing the staking form
   useEffect(() => {
-    if (showStakingForm && currentProvider?.providerId && !walletBalance) {
+    if (showStakingForm && walletAddress && !walletBalance) {
       const fetchBalance = async () => {
         try {
-          const balance = await aoHelpers.getWalletBalance(currentProvider.providerId);
+          console.log('Fetching wallet balance for:', walletAddress);
+          const balance = await aoHelpers.getWalletBalance(walletAddress);
+          console.log('Wallet balance received:', balance);
           setWalletBalance(balance);
         } catch (err) {
           console.error('Error fetching wallet balance:', err);
@@ -94,7 +98,7 @@ export const StartProvider: React.FC<StartProviderProps> = ({ currentProvider })
       };
       fetchBalance();
     }
-  }, [showStakingForm, currentProvider, walletBalance]);
+  }, [showStakingForm, walletAddress, walletBalance]);
 
   // Show nothing while loading
   if (isLoading) {
@@ -122,7 +126,7 @@ export const StartProvider: React.FC<StartProviderProps> = ({ currentProvider })
           <ProviderDetails 
             walletBalance={walletBalance}
             provider={{
-              providerId: currentProvider?.providerId || '',
+              providerId: walletAddress || '',
               providerInfo: {
                 created_at: Date.now(),
                 provider_details: {
@@ -135,9 +139,9 @@ export const StartProvider: React.FC<StartProviderProps> = ({ currentProvider })
                   timestamp: Date.now(),
                   status: 'active',
                   token: 'RANDAO',
-                  provider_id: currentProvider?.providerId || ''
+                  provider_id: walletAddress || ''
                 },
-                provider_id: currentProvider?.providerId || ''
+                provider_id: walletAddress || ''
               }
             } as unknown as ProviderInfoAggregate}
             isEditing={true}

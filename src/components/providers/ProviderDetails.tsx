@@ -106,6 +106,10 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     });
     setChanges(newChanges);
   }, [formData, parsedDetails]);
+  
+  // Determine if this is a new provider setup (no stake)
+  const isNewProviderSetup = defaultIsEditing && 
+    (!provider.providerInfo?.stake || parseFloat(provider.providerInfo?.stake?.amount || '0') === 0);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -300,9 +304,10 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             </div>
           </div>
           
-          {defaultIsEditing && (
+          {/* Always show wallet balance for new provider setup, optionally show it for existing providers */}
+          {(isNewProviderSetup || defaultIsEditing) && (
             <div className="detail-group wallet-status">
-              <label>Staking Information</label>
+              <label>{isNewProviderSetup ? "Available Balance for Staking" : "Staking Information"}</label>
               <div className="staking-info-compact">
                 <div className="staking-info-icon">
                   <GiTwoCoins className="stake-icon" />
@@ -313,6 +318,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                       `${(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : 
                       "0"} / 10,000 tokens
                   </span>
+                  {isNewProviderSetup && (
+                    <p className="staking-info-note">10,000 tokens required to become a provider</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -339,28 +347,33 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             )}
           </div>
           
-          <div className="detail-group">
-            <label>Random Available</label>
-            <div className="detail-value">
-              {provider.providerActivity?.random_balance !== undefined ? 
-                provider.providerActivity.random_balance : 'N/A'}
-            </div>
-          </div>
-          
-          <div className="detail-group">
-            <label>Random Provided</label>
-            <div className="detail-value">
-              {provider.totalFullfullilled !== undefined ? 
-                provider.totalFullfullilled : '0'}
-            </div>
-          </div>
-          
-          <div className="detail-group">
-            <label>Random Value Fee</label>
-            <div className="detail-value">
-              0
-            </div>
-          </div>
+          {/* Only show provider-specific metrics if not in setup mode */}
+          {!isNewProviderSetup && (
+            <>
+              <div className="detail-group">
+                <label>Random Available</label>
+                <div className="detail-value">
+                  {provider.providerActivity?.random_balance !== undefined ? 
+                    provider.providerActivity.random_balance : 'N/A'}
+                </div>
+              </div>
+              
+              <div className="detail-group">
+                <label>Random Provided</label>
+                <div className="detail-value">
+                  {provider.totalFullfullilled !== undefined ? 
+                    provider.totalFullfullilled : '0'}
+                </div>
+              </div>
+              
+              <div className="detail-group">
+                <label>Random Value Fee</label>
+                <div className="detail-value">
+                  0
+                </div>
+              </div>
+            </>
+          )}
           
           {/* Description moved next to random value fee */}
           <div className="detail-group description-group">
@@ -382,47 +395,51 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
           </div>
         </div>
 
-        {/* Provider Status Section */}
-        <div className="detail-group provider-status-section">
-          <label>Provider Status</label>
-          {availableRandom !== null ? (
-            <div className={`provider-status ${getRandomStatusMessage().className}`}>
-              <div className="status-message">
-                <div>
-                  <p><strong>{getRandomStatusMessage().message}</strong></p>
-                  {getRandomStatusMessage().subMessage && (
-                    <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
-                      {getRandomStatusMessage().subMessage}
-                    </p>
+        {/* Provider Status Section - Only shown for existing providers */}
+        {!isNewProviderSetup && (
+          <div className="detail-group provider-status-section">
+            <label>Provider Status</label>
+            {availableRandom !== null ? (
+              <div className={`provider-status ${getRandomStatusMessage().className}`}>
+                <div className="status-message">
+                  <div>
+                    <p><strong>{getRandomStatusMessage().message}</strong></p>
+                    {getRandomStatusMessage().subMessage && (
+                      <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
+                        {getRandomStatusMessage().subMessage}
+                      </p>
+                    )}
+                  </div>
+                  <button 
+                    className="status-action-btn"
+                    onClick={() => handleUpdateAvailableRandom(getRandomStatusMessage().value)}
+                    disabled={isUpdatingRandom}
+                  >
+                    {isUpdatingRandom ? (
+                      <span className="loading-spinner"><BiRefresh className="spin" /></span>
+                    ) : (
+                      <>
+                        <FiPower /> {getRandomStatusMessage().action}
+                      </>
+                    )}
+                  </button>
+                  {randomUpdateSuccess && (
+                    <div className="success-message">Provider status updated successfully!</div>
                   )}
                 </div>
-                <button 
-                  className="status-action-btn"
-                  onClick={() => handleUpdateAvailableRandom(getRandomStatusMessage().value)}
-                  disabled={isUpdatingRandom}
-                >
-                  {isUpdatingRandom ? (
-                    <span className="loading-spinner"><BiRefresh className="spin" /></span>
-                  ) : (
-                    <>
-                      <FiPower /> {getRandomStatusMessage().action}
-                    </>
-                  )}
-                </button>
-                {randomUpdateSuccess && (
-                  <div className="success-message">Provider status updated successfully!</div>
-                )}
               </div>
-            </div>
-          ) : (
-            <div className="detail-value">Loading status...</div>
-          )}
-        </div>
+            ) : (
+              <div className="detail-value">Loading status...</div>
+            )}
+          </div>
+        )}
 
-        {/* Active Requests Section */}
-        <div className="detail-group">
-          <ActiveRequests providerId={provider.providerId} />
-        </div>
+        {/* Active Requests Section - Only shown for existing providers */}
+        {!isNewProviderSetup && (
+          <div className="detail-group">
+            <ActiveRequests providerId={provider.providerId} />
+          </div>
+        )}
 
         <div className="social-group">
           <div className="social-item">
@@ -490,14 +507,15 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
           </div>
         </div>
 
-        {isEditing && changeCount > 0 && (
+        {/* Always show button in setup mode, otherwise only show when there are changes */}
+        {(isEditing && (isNewProviderSetup || changeCount > 0)) && (
           <button 
             type="button" 
             className="save-btn" 
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {submitLabel} ({changeCount} change{changeCount !== 1 ? 's' : ''})
+            {isNewProviderSetup ? submitLabel : `${submitLabel} (${changeCount} change${changeCount !== 1 ? 's' : ''})`}
           </button>
         )}
       </div>

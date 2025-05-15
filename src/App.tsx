@@ -7,7 +7,6 @@ import { Raffle, Lootbox, CriticalStrike, Lottery, RandomNumber } from './pages/
 // Documentation page temporarily commented out - DO NOT REMOVE
 // import Docs from './pages/Docs'
 import About from './pages/About'
-import BecomeProvider from './pages/BecomeProvider'
 import InfoHow from './pages/InfoHow'
 import Admin from './pages/Admin'
 import Faucet from './pages/Faucet'
@@ -34,7 +33,6 @@ function App() {
             <Route path="/docs" element={<Docs />} />
             */}
             <Route path="/about" element={<About />} />
-            <Route path="/become-provider" element={<BecomeProvider />} />
             <Route path="/info/how" element={<InfoHow />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/faucet" element={<Faucet />} />

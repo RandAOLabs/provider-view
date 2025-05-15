@@ -71,12 +71,6 @@ export const Sidebar = () => {
           <FiPackage />
           Products
         </Link> */}
-        {( (!isConnected || !isProvider) && finishedLoading) && (
-          <Link to="/become-provider" className={`nav-item ${isActive('/become-provider') ? 'active' : ''}`}>
-            <FiUserPlus />
-            Become a Provider
-          </Link>
-        )}
       </nav>
       <div className="bottom-section">
         <div className="bottom-nav">
