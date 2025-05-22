@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { FiX, FiServer, FiCpu, FiHardDrive, FiActivity, FiHash, FiPower } from 'react-icons/fi';
+import { FiX, FiServer, FiCpu, FiHardDrive, FiActivity, FiHash, FiPower, FiCheck, FiAlertTriangle, FiClock } from 'react-icons/fi';
 import { BiRefresh } from 'react-icons/bi';
-import { ProviderMonitoringData } from '../types/monitoring';
+import { MonitoringData } from 'ao-process-clients';
 import { aoHelpers } from '../utils/ao-helpers';
 import './ProviderDetailsModal.css';
 
@@ -10,7 +10,7 @@ interface ProviderDetailsModalProps {
   onClose: () => void;
   providerId: string;
   providerName: string;
-  monitoringData?: ProviderMonitoringData;
+  monitoringData?: MonitoringData;
   providerIsActive?: boolean;
   availableRandom?: number | null;
 }
@@ -27,7 +27,6 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
   const [providerStatus, setProviderStatus] = useState(availableRandom);
-  if (!isOpen) return null;
   
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -42,6 +41,60 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
   // Helper function to format percentage
   const formatPercentage = (percentage: number) => {
     return `${percentage.toFixed(1)}%`;
+  };
+  
+  // Utility function to format uptime from seconds to a readable format
+  const formatUptime = (uptimeSeconds?: number) => {
+    if (uptimeSeconds === undefined || uptimeSeconds === null) return 'Unknown';
+    const days = Math.floor(uptimeSeconds / 86400);
+    const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
+  // Format memory in a readable way
+  const formatMemory = (bytes?: number) => {
+    if (bytes === undefined || bytes === null) return 'Unknown';
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
+  // Format load average
+  const formatLoadAvg = (loadAvg?: number[]) => {
+    if (!loadAvg || loadAvg.length === 0) return 'Unknown';
+    return loadAvg.map(v => v.toFixed(2)).join(', ');
+  };
+  
+  // Format network stats
+  const formatNetworkSpeed = (bytesPerSec?: number) => {
+    if (bytesPerSec === undefined || bytesPerSec === null) return 'Unknown';
+    if (bytesPerSec > 1024 * 1024) {
+      return `${(bytesPerSec / (1024 * 1024)).toFixed(2)} MB/s`;
+    } else if (bytesPerSec > 1024) {
+      return `${(bytesPerSec / 1024).toFixed(2)} KB/s`;
+    }
+    return `${bytesPerSec.toFixed(2)} B/s`;
+  };
+  
+  // Safe access helper for deep properties
+  const safeGet = <T,>(obj: any, path: string, defaultValue: T): T => {
+    try {
+      const parts = path.split('.');
+      let current = obj;
+      for (const part of parts) {
+        if (current === undefined || current === null) return defaultValue;
+        current = current[part];
+      }
+      return (current === undefined || current === null) ? defaultValue : current as T;
+    } catch (e) {
+      console.log(`Error accessing path ${path}:`, e);
+      return defaultValue;
+    }
   };
   
   // Handle provider status toggle
@@ -100,6 +153,8 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
   };
 
   // If no monitoring data is available
+  if (!isOpen) return null;
+  
   if (!monitoringData) {
     return (
       <div className="modal-overlay">
@@ -115,143 +170,172 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
       </div>
     );
   }
-
+  
   return (
     <div className="modal-overlay">
       <div className="modal-container">
         <div className="modal-header">
           <h2>{providerName || providerId.slice(0, 10) + '...'}</h2>
-          <div className="provider-version">v{monitoringData.providerVersion || 'unknown'}</div>
+          <div className="provider-meta">
+            <div className="provider-version">v{monitoringData.providerVersion || 'unknown'}</div>
+            <div className="provider-timestamp"><FiClock /> {new Date(monitoringData.timestamp || '').toLocaleString()}</div>
+          </div>
           <button className="close-button" onClick={onClose}><FiX /></button>
         </div>
         
         <div className="modal-content">
-          {/* Provider Status Toggle - Moved to top */}
-          <div className="provider-status-section">
-            {providerStatus !== null ? (
-              <div className={`provider-status ${getStatusMessage().className}`}>
-                <div className="status-message">
-                  <div>
-                    <p><strong>{getStatusMessage().message}</strong></p>
-                    {getStatusMessage().subMessage && (
-                      <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
-                        {getStatusMessage().subMessage}
-                      </p>
-                    )}
-                  </div>
-                  <button 
-                    className="status-action-btn"
-                    onClick={() => handleUpdateProviderStatus(getStatusMessage().value)}
-                    disabled={isUpdatingStatus}
-                  >
-                    {isUpdatingStatus ? (
-                      <span className="loading-spinner"><BiRefresh className="spin" /></span>
-                    ) : (
-                      <>
-                        <FiPower /> {getStatusMessage().action}
-                      </>
-                    )}
-                  </button>
-                  {statusUpdateSuccess && (
-                    <div className="success-message">Provider status updated successfully!</div>
-                  )}
+          
+          {/* Health Status Section */}
+          <div className="detail-section health-status-section">
+            <h3><FiActivity /> Health Status</h3>
+            <div className="health-status-container">
+              <div className={`health-status-indicator ${safeGet<string>(monitoringData, 'health.status', 'unknown')}`}>
+                {safeGet<string>(monitoringData, 'health.status', 'unknown') === 'healthy' ? 
+                  <FiCheck className="health-icon" /> : 
+                  <FiAlertTriangle className="health-icon" />
+                }
+                <span className="health-status-text">{safeGet(monitoringData, 'health.status', 'Unknown')}</span>
+              </div>
+              
+              <div className="health-metrics">
+                <div className="detail-row">
+                  <span className="detail-label">Total Errors:</span>
+                  <span className="detail-value">{safeGet(monitoringData, 'health.errorTotal', 0)}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Errors Last Hour:</span>
+                  <span className="detail-value">{safeGet(monitoringData, 'health.errorsLastHour', 0)}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Errors Last Day:</span>
+                  <span className="detail-value">{safeGet(monitoringData, 'health.errorsLastDay', 0)}</span>
                 </div>
               </div>
-            ) : (
-              <div className="detail-value">Loading status...</div>
-            )}
+            </div>
           </div>
           
-          <div className="modal-section">
-            <h3><FiCpu className="section-icon" /> System Specs</h3>
+          {/* System Specs Section */}
+          <div className="detail-section system-specs-section">
+            <h3><FiServer /> System Specifications</h3>
             <div className="detail-grid">
-
-              <div className="detail-item">
-                <span className="detail-label">Architecture</span>
-                <span className="detail-value">{monitoringData.systemSpecs?.arch || 'Unknown'}</span>
+              <div className="detail-row">
+                <span className="detail-label">Hostname:</span>
+                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.hostname', 'Unknown')}</span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">CPU Cores</span>
-                <span className="detail-value">{monitoringData.systemSpecs?.cpuCount || 'Unknown'}</span>
+              <div className="detail-row">
+                <span className="detail-label">Architecture:</span>
+                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.arch', 'Unknown')}</span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Memory</span>
-                <span className="detail-value">{monitoringData.systemSpecs?.memoryTotalBytes ? formatBytes(monitoringData.systemSpecs.memoryTotalBytes) : 'Unknown'}</span>
+              <div className="detail-row">
+                <span className="detail-label">OS Platform:</span>
+                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.platform', 'Unknown')}</span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Token</span>
-                <span className="detail-value">{monitoringData.systemSpecs?.token || 'Unknown'}</span>
+              <div className="detail-row">
+                <span className="detail-label">CPU Count:</span>
+                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.cpuCount', 'Unknown')}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">CPU Model:</span>
+                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.cpuModel', 'Unknown')}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Total Memory:</span>
+                <span className="detail-value">{formatMemory(safeGet(monitoringData, 'systemSpecs.memoryTotalBytes', undefined))}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Uptime:</span>
+                <span className="detail-value">{formatUptime(safeGet(monitoringData, 'systemSpecs.uptime', undefined))}</span>
               </div>
             </div>
           </div>
           
-          <div className="modal-section">
-            <h3><FiActivity className="section-icon" /> Performance</h3>
+          {/* Performance Metrics Section */}
+          <div className="detail-section performance-section">
+            <h3><FiCpu /> Performance Metrics</h3>
             <div className="detail-grid">
-              <div className="detail-item">
-                <span className="detail-label">Load Average (1m/5m/15m)</span>
+              <div className="detail-row">
+                <span className="detail-label">Load Average:</span>
+                <span className="detail-value">{formatLoadAvg(safeGet(monitoringData, 'performance.loadAverage', undefined))}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Memory Used:</span>
                 <span className="detail-value">
-                  {monitoringData.performance?.loadAverage ? monitoringData.performance.loadAverage.map(load => load.toFixed(2)).join(' / ') : 'Unknown'}
+                  {safeGet(monitoringData, 'performance.memoryUsedPercent', 'Unknown') !== 'Unknown'
+                    ? `${safeGet(monitoringData, 'performance.memoryUsedPercent', 0).toFixed(2)}%`
+                    : 'Unknown'}
                 </span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Memory Used</span>
-                <span className="detail-value">{monitoringData.performance?.memoryUsedPercent ? formatPercentage(monitoringData.performance.memoryUsedPercent) : 'Unknown'}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Disk Used</span>
-                <span className="detail-value">{monitoringData.performance?.diskUsedPercent ? formatPercentage(monitoringData.performance.diskUsedPercent) : 'Unknown'}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Network Rx/Tx</span>
+              <div className="detail-row">
+                <span className="detail-label">Disk Used:</span>
                 <span className="detail-value">
-                  {monitoringData.performance?.network ? `${formatBytes(monitoringData.performance.network.rxBytes)} / ${formatBytes(monitoringData.performance.network.txBytes)}` : 'Unknown'}
+                  {safeGet(monitoringData, 'performance.diskUsedPercent', 'Unknown') !== 'Unknown'
+                    ? `${safeGet(monitoringData, 'performance.diskUsedPercent', 0).toFixed(2)}%`
+                    : 'Unknown'}
                 </span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Overall Execution Time</span>
-                <span className="detail-value">{monitoringData.executionMetrics?.stepTimingsMs?.overall ? `${monitoringData.executionMetrics.stepTimingsMs.overall.toFixed(1)}ms` : 'Unknown'}</span>
+              <div className="detail-row">
+                <span className="detail-label">Network Receive:</span>
+                <span className="detail-value">
+                  {formatNetworkSpeed(safeGet(monitoringData, 'performance.network.rx_sec', undefined))}
+                </span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Network Transmit:</span>
+                <span className="detail-value">
+                  {formatNetworkSpeed(safeGet(monitoringData, 'performance.network.tx_sec', undefined))}
+                </span>
               </div>
             </div>
           </div>
           
-          <div className="modal-section">
-            <h3>Step Timing Breakdown</h3>
-            <div className="step-timing-grid">
-              {monitoringData.executionMetrics?.stepTimingsMs ? Object.entries(monitoringData.executionMetrics.stepTimingsMs)
-                .filter(([key]) => key !== 'overall')
-                .map(([step, time]) => (
-                  <div key={step} className="step-timing-item">
-                    <div className="step-name">{step}</div>
-                    <div className="step-time">{time.toFixed(1)}ms</div>
-                    <div className="step-bar-container">
-                      <div 
-                        className="step-bar" 
-                        style={{
-                          width: `${Math.min(100, (time / monitoringData.executionMetrics.stepTimingsMs.overall) * 100)}%`
-                        }}
-                      />
+          {/* Execution Metrics Section */}
+          <div className="detail-section execution-metrics-section">
+            <h3><FiHash /> Execution Metrics</h3>
+            <div className="detail-grid">
+              {safeGet(monitoringData, 'executionMetrics.stepTimingsMs', null) ? (
+                <>
+                  {Object.entries(safeGet<Record<string, number>>(monitoringData, 'executionMetrics.stepTimingsMs', {})).map(([key, value]) => (
+                    <div className="detail-row" key={key}>
+                      <span className="detail-label">{key}:</span>
+                      <span className="detail-value">
+                        {typeof value === 'number' ? `${value.toFixed(2)} ms` : 'N/A'}
+                      </span>
                     </div>
+                  ))}
+                </>
+              ) : (
+                <div className="detail-row">
+                  <span className="detail-value">No execution metrics available</span>
+                </div>
+              )}
+              
+              {monitoringData.executionMetrics?.stepTimingsMs?.overall && (
+                <div className="step-timing-breakdown">
+                  <h4>Step Timing Breakdown</h4>
+                  <div className="step-timing-grid">
+                    {Object.entries(monitoringData.executionMetrics.stepTimingsMs)
+                      .filter(([key]) => key !== 'overall')
+                      .map(([step, time]) => (
+                        <div key={step} className="step-timing-item">
+                          <div className="step-name">{step}</div>
+                          <div className="step-time">{time.toFixed(1)}ms</div>
+                          <div className="step-bar-container">
+                            <div 
+                              className="step-bar" 
+                              style={{
+                                width: `${Math.min(100, (time / monitoringData.executionMetrics.stepTimingsMs.overall) * 100)}%`
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
                   </div>
-                ))
-              : <div>No step timing data available</div>}
+                </div>
+              )}
             </div>
           </div>
-          
-          <div className="modal-section health-section">
-            <h3>Health Status</h3>
-            <div className={`health-status ${monitoringData.health?.status === 'healthy' ? 'status-healthy' : 'status-warning'}`}>
-              <div className="status-indicator"></div>
-              <span className="status-text">{monitoringData.health?.status ? monitoringData.health.status.toUpperCase() : 'UNKNOWN'}</span>
-              <span className="error-count">Errors: {monitoringData.health?.errors !== undefined ? monitoringData.health.errors : '?'}</span>
-            </div>
-          </div>
-          
-          {/* Provider Status section removed from here since it's moved to the top */}
         </div>
       </div>
     </div>
   );
 };
-
-export default ProviderDetailsModal;

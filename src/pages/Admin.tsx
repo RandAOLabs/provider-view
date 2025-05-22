@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { aoHelpers, TOKEN_DECIMALS } from '../utils/ao-helpers';
+
+// Add type declaration for arweaveWallet on window object
+declare global {
+  interface Window {
+    arweaveWallet: any;
+  }
+}
 import { connect, createDataItemSigner, message } from "@permaweb/aoconnect";
 import { ConnectWallet } from '../components/common/ConnectWallet';
 import { Spinner } from '../components/common/Spinner';
 import { ButtonSpinner } from '../components/common/ButtonSpinner';
-import { ProviderInfoAggregate, RandomClient, RNGToken } from 'ao-process-clients';
+import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData } from 'ao-process-clients';
 import { useWallet } from '../contexts/WalletContext';
 import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo, FiCpu, FiDatabase, FiServer } from 'react-icons/fi';
-import ProviderDetailsModal from '../components/ProviderDetailsModal';
-import { ProviderMonitoringData } from '../types/monitoring';
+import { ProviderDetailsModal } from '../components/ProviderDetailsModal';
 import './Providers.css';
 import './Admin.css';
 
@@ -86,69 +92,47 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
     return searchableText.toLowerCase().includes(searchTerm.toLowerCase());
   });
   
-  // Get monitoring data for a provider
-  const getProviderMonitoringData = (provider: ProviderInfoAggregate): ProviderMonitoringData | undefined => {
-    if (!provider.providerActivity?.provider_info) return undefined;
-    
-    // Check the type of provider_info
-    const providerInfo = provider.providerActivity.provider_info;
-    
+  // Get monitoring data for a provider with enhanced logging
+  const getProviderMonitoringData = (provider: ProviderInfoAggregate): MonitoringData | undefined => {
     try {
-      // If it's already an object, return it directly
-      if (typeof providerInfo === 'object' && providerInfo !== null) {
-        return providerInfo as ProviderMonitoringData;
+      const providerInfo = provider.providerActivity?.provider_info;
+      
+      // Log provider info to debug issues
+      if (provider.providerId) {
+        console.log(`Provider ${provider.providerId} monitoring data:`, 
+          typeof providerInfo === 'string' ? 'String data (needs parsing)' : providerInfo);
       }
       
-      // If it's a string, try to parse it as JSON
+      // If provider_info is a string, try to parse it
       if (typeof providerInfo === 'string') {
-        // Check if it looks like a JSON string (starts with { or [)
-        if (providerInfo.trim().startsWith('{') || providerInfo.trim().startsWith('[')) {
-          return JSON.parse(providerInfo);
-        } else {
-          // It's a non-JSON string, create a minimal monitoring data object 
-          return {
-            providerVersion: 'unknown',
-            systemSpecs: {
-              platform: 'unknown',
-              release: 'unknown',
-              arch: 'unknown',
-              cpuCount: 0,
-              memoryTotalBytes: 0,
-              token: 'unknown'
-            },
-            performance: {
-              loadAverage: [0, 0, 0],
-              memoryUsedPercent: 0,
-              diskUsedPercent: 0,
-              network: {
-                rxBytes: 0,
-                txBytes: 0,
-                rxPackets: 0,
-                txPackets: 0
-              }
-            },
-            executionMetrics: {
-              stepTimingsMs: {
-                step1: 0,
-                step2: 0,
-                step3: 0,
-                step4: 0,
-                overall: 0
-              }
-            },
-            health: {
-              errors: 0,
-              status: 'unknown'
-            }
-          };
+        try {
+          return JSON.parse(providerInfo) as MonitoringData;
+        } catch (parseError) {
+          console.error('Failed to parse provider_info string:', parseError);
+          return undefined;
         }
       }
       
-      // If it's neither an object nor a string, return undefined
-      return undefined;
+      return providerInfo as MonitoringData | undefined;
     } catch (error) {
-      console.error('Error processing provider monitoring data:', error);
+      console.error('Error getting provider monitoring data:', error);
       return undefined;
+    }
+  };
+  
+  // Safe access helper for deep properties
+  const safeGet = <T,>(obj: any, path: string, defaultValue: T): T => {
+    try {
+      const parts = path.split('.');
+      let current = obj;
+      for (const part of parts) {
+        if (current === undefined || current === null) return defaultValue;
+        current = current[part];
+      }
+      return (current === undefined || current === null) ? defaultValue : current as T;
+    } catch (e) {
+      console.log(`Error accessing path ${path}:`, e);
+      return defaultValue;
     }
   };
   
@@ -483,35 +467,35 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
                     <div className="provider-metrics">
                       <div className="metric-row">
                         <div className="metric">
-                          <span className="metric-label">Disk:</span>
+                          <span className="metric-label">Status:</span>
                           <span className={monitoringData ? "metric-value" : "metric-value missing"}>
-                            {monitoringData && monitoringData.performance?.diskUsedPercent ? `${monitoringData.performance.diskUsedPercent.toFixed(1)}%` : "N/A"}
+                            {safeGet(monitoringData, 'health.status', 'N/A')}
                           </span>
                         </div>
                         <div className="metric">
-                          <span className="metric-label">Load:</span>
+                          <span className="metric-label">Uptime:</span>
                           <span className={monitoringData ? "metric-value" : "metric-value missing"}>
-                            {monitoringData && monitoringData.performance?.loadAverage && monitoringData.performance.loadAverage.length > 0 ? monitoringData.performance.loadAverage[0].toFixed(1) : "N/A"}
+                            {safeGet(monitoringData, 'systemSpecs.uptime', null) ? 
+                              `${Math.floor(safeGet(monitoringData, 'systemSpecs.uptime', 0) / 3600)}h` : "N/A"}
                           </span>
                         </div>
                       </div>
                       
                       <div className="metric-row">
                         <div className="metric">
-                          <span className="metric-label">Proc Time:</span>
+                          <span className="metric-label">Last Update:</span>
                           <span className={monitoringData ? "metric-value" : "metric-value missing"}>
-                            {monitoringData && monitoringData.executionMetrics?.stepTimingsMs?.overall ? `${monitoringData.executionMetrics.stepTimingsMs.overall.toFixed(0)}ms` : "N/A"}
+                            {safeGet(monitoringData, 'timestamp', null) ? 
+                              new Date(safeGet(monitoringData, 'timestamp', '')).toLocaleTimeString() : "N/A"}
                           </span>
                         </div>
                         <div className="health-indicator" title="Provider health status">
-                          {monitoringData ? (
-                            <div className={`status-dot ${monitoringData.health.status}`}></div>
-                          ) : (
-                            <div className="status-dot missing"></div>
+                          <span className={`status-circle ${safeGet(monitoringData, 'health.status', 'unknown')}`}></span>
+                          {safeGet(monitoringData, 'health.errorTotal', 0) > 0 && (
+                            <span className="error-count" title={`${safeGet(monitoringData, 'health.errorTotal', 0)} errors detected`}>
+                              {safeGet(monitoringData, 'health.errorTotal', 0)}
+                            </span>
                           )}
-                          <span className={monitoringData ? `status-text ${monitoringData.health.status}` : "status-text missing"}>
-                            {monitoringData ? monitoringData.health.status : "N/A"}
-                          </span>
                         </div>
                       </div>
                     </div>

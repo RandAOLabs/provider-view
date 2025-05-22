@@ -1,4 +1,7 @@
-export interface ProviderMonitoringData {
+import { MonitoringData } from 'ao-process-clients';
+
+// Legacy interface (kept for backward compatibility)
+export interface LegacyProviderMonitoringData {
   providerVersion: string;
   
   systemSpecs: {
@@ -37,3 +40,6 @@ export interface ProviderMonitoringData {
     status: string;
   };
 }
+
+// Using the official MonitoringData type from ao-process-clients
+export type ProviderMonitoringData = MonitoringData;
