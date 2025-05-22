@@ -129,6 +129,68 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
     }))
   }
 
+  // Helper function to extract provider version
+  const getProviderVersion = (provider: ProviderInfoAggregate): string => {
+    if (!provider.providerActivity?.provider_info) return '';
+    
+    // Handle different types of provider_info
+    const info = provider.providerActivity.provider_info;
+    
+    // If it's already a string
+    if (typeof info === 'string') {
+      try {
+        // Try to parse as JSON
+        const providerInfo = JSON.parse(info);
+        return providerInfo.providerVersion ? `${providerInfo.providerVersion}` : '';
+      } catch (e) {
+        // If it's not valid JSON, return the string as is
+        return info;
+      }
+    }
+    
+    // If it's an object, try to access providerVersion directly
+    if (typeof info === 'object' && info !== null) {
+      return (info as any).providerVersion ? `${(info as any).providerVersion}` : '';
+    }
+    
+    // Default fallback
+    return '';
+  };
+
+  // Helper function to compare version strings
+  const compareVersions = (versionA: string, versionB: string): number => {
+    // Remove 'v' prefix if present
+    const cleanA = versionA.replace(/^v/, '');
+    const cleanB = versionB.replace(/^v/, '');
+    
+    // If either string is empty, put it at the end
+    if (!cleanA && !cleanB) return 0;
+    if (!cleanA) return 1; // A is empty, B has value, A should come after B
+    if (!cleanB) return -1; // B is empty, A has value, A should come before B
+    
+    // Split by dots and compare each segment
+    const segmentsA = cleanA.split('.');
+    const segmentsB = cleanB.split('.');
+    
+    // Compare each segment numerically if possible
+    const maxLength = Math.max(segmentsA.length, segmentsB.length);
+    for (let i = 0; i < maxLength; i++) {
+      const segA = i < segmentsA.length ? parseInt(segmentsA[i], 10) : 0;
+      const segB = i < segmentsB.length ? parseInt(segmentsB[i], 10) : 0;
+      
+      // If segments can't be parsed as numbers, fall back to string comparison
+      const numA = isNaN(segA) ? 0 : segA;
+      const numB = isNaN(segB) ? 0 : segB;
+      
+      if (numA !== numB) {
+        // Return B - A instead of A - B to get higher versions first
+        return numB - numA;
+      }
+    }
+    
+    return 0; // Versions are equal
+  };
+
   const sortedProviders = useMemo(() => {
     if (isLoading || providers.length === 0) {
       return [];
@@ -138,7 +200,16 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
       const aActive = a.providerActivity?.active ? 1 : 0;
       const bActive = b.providerActivity?.active ? 1 : 0;
   
-      if (sortConfig.key === 'active' || aActive !== bActive) {
+      if (sortConfig.key === 'status') {
+        // Sort by provider version
+        const aVersion = getProviderVersion(a);
+        const bVersion = getProviderVersion(b);
+        // The compareVersions function now returns higher versions first,
+        // so we need to invert the logic for asc/desc
+        return sortConfig.direction === 'desc' 
+          ? compareVersions(aVersion, bVersion) 
+          : compareVersions(bVersion, aVersion);
+      } else if (sortConfig.key === 'active' || aActive !== bActive) {
         if (aActive === bActive) {
           const aStake = Number(a.providerInfo?.stake?.amount || "0");
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
@@ -202,8 +273,8 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
         <table>
         <thead>
           <tr>
-            <th onClick={() => handleSort('active')} className="sortable">
-              Status {sortConfig.key === 'active' && (
+            <th onClick={() => handleSort('status')} className="sortable">
+              Status {sortConfig.key === 'status' && (
                 <span className="sort-indicator">
                   {sortConfig.direction === 'asc' ? '↑' : '↓'}
                 </span>
@@ -271,13 +342,31 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                     {provider.providerActivity?.provider_info && (
                       <span className="provider-version">
                         {(() => {
-                          try {
-                            const providerInfo = JSON.parse(provider.providerActivity.provider_info);
-                            return providerInfo.providerVersion ? `v${providerInfo.providerVersion}` : '';
-                          } catch (e) {
-                            console.error('Error parsing provider info:', e);
-                            return '';
+                          const info = provider.providerActivity.provider_info;
+                          
+                          // If it's a string, try to parse as JSON
+                          if (typeof info === 'string') {
+                            try {
+                              const providerInfo = JSON.parse(info);
+                              return providerInfo.providerVersion ? `v${providerInfo.providerVersion}` : '';
+                            } catch (e) {
+                              // If it's not JSON, treat it as a plain string
+                              // Display it directly if it looks like a version or starts with 'v'
+                              if (info.match(/^v?\d/) || info.match(/^v\d+(\.\d+)*$/)) {
+                                return info.startsWith('v') ? info : `v${info}`;
+                              }
+                              // For other strings, just display them as is
+                              return info;
+                            }
                           }
+                          
+                          // If it's an object, try to access providerVersion directly
+                          if (typeof info === 'object' && info !== null) {
+                            const version = (info as any).providerVersion;
+                            return version ? `v${version}` : '';
+                          }
+                          
+                          return '';
                         })()}
                       </span>
                     )}
