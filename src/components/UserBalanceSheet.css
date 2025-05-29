@@ -1,0 +1,138 @@
+.balance-sheet-container {
+  background-color: #f7f9fc;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.balance-sheet-container h2 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+}
+
+.balance-info {
+  margin-bottom: 20px;
+  background-color: white;
+  border-radius: 6px;
+  padding: 15px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.balance-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.balance-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.balance-label {
+  font-weight: 500;
+  color: #555;
+}
+
+.balance-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.prepay-section {
+  background-color: white;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.prepay-section h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.prepay-input-group {
+  display: flex;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.prepay-input-group input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px 0 0 4px;
+  font-size: 1rem;
+}
+
+.prepay-input-group button {
+  background-color: #4a81d1;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.prepay-input-group button:hover {
+  background-color: #3870c0;
+}
+
+.prepay-input-group button:disabled {
+  background-color: #a0b6d6;
+  cursor: not-allowed;
+}
+
+.prepay-input-group button.loading {
+  background-color: #a0b6d6;
+}
+
+.refresh-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #edf2fa;
+  border: 1px solid #d1e0f6;
+  color: #4a81d1;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.refresh-button:hover {
+  background-color: #e3ecf8;
+}
+
+.refresh-button:disabled {
+  color: #9fb4cf;
+  background-color: #f2f5fa;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  color: #388e3c;
+  background-color: #e8f5e9;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { FaucetClient } from 'ao-process-clients';
+import UserBalanceSheet from '../components/UserBalanceSheet';
 import './Faucet.css';
 
 const Faucet: React.FC = () => {
@@ -100,6 +101,8 @@ const Faucet: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {isConnected && <UserBalanceSheet />}
     </div>
   );
 };
