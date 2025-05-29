@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ProviderTable } from '../components/providers/ProviderTable'
-import { StartProvider } from '../components/providers/StartProvider'
+import { ProviderDetails } from '../components/providers/ProviderDetails'
 import { ConnectWallet } from '../components/common/ConnectWallet'
 import { Spinner } from '../components/common/Spinner'
 import { UnresolvedRandomRequests } from '../components/providers/UnresolvedRandomRequests'
@@ -110,7 +110,7 @@ export default function Providers() {
           ) : providers.length > 0 ? (
             <>
               {isReady && !isConnecting && (
-                <StartProvider 
+                <ProviderDetails 
                   currentProvider={providers.find(p => p.providerId === connectedAddress)}
                 />
               )}
