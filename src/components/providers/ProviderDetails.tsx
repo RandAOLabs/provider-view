@@ -8,6 +8,40 @@ import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-proces
 import { ActiveRequests } from './ActiveRequests'
 import './ProviderDetails.css'
 
+// Add CSS for stake status display
+const stakeStatusStyles = `
+.stake-status {
+  font-size: 12px;
+  margin-top: 5px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.stake-status.unstaking {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.stake-status.staked {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.stake-timestamp {
+  font-style: italic;
+  font-weight: normal;
+}
+`;
+
+// Insert the styles into the document
+const styleElement = document.createElement('style');
+styleElement.textContent = stakeStatusStyles;
+document.head.appendChild(styleElement);
+
 interface ProviderDetailsProps {
   provider: ProviderInfoAggregate;
   isEditing?: boolean;
@@ -84,6 +118,28 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       return {};
     }
   }, [provider.providerInfo?.provider_details]);
+
+  // Format timestamp to show how long ago it was
+  const formatTimeAgo = (timestamp: number): string => {
+    const now = Date.now();
+    const diffMs = now - timestamp;
+    
+    // Convert to seconds, minutes, hours, days
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHrs = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHrs / 24);
+    
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    } else if (diffHrs > 0) {
+      return `${diffHrs} hour${diffHrs !== 1 ? 's' : ''} ago`;
+    } else if (diffMin > 0) {
+      return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+    } else {
+      return 'just now';
+    }
+  };
 
   const [formData, setFormData] = useState(() => ({
     name: parsedDetails.name || '',
@@ -292,6 +348,16 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 6
                 }) : '0'}
+                {provider.providerInfo?.stake?.status && (
+                  <div className={`stake-status ${provider.providerInfo.stake.status}`}>
+                    {provider.providerInfo.stake.status}
+                    {provider.providerInfo.stake.timestamp && (
+                      <span className="stake-timestamp">
+                        {' - '}{formatTimeAgo(provider.providerInfo.stake.timestamp)}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               {isEditing && (
                 <button 

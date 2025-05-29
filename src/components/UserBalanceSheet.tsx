@@ -115,7 +115,7 @@ const UserBalanceSheet: React.FC = () => {
 
   return (
     <div className="balance-sheet-container">
-      <h2>Your RNG Balance</h2>
+      <h2>Your RNG Token Balance</h2>
       
       <div className="balance-info">
         <div className="balance-row">
@@ -140,12 +140,13 @@ const UserBalanceSheet: React.FC = () => {
 
       <div className="prepay-section">
         <h3>Prepay for Random Values</h3>
-        <p>Prepay RNG tokens for future random value requests.</p>
+        <p>Pre-purchase RNG tokens for future random value requests without requiring a transaction each time.</p>
         
         <div className="prepay-input-group">
           <input
             type="number"
             min="1"
+            placeholder="Amount to prepay"
             value={prepayAmount}
             onChange={(e) => setPrepayAmount(Math.max(1, parseInt(e.target.value) || 0))}
             disabled={isLoading}
@@ -155,7 +156,7 @@ const UserBalanceSheet: React.FC = () => {
             disabled={isLoading || !isConnected}
             className={isLoading ? 'loading' : ''}
           >
-            {isLoading ? 'Processing...' : 'Prepay RNG'}
+            {isLoading ? 'Processing...' : 'Prepay RNG Tokens'}
           </button>
         </div>
         
