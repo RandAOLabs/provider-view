@@ -3,11 +3,11 @@ import { ProviderTable } from '../components/providers/ProviderTable'
 import { ProviderDetails } from '../components/providers/ProviderDetails'
 import { ConnectWallet } from '../components/common/ConnectWallet'
 import { Spinner } from '../components/common/Spinner'
-import { UnresolvedRandomRequests } from '../components/providers/UnresolvedRandomRequests'
 import { aoHelpers } from '../utils/ao-helpers'
 import { useWallet } from '../contexts/WalletContext'
 import { ProviderInfoAggregate } from 'ao-process-clients'
 import './Providers.css'
+import { RequestFlowMinimal } from '../components/providers/RequestFlowMinimal'
 
 export default function Providers() {
   const [providers, setProviders] = useState<ProviderInfoAggregate[]>([])
@@ -115,11 +115,12 @@ export default function Providers() {
                 />
               )}
               <ProviderTable providers={providers} />
-              {/* TODO ADD THIS BACK WHEN ITS CLEANER. DO NOT REMOVE THIS CODE */}
-              {/* <UnresolvedRandomRequests 
-                providers={providers} 
-                refreshProviders={refreshProviders} 
-              /> */}
+              <div className="admin-section unresolved-requests-section">
+                <h2>Unresolved Random Requests Tracker</h2>
+                <p>Monitor the lifecycle of random requests as they move through the system</p>
+                {/* Ultra-lightweight request flow visualizer with minimal rendering */}
+                <RequestFlowMinimal />
+              </div>
             </>
           ) : (
             <p>No providers available.</p>

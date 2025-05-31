@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiCircle, FiCheck, FiCopy, FiLoader, FiRefreshCw, FiPlay, FiPause } from 'react-icons/fi';
+import { FiCircle, FiCheck, FiCopy, FiLoader, FiRefreshCw, FiPlay, FiPause, FiAlertTriangle } from 'react-icons/fi';
 import { ProviderInfoAggregate, ProviderInfo, ProviderActivity, RequestList } from 'ao-process-clients';
 import { aoHelpers } from '../../utils/ao-helpers';
 import './UnresolvedRandomRequests.css';
@@ -15,6 +15,16 @@ interface ProviderWithRequests {
   outputRequests: string[];
 }
 
+interface RequestStatus {
+  id: string;
+  firstSeen: number; // Timestamp when first detected
+  lastSeen: number;  // Timestamp of last update
+  status: 'challenge' | 'output' | 'disappeared';
+  previousStatus?: 'challenge' | 'output' | 'disappeared'; // For tracking transitions
+  providerIds: string[]; // Which providers this request is associated with
+  defunct: boolean;      // Whether the request has been in the system too long
+}
+
 export const UnresolvedRandomRequests = ({ providers, refreshProviders }: UnresolvedRandomRequestsProps) => {
   const [providersWithRequests, setProvidersWithRequests] = useState<ProviderWithRequests[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +32,7 @@ export const UnresolvedRandomRequests = ({ providers, refreshProviders }: Unreso
   const [expandedLists, setExpandedLists] = useState<{ [key: string]: boolean }>({});
   const [infoDropdownVisible, setInfoDropdownVisible] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
-  const [refreshTimer, setRefreshTimer] = useState<NodeJS.Timeout | null>(null);
+  const [refreshTimer, setRefreshTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   
   // Animation state management with clearer naming for each animation type
   const [updatedProviderIds, setUpdatedProviderIds] = useState<string[]>([]);
@@ -37,9 +47,17 @@ export const UnresolvedRandomRequests = ({ providers, refreshProviders }: Unreso
   
   // State for toggling various debug and visualization features
   const [debugMode] = useState<boolean>(true); // Enable detailed console logs
-  const [showVisualIndicators, setShowVisualIndicators] = useState<boolean>(false); // Toggle for visual indicators
+  const [showVisualIndicators, setShowVisualIndicators] = useState<boolean>(true); // Toggle for visual indicators (default enabled now)
   const [testAnimations, setTestAnimations] = useState<boolean>(false); // Test animation button
   
+  // Track all requests by their IDs with timestamps and status information
+  const [requestStatusMap, setRequestStatusMap] = useState<Map<string, RequestStatus>>(new Map());
+  const [defunctRequests, setDefunctRequests] = useState<string[]>([]); // Track requests that have been in the system too long
+  
+  // Constants for tracking
+  const DEFUNCT_REQUEST_THRESHOLD_MS = 30000; // 30 seconds before a request is considered defunct
+  
+  // Previous state tracking via refs (persists between renders)
   const prevProvidersMapRef = useRef<Map<string, ProviderWithRequests>>(new Map());
   const prevRequestIdsRef = useRef<Set<string>>(new Set());
   const prevChallengeIdsRef = useRef<Set<string>>(new Set());
@@ -48,6 +66,97 @@ export const UnresolvedRandomRequests = ({ providers, refreshProviders }: Unreso
   // How many requests to show initially
   const VISIBLE_REQUESTS_COUNT = 3;
 
+  /**
+   * Update request timestamps and track their status changes
+   * @param currentRequestsMap Map of current request IDs to their statuses
+   */
+  const updateRequestTimestamps = (providersThatHaveRequests: ProviderWithRequests[]) => {
+    const now = Date.now();
+    const currentRequestMap = new Map<string, RequestStatus>();
+    const expiredRequests: string[] = [];
+    
+    // Process all current requests from all providers
+    providersThatHaveRequests.forEach(providerWithRequests => {
+      const providerId = providerWithRequests.provider.providerId;
+      
+      // Process challenge requests
+      providerWithRequests.challengeRequests.forEach(requestId => {
+        const existingStatus = requestStatusMap.get(requestId);
+        let providerIds = existingStatus?.providerIds || [];
+        
+        if (!providerIds.includes(providerId)) {
+          providerIds = [...providerIds, providerId];
+        }
+        
+        currentRequestMap.set(requestId, {
+          id: requestId,
+          firstSeen: existingStatus?.firstSeen || now,
+          lastSeen: now,
+          status: 'challenge',
+          previousStatus: existingStatus?.status || undefined,
+          providerIds,
+          defunct: existingStatus?.defunct || false
+        });
+      });
+      
+      // Process output requests
+      providerWithRequests.outputRequests.forEach(requestId => {
+        const existingStatus = requestStatusMap.get(requestId);
+        let providerIds = existingStatus?.providerIds || [];
+        
+        if (!providerIds.includes(providerId)) {
+          providerIds = [...providerIds, providerId];
+        }
+        
+        currentRequestMap.set(requestId, {
+          id: requestId,
+          firstSeen: existingStatus?.firstSeen || now,
+          lastSeen: now,
+          status: 'output',
+          previousStatus: existingStatus?.status || undefined,
+          providerIds,
+          defunct: existingStatus?.defunct || false
+        });
+      });
+    });
+    
+    // Check for requests that are not in the current set but were in the previous set
+    // Mark them as disappeared
+    requestStatusMap.forEach((status, requestId) => {
+      if (!currentRequestMap.has(requestId)) {
+        // Request has disappeared from all providers
+        currentRequestMap.set(requestId, {
+          ...status,
+          status: 'disappeared',
+          previousStatus: status.status,
+          lastSeen: now
+        });
+      }
+    });
+    
+    // Check for defunct requests (those that have been in the system too long)
+    currentRequestMap.forEach((status, requestId) => {
+      if (status.status !== 'disappeared' && 
+          now - status.firstSeen > DEFUNCT_REQUEST_THRESHOLD_MS) {
+        // Mark as defunct
+        status.defunct = true;
+        expiredRequests.push(requestId);
+      }
+    });
+    
+    if (expiredRequests.length > 0) {
+      console.warn(`Found ${expiredRequests.length} defunct requests:`, 
+        expiredRequests.map(id => id.substring(0, 8) + "...").join(", "));
+      setDefunctRequests(expiredRequests);
+    } else {
+      setDefunctRequests([]);
+    }
+    
+    // Update the request status map
+    setRequestStatusMap(currentRequestMap);
+    return currentRequestMap;
+  };
+  
   // Fetch fresh provider data from API - only refresh this component's data
   const fetchProviderData = async () => {
     try {

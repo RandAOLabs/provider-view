@@ -153,14 +153,9 @@ class AOHelpers {
                     const randclient = await this.getRandomClient();
                     const providers = await service.getAllProviderInfo();
                     const providersactivity = await randclient.getAllProviderActivity();
-                    console.log(providers);
-                    console.log(providersactivity);
                     
                     // Map provider activity to providers and clean up request_ids format
                     if (Array.isArray(providersactivity) && providersactivity.length > 0) {
-                        // Debug the entire providersactivity list
-                        console.log('Full providersactivity structure:', JSON.stringify(providersactivity[0], null, 2));
-                        
                         providers.forEach(provider => {
                             const activity = providersactivity.find(
                                 activity => activity.provider_id === provider.providerId
@@ -174,7 +169,6 @@ class AOHelpers {
                                         try {
                                             // Parse the string to get the object with request_ids
                                             const parsedObj = JSON.parse(activity.active_challenge_requests);
-                                            console.log(`Parsed challenge requests for ${provider.providerId}:`, parsedObj);
                                             
                                             // Replace the string with the parsed object
                                             activity.active_challenge_requests = parsedObj;
@@ -207,7 +201,6 @@ class AOHelpers {
                                         try {
                                             // Parse the string to get the object with request_ids
                                             const parsedObj = JSON.parse(activity.active_output_requests);
-                                            console.log(`Parsed output requests for ${provider.providerId}:`, parsedObj);
                                             
                                             // Replace the string with the parsed object
                                             activity.active_output_requests = parsedObj;
@@ -233,12 +226,6 @@ class AOHelpers {
                                     activity.active_output_requests = { request_ids: [] };
                                 }
                                 
-                                // Log the processed data for debugging
-                                console.log(`Processed activity for ${provider.providerId}:`, {
-                                    challenge_count: activity.active_challenge_requests.request_ids.length,
-                                    output_count: activity.active_output_requests.request_ids.length
-                                });
-                                
                                 provider.providerActivity = activity;
                             }
                         });
@@ -247,7 +234,6 @@ class AOHelpers {
                     // Update cache
                     this._providersCache = providers;
                     this._providersCacheTimestamp = now;
-                    console.log(providers);
                     return providers;
                 } finally {
                     // Clear the promise reference when done (success or failure)

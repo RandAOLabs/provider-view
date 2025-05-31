@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX, FiServer, FiCpu, FiHardDrive, FiActivity, FiHash, FiPower, FiCheck, FiAlertTriangle, FiClock } from 'react-icons/fi';
 import { BiRefresh } from 'react-icons/bi';
 import { MonitoringData } from 'ao-process-clients';
@@ -27,6 +27,13 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
   const [providerStatus, setProviderStatus] = useState(availableRandom);
+  
+  // Add logging when modal opens with monitoring data
+  useEffect(() => {
+    if (isOpen && monitoringData) {
+      console.log('ProviderDetailsModal opened with data:', monitoringData);
+    }
+  }, [isOpen, monitoringData]);
   
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -219,24 +226,12 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
             <h3><FiServer /> System Specifications</h3>
             <div className="detail-grid">
               <div className="detail-row">
-                <span className="detail-label">Hostname:</span>
-                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.hostname', 'Unknown')}</span>
-              </div>
-              <div className="detail-row">
                 <span className="detail-label">Architecture:</span>
                 <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.arch', 'Unknown')}</span>
               </div>
               <div className="detail-row">
-                <span className="detail-label">OS Platform:</span>
-                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.platform', 'Unknown')}</span>
-              </div>
-              <div className="detail-row">
                 <span className="detail-label">CPU Count:</span>
                 <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.cpuCount', 'Unknown')}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">CPU Model:</span>
-                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.cpuModel', 'Unknown')}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Total Memory:</span>
@@ -245,6 +240,10 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
               <div className="detail-row">
                 <span className="detail-label">Uptime:</span>
                 <span className="detail-value">{formatUptime(safeGet(monitoringData, 'systemSpecs.uptime', undefined))}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Token:</span>
+                <span className="detail-value">{safeGet(monitoringData, 'systemSpecs.token', 'Unknown')}</span>
               </div>
             </div>
           </div>
@@ -306,30 +305,6 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
               ) : (
                 <div className="detail-row">
                   <span className="detail-value">No execution metrics available</span>
-                </div>
-              )}
-              
-              {monitoringData.executionMetrics?.stepTimingsMs?.overall && (
-                <div className="step-timing-breakdown">
-                  <h4>Step Timing Breakdown</h4>
-                  <div className="step-timing-grid">
-                    {Object.entries(monitoringData.executionMetrics.stepTimingsMs)
-                      .filter(([key]) => key !== 'overall')
-                      .map(([step, time]) => (
-                        <div key={step} className="step-timing-item">
-                          <div className="step-name">{step}</div>
-                          <div className="step-time">{time.toFixed(1)}ms</div>
-                          <div className="step-bar-container">
-                            <div 
-                              className="step-bar" 
-                              style={{
-                                width: `${Math.min(100, (time / monitoringData.executionMetrics.stepTimingsMs.overall) * 100)}%`
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                  </div>
                 </div>
               )}
             </div>
