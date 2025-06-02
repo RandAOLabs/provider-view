@@ -681,7 +681,16 @@ export default function Admin() {
     setReinitSuccess(prev => ({ ...prev, [providerId]: false }));
 
     try {
-      await aoHelpers.reinitProvider(providerId, window.arweaveWallet, RANDAO_PROCESS_ID);
+      // Find the provider from our context data
+      const providerToReinit = providers.find(p => p.providerId === providerId);
+      
+      // Make sure we have provider data
+      if (!providerToReinit) {
+        throw new Error(`Provider data not found for ${providerId}`);
+      }
+      
+      // Pass the provider data to avoid another API call
+      await aoHelpers.reinitProvider(providerId, window.arweaveWallet, providerToReinit);
       setReinitSuccess(prev => ({ ...prev, [providerId]: true }));
       
       // Reset success indicator after 3 seconds
@@ -727,8 +736,9 @@ export default function Admin() {
         setReinitSuccess(prev => ({ ...prev, [provider.providerId]: false }));
         
         try {
-          // Call reinitialize for this provider
-          await aoHelpers.reinitProvider(provider.providerId, window.arweaveWallet, RANDAO_PROCESS_ID);
+          // Provider data is already available from the filter above
+          // We can be sure it's not undefined
+          await aoHelpers.reinitProvider(provider.providerId, window.arweaveWallet, provider);
           setReinitSuccess(prev => ({ ...prev, [provider.providerId]: true }));
         } catch (err) {
           console.error(`Failed to reinitialize provider ${provider.providerId}:`, err);

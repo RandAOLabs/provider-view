@@ -122,179 +122,12 @@ class AOHelpers {
     private _providersPromise: Promise<ProviderInfoAggregate[]> | null = null;
     private readonly CACHE_LIFETIME_MS = 300000; // 5 minutes cache lifetime
     
-    /**
-     * Get all provider information in one call with promise memoization and caching.
-     * This is the primary method for getting provider data - use this whenever possible.
-     * - Returns cached data if available and not expired
-     * - Returns the same promise for concurrent calls to avoid duplicate queries
-     * - Caches the result for future calls
-     */
-    async getAllProvidersInfo(): Promise<ProviderInfoAggregate[]> {
-        try {
-            // Check if we have a valid cache
-            const now = Date.now();
-            if (this._providersCache && (now - this._providersCacheTimestamp) < this.CACHE_LIFETIME_MS) {
-                console.log('Using cached provider information');
-                return this._providersCache;
-            }
-            
-            // If there's an in-flight request, return that promise instead of starting a new one
-            if (this._providersPromise) {
-                console.log('Joining existing provider information request');
-                return this._providersPromise;
-            }
-            
-            console.log('Fetching fresh provider information');
-            
-            // Create and store the promise
-            this._providersPromise = (async () => {
-                try {
-                    const service = await this.getRandAOService();
-                    const randclient = await this.getRandomClient();
-                    const providers = await service.getAllProviderInfo();
-                    const providersactivity = await randclient.getAllProviderActivity();
-                    
-                    // Map provider activity to providers and clean up request_ids format
-                    if (Array.isArray(providersactivity) && providersactivity.length > 0) {
-                        providers.forEach(provider => {
-                            const activity = providersactivity.find(
-                                activity => activity.provider_id === provider.providerId
-                            );
-                            
-                            if (activity) {
-                                // Fix challenge requests - need careful handling for nested JSON
-                                if (activity.active_challenge_requests) {
-                                    // If it's a string, parse it to get the actual request_ids structure
-                                    if (typeof activity.active_challenge_requests === 'string') {
-                                        try {
-                                            // Parse the string to get the object with request_ids
-                                            const parsedObj = JSON.parse(activity.active_challenge_requests);
-                                            
-                                            // Replace the string with the parsed object
-                                            activity.active_challenge_requests = parsedObj;
-                                        } catch (e) {
-                                            console.error(`Failed to parse challenge requests for ${provider.providerId}:`, e);
-                                            // Create a placeholder object with empty array
-                                            activity.active_challenge_requests = { request_ids: [] };
-                                        }
-                                    } else if (typeof activity.active_challenge_requests === 'object') {
-                                        // It's already an object, but may have string request_ids property
-                                        if (typeof activity.active_challenge_requests.request_ids === 'string') {
-                                            try {
-                                                activity.active_challenge_requests.request_ids = 
-                                                    JSON.parse(activity.active_challenge_requests.request_ids);
-                                            } catch (e) {
-                                                console.error(`Failed to parse challenge request_ids for ${provider.providerId}:`, e);
-                                                activity.active_challenge_requests.request_ids = [];
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // Ensure request_ids exists
-                                    activity.active_challenge_requests = { request_ids: [] };
-                                }
-                                
-                                // Fix output requests - similar approach
-                                if (activity.active_output_requests) {
-                                    // If it's a string, parse it to get the actual request_ids structure
-                                    if (typeof activity.active_output_requests === 'string') {
-                                        try {
-                                            // Parse the string to get the object with request_ids
-                                            const parsedObj = JSON.parse(activity.active_output_requests);
-                                            
-                                            // Replace the string with the parsed object
-                                            activity.active_output_requests = parsedObj;
-                                        } catch (e) {
-                                            console.error(`Failed to parse output requests for ${provider.providerId}:`, e);
-                                            // Create a placeholder object with empty array
-                                            activity.active_output_requests = { request_ids: [] };
-                                        }
-                                    } else if (typeof activity.active_output_requests === 'object') {
-                                        // It's already an object, but may have string request_ids property
-                                        if (typeof activity.active_output_requests.request_ids === 'string') {
-                                            try {
-                                                activity.active_output_requests.request_ids = 
-                                                    JSON.parse(activity.active_output_requests.request_ids);
-                                            } catch (e) {
-                                                console.error(`Failed to parse output request_ids for ${provider.providerId}:`, e);
-                                                activity.active_output_requests.request_ids = [];
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // Ensure request_ids exists
-                                    activity.active_output_requests = { request_ids: [] };
-                                }
-                                
-                                provider.providerActivity = activity;
-                            }
-                        });
-                    }
-                    
-                    // Update cache
-                    this._providersCache = providers;
-                    this._providersCacheTimestamp = now;
-                    return providers;
-                } finally {
-                    // Clear the promise reference when done (success or failure)
-                    // This allows a retry on the next call if this one failed
-                    this._providersPromise = null;
-                }
-            })();
-            
-            // Return the promise
-            return this._providersPromise;
-        } catch (error) {
-            console.error('Error getting all provider info:', error);
-            throw error;
-        }
-    }
-    
-    // /**
-    //  * Legacy compatibility method - maps the new format to the old format.
-    //  * Internal implementation uses the cached data to avoid additional API calls.
-    //  */
-    // async getAllProvidersInfo(): Promise<ProviderInfoAggregate[]> {
-    //     try {
-    //      return await this.getAllProviderInfo();
-    //     } catch (error) {
-    //         console.error('Error in backward compatibility getAllProvidersInfo:', error);
-    //         throw error;
-    //     }
-    // }
-    
-    /**
-     * Legacy compatibility method - gets a single provider's info.
-     * Uses the cached data from getAllProvidersInfo when possible to avoid additional API calls.
-     */
-    async getProviderInfo(providerId: string): Promise<ProviderInfoAggregate> {
-        console.log(`Getting provider info for: ${providerId}`);
-        
-        try {
-            // First try to find the provider in the cached data
-            const allProviders = await this.getAllProvidersInfo();
-            const provider = allProviders.find(p => p.providerId === providerId);
-            
-            if (provider) {
-                console.log('Provider found in cached data');
-                return provider;
-            }
-            
-            // If not found in cache, fall back to direct API call
-            console.log('Provider not found in cache, making direct API call');
-            const service = await this.getRandAOService();
-            const returnvalue = await service.getAllInfoForProvider(providerId);
-            return returnvalue;
-        } catch (error) {
-            console.error('Error in getProviderInfo:', error);
-            throw error;
-        }
-    }
+
 
     // Get open random requests for a provider
     async getOpenRandomRequests(providerId?: string): Promise<GetOpenRandomRequestsResponse> {
         try {
-            const client = (await this.getRandomClient());
+            const client = await this.getRandomClient();
             return await client.getOpenRandomRequests(providerId || "");
         } catch (error) {
             console.error('Error getting open random requests:', error);
@@ -416,13 +249,18 @@ class AOHelpers {
      * Only providers with value -2 can be reinitialized and will be set to 0
      * @param providerId The provider ID to reinitialize
      * @param wallet The wallet to use for signing
-     * @param processId The process ID to send the message to
+     * @param providerInfo Provider info from context - required since getProviderInfo is no longer available
      * @returns The message ID
      */
-    async reinitProvider(providerId: string, wallet: any, processId: string): Promise<string> {
+    async reinitProvider(providerId: string, wallet: any, providerInfo: ProviderInfoAggregate): Promise<string> {
         // Check if this provider has a random_balance of -2 before proceeding
         try {
-            const providerInfo = await this.getProviderInfo(providerId);
+            // We now require provider data to be passed from the ProviderContext
+            if (!providerInfo) {
+                throw new Error('Provider information is required for reinitialization');
+            }
+            const randClient = await this.getRandomClient();
+            const processId = await randClient.getProcessId();
             const randomBalance = providerInfo?.providerActivity?.random_balance;
             
             // Only allow reinitialization of providers with value -2
@@ -457,6 +295,21 @@ class AOHelpers {
             throw error;
         }
     }
+
+        /**
+     * Claim random rewards for a provider
+     * @returns Promise that resolves when rewards are claimed
+     */
+        async claimRandomRewards(): Promise<void> {
+            try {
+                const client = await this.getRandomClient();
+                await client.claimRewards();
+            } catch (error) {
+                console.error('Error claiming random rewards:', error);
+                throw error;
+            }
+        }
+
 }
 
 export const aoHelpers = new AOHelpers();

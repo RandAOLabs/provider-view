@@ -7,6 +7,7 @@ import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-
 import { ProviderInfoAggregate } from 'ao-process-clients'
 import { ActiveRequests } from './ActiveRequests'
 import { useWallet } from '../../contexts/WalletContext'
+import { useProviders } from '../../contexts/ProviderContext'
 import './ProviderDetails.css'
 
 // Modal component for confirmation dialogs
@@ -244,7 +245,7 @@ interface ProviderDetailsProps {
 }
 
 export const ProviderDetails: React.FC<ProviderDetailsProps> = ({ 
-  currentProvider, 
+  currentProvider: externalCurrentProvider, 
   isEditing: defaultIsEditing,
   onSave,
   isSubmitting: externalIsSubmitting,
@@ -253,11 +254,12 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   onCancel: externalOnCancel
 }) => {
   const { address: walletAddress } = useWallet()
+  const { providers, loading: providersLoading, error: providersError, refreshProviders } = useProviders()
   const [mode, setMode] = useState<ProviderMode>('view')
-  const [isLoading, setIsLoading] = useState(true)
   const [provider, setProvider] = useState<ProviderInfoAggregate | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(providersError)
   const [success, setSuccess] = useState('')
+  const isLoading = providersLoading
   const [walletBalance, setWalletBalance] = useState<string | null>(externalWalletBalance || null)
   const [isSubmitting, setIsSubmitting] = useState(externalIsSubmitting || false)
   const [isEditing, setIsEditing] = useState(defaultIsEditing || false)
@@ -292,59 +294,60 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
   // Initialize provider data
   useEffect(() => {
-    let mounted = true;
-
-    const initializeProvider = async () => {
-      try {
-        if (!mounted) return;
-        
-        if (currentProvider) {
-          setProvider(currentProvider);
-          
-          // If this is a provider, also fetch wallet balance if not externally provided
-          if (!externalWalletBalance) {
-            try {
-              const balance = await aoHelpers.getWalletBalance(currentProvider.providerId);
-              setWalletBalance(balance);
-            } catch (err) {
-              console.error('Error fetching wallet balance:', err);
-            }
+    // If external provider was passed directly, use it
+    if (externalCurrentProvider) {
+      setProvider(externalCurrentProvider);
+      
+      // If this is a provider, also fetch wallet balance if not externally provided
+      if (!externalWalletBalance && !providersLoading) {
+        (async () => {
+          try {
+            const balance = await aoHelpers.getWalletBalance(externalCurrentProvider.providerId);
+            setWalletBalance(balance);
+          } catch (err) {
+            console.error('Error fetching wallet balance:', err);
           }
-          
-          // Get random balance from provider activity
-          const randomValue = currentProvider.providerActivity?.random_balance;
-          console.log('Available random value:', randomValue);
-          // Convert undefined to null for state
-          setAvailableRandom(randomValue !== undefined ? randomValue : null);
-          
-          // Determine the appropriate mode
-          if (defaultIsEditing) {
-            setMode('edit');
-          } else {
-            setMode('view');
-          }
-        } else if (walletAddress) {
-          // User is connected but not a provider - show registration form
-          setMode('register');
-        }
-      } catch (err) {
-        if (mounted) {
-          console.error('Error initializing provider:', err);
-          setError('Unable to connect to wallet. Please refresh the page and try again.');
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+        })();
       }
-    };
-
-    initializeProvider();
-
-    return () => {
-      mounted = false;
-    };
-  }, [currentProvider, walletAddress, defaultIsEditing, externalWalletBalance]);
+      
+      // Get random balance from provider activity
+      const randomValue = externalCurrentProvider.providerActivity?.random_balance;
+      console.log('Available random value:', randomValue);
+      // Convert undefined to null for state
+      setAvailableRandom(randomValue !== undefined ? randomValue : null);
+      
+      // Determine the appropriate mode
+      if (defaultIsEditing) {
+        setMode('edit');
+      } else {
+        setMode('view');
+      }
+    } 
+    // Otherwise, if we have a wallet address and providers loaded, try to find the provider
+    else if (walletAddress && !providersLoading && providers.length > 0) {
+      // Find provider that matches the wallet address
+      const foundProvider = providers.find(p => p.providerId === walletAddress);
+      
+      if (foundProvider) {
+        setProvider(foundProvider);
+        
+        // Get random balance from provider activity
+        const randomValue = foundProvider.providerActivity?.random_balance;
+        console.log('Available random value:', randomValue);
+        // Convert undefined to null for state
+        setAvailableRandom(randomValue !== undefined ? randomValue : null);
+        
+        // Determine mode based on editing state
+        setMode(defaultIsEditing ? 'edit' : 'view');
+      } else if (walletAddress) {
+        // User is connected but not a provider - show registration form
+        setMode('register');
+      }
+    } else if (walletAddress) {
+      // If we don't have providers data yet but have wallet address, assume registration mode for now
+      setMode('register');
+    }
+  }, [externalCurrentProvider, walletAddress, defaultIsEditing, externalWalletBalance, providers, providersLoading]);
   
   // Fetch wallet balance if showing the staking form
   useEffect(() => {
@@ -457,11 +460,17 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       await aoHelpers.stakeTokens(stakeAmount, details);
       setSuccess('Successfully staked and registered as a provider!');
       
-      // Refresh provider details
+      // Refresh provider details using the context
+      await refreshProviders();
+      
+      // After refresh, the providers list should include the new provider
+      // Find the provider that matches the wallet address
       if (walletAddress) {
-        const providerData = await aoHelpers.getProviderInfo(walletAddress);
-        setProvider(providerData);
-        setMode('view');
+        const updatedProvider = providers.find(p => p.providerId === walletAddress);
+        if (updatedProvider) {
+          setProvider(updatedProvider);
+          setMode('view');
+        }
       }
       
       // Hide staking form after success
@@ -942,7 +951,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                         </p>
                       )}
                       <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '10px' }}>
-                        <strong>Claimable rewards:</strong> {currentProvider?.providerActivity?.fulfillment_rewards ? (currentProvider.providerActivity.fulfillment_rewards/1000000000).toLocaleString() + " Test RNG": "0 Test RNG"}
+                        <strong>Claimable rewards:</strong> {provider?.providerActivity?.fulfillment_rewards ? (provider.providerActivity.fulfillment_rewards/1000000000).toLocaleString() + " Test RNG": "0 Test RNG"}
                       </p>
                     </div>
                     <div className="status-actions">
