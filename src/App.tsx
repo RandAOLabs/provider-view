@@ -11,6 +11,7 @@ import InfoHow from './pages/InfoHow'
 import Admin from './pages/Admin'
 import Faucet from './pages/Faucet'
 import { WalletProvider } from './contexts/WalletContext'
+import { ProviderProvider } from './contexts/ProviderContext'
 import './App.css'
 import './pages/Providers.css'
 // import './pages/Docs.css'  // Documentation CSS temporarily commented out
@@ -22,10 +23,11 @@ import './pages/Faucet.css'
 function App() {
   return (
     <WalletProvider>
-      <Router>
-      <div className="app-container">
-        <Sidebar />
-        <main className="main-content">
+      <ProviderProvider>
+        <Router>
+        <div className="app-container">
+          <Sidebar />
+          <main className="main-content">
           <Routes>
             <Route path="/" element={<About />} />
             <Route path="/providers" element={<Providers />} />
@@ -46,8 +48,9 @@ function App() {
             </Route>
           </Routes>
         </main>
-      </div>
-      </Router>
+        </div>
+        </Router>
+      </ProviderProvider>
     </WalletProvider>
   )
 }

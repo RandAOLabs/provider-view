@@ -3,25 +3,23 @@ import { FiBook, FiInfo, FiFileText, FiUserPlus, FiUsers, FiPackage, FiHelpCircl
 import { FaTelegram, FaGithub, FaXTwitter } from 'react-icons/fa6'
 import { Link, useLocation } from 'react-router-dom'
 import { useWallet } from '../../contexts/WalletContext'
+import { useProviders } from '../../contexts/ProviderContext'
 import { useState, useEffect } from 'react'
-import { aoHelpers } from '../../utils/ao-helpers'
 import './Sidebar.css'
 
 export const Sidebar = () => {
   const location = useLocation()
   const { address: connectedAddress, isConnected } = useWallet()
+  const { providers } = useProviders()
   const [isProvider, setIsProvider] = useState(false)
   const [finishedLoading, setFinishedLoading] = useState(false)
 
   useEffect(() => {
-    const checkIfProvider = async () => {
-      if (isConnected) {
+    const checkIfProvider = () => {
+      if (isConnected && providers.length > 0) {
         try {
-          // Get all providers info from the cached function instead of making separate API call
-          const allProviders = await aoHelpers.getAllProvidersInfo()
-          
-          // Find the provider that matches the connected address
-          const currentProvider = allProviders.find(p => p.providerId === connectedAddress)
+          // Find the provider that matches the connected address using the context data
+          const currentProvider = providers.find(p => p.providerId === connectedAddress)
           
           console.log("user data")
           console.log(currentProvider)
@@ -37,11 +35,14 @@ export const Sidebar = () => {
         }
       } else {
         setIsProvider(false)
+        if (!isConnected) {
+          setFinishedLoading(true)
+        }
       }
     }
 
     checkIfProvider()
-  }, [connectedAddress, isConnected])
+  }, [connectedAddress, isConnected, providers])
 
   const isActive = (path) => location.pathname === path
 

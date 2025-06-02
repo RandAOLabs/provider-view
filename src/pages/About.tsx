@@ -3,7 +3,7 @@ import { FiGithub, FiGlobe, FiLoader } from 'react-icons/fi'
 import { FaXTwitter } from 'react-icons/fa6'
 import { FaTelegram } from 'react-icons/fa'
 import { ConnectWallet } from '../components/common/ConnectWallet'
-import { aoHelpers } from '../utils/ao-helpers'
+import { useProviders } from '../contexts/ProviderContext'
 import { getTotalProvided } from '../utils/graphQLquery'
 import './About.css'
 
@@ -37,26 +37,11 @@ const STATIC_STATS = [
 ]
 
 export default function About() {
-  const [providerCount, setProviderCount] = useState(0)
+  const { providers, loading: loadingProviders } = useProviders() // Get providers from context
   const [transactionCount, setTransactionCount] = useState(0)
-  const [loadingProviders, setLoadingProviders] = useState(true)
   const [loadingTransactions, setLoadingTransactions] = useState(true)
 
   useEffect(() => {
-    // Fetch providers count independently
-    const fetchProviders = async () => {
-      try {
-        console.log('Fetching providers...');
-        const providers = await aoHelpers.getAllProvidersInfo();
-        console.log('Providers fetched:', providers.length);
-        setProviderCount(providers.length);
-      } catch (err) {
-        console.error('Error fetching providers:', err);
-      } finally {
-        setLoadingProviders(false);
-      }
-    };
-
     // Fetch transaction count independently
     const fetchTransactions = async () => {
       try {
@@ -71,7 +56,6 @@ export default function About() {
       }
     };
 
-    fetchProviders();
     fetchTransactions();
   }, []);
 
@@ -82,7 +66,7 @@ export default function About() {
         <div className="loading-spinner">
           <FiLoader className="animate-spin" />
         </div>
-      ) : providerCount.toString() 
+      ) : providers.length.toString() 
     },
     { 
       label: "Total Random Provided", 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { aoHelpers, TOKEN_DECIMALS } from '../utils/ao-helpers';
+import { useProviders } from '../contexts/ProviderContext';
 
 // Add type declaration for arweaveWallet on window object
 declare global {
@@ -626,9 +627,8 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
 };
 
 export default function Admin() {
-  const [providers, setProviders] = useState<ProviderInfoAggregate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Get providers data from context
+  const { providers, loading, error } = useProviders();
   const [reinitializing, setReinitializing] = useState<{ [key: string]: boolean }>({});
   const [reinitSuccess, setReinitSuccess] = useState<{ [key: string]: boolean }>({});
   const [reinitAllLoading, setReinitAllLoading] = useState(false);
@@ -664,41 +664,12 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchProviders = async () => {
-      if (!isReady || isConnecting) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        console.log('Fetching providers data for admin...');
-        const fetchedProviders = await aoHelpers.getAllProvidersInfo();
-        console.log('Admin: All providers data:', fetchedProviders);
-
-        if (mounted) {
-          setProviders(fetchedProviders);
-        }
-      } catch (err) {
-        console.error('Error fetching providers:', err);
-        if (mounted) setError('Failed to load providers. Please try again later.');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    fetchProviders();
-    
-    // Also fetch wallet balance when address is available
+    // Just fetch wallet balance when address is available
+    // Providers are now handled by the context
     if (connectedAddress && isConnected) {
       fetchWalletBalance();
     }
-
-    return () => {
-      mounted = false;
-    };
-  }, [isReady, isConnecting, connectedAddress, isConnected]);
+  }, [connectedAddress, isConnected]);
 
   const handleReinitialize = async (providerId: string) => {
     if (!isConnected || !window.arweaveWallet) {

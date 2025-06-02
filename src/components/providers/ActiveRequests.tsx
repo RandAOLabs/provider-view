@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiLoader } from 'react-icons/fi';
 import { aoHelpers } from '../../utils/ao-helpers';
+import { useProviders } from '../../contexts/ProviderContext';
 import './ActiveRequests.css';
 
 interface ActiveRequestsProps {
@@ -10,25 +11,25 @@ interface ActiveRequestsProps {
 export const ActiveRequests = ({ providerId }: ActiveRequestsProps) => {
   const [activeRequests, setActiveRequests] = useState<{ challengeRequests: string[], outputRequests: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { providers } = useProviders(); // Get providers from context
 
   useEffect(() => {
-    if (providerId) {
-      // Use cached data from providers instead of making a new API call
-      getProviderActivityFromCache();
+    if (providerId && providers.length > 0) {
+      // Use data from ProviderContext instead of making API calls
+      getProviderActivityFromContext();
     }
-  }, [providerId]);
+  }, [providerId, providers]);
 
-  const getProviderActivityFromCache = async () => {
+  const getProviderActivityFromContext = async () => {
     if (!providerId) return;
     
     setIsLoading(true);
     try {
-      // Get all providers data from cache to find this provider's activity
-      const providers = await aoHelpers.getAllProvidersInfo();
+      // Find the provider in the context data
       const provider = providers.find(p => p.providerId === providerId);
       
       if (provider?.providerActivity) {
-        console.log(`Using cached provider activity for: ${providerId}`);
+        console.log(`Using provider activity from context for: ${providerId}`);
         
         // Extract and process the request_ids arrays
         const activity = provider.providerActivity;
@@ -53,10 +54,10 @@ export const ActiveRequests = ({ providerId }: ActiveRequestsProps) => {
           challengeRequests,
           outputRequests
         });
-        console.log('Successfully updated active requests from cache');
+        console.log('Successfully updated active requests from context');
       } else {
-        // Fallback to API call if no cached activity data is found
-        console.log(`No cached activity found, fetching for: ${providerId}`);
+        // Fallback to API call if no activity data is found in the context
+        console.log(`No activity found in context, fetching for: ${providerId}`);
         const response = await aoHelpers.getOpenRandomRequests(providerId);
         
         if (response?.activeChallengeRequests?.request_ids && response?.activeOutputRequests?.request_ids) {
@@ -99,7 +100,7 @@ export const ActiveRequests = ({ providerId }: ActiveRequestsProps) => {
         <label>Active Requests</label>
         <button
           className={`refresh-button${isLoading ? ' loading' : ''}`}
-          onClick={getProviderActivityFromCache}
+          onClick={getProviderActivityFromContext}
           disabled={isLoading}
         >
           <div className="button-content">

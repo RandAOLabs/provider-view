@@ -457,20 +457,6 @@ class AOHelpers {
             throw error;
         }
     }
-
-    /**
-     * Claim random rewards for a provider
-     * @returns Promise that resolves when rewards are claimed
-     */
-    async claimRandomRewards(): Promise<void> {
-        try {
-            const client = await this.getRandomClient();
-            await client.claimRewards();
-        } catch (error) {
-            console.error('Error claiming random rewards:', error);
-            throw error;
-        }
-    }
 }
 
 export const aoHelpers = new AOHelpers();
