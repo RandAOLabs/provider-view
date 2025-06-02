@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiCheck, FiCopy, FiGlobe } from 'react-icons/fi';
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa';
 import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-process-clients';
 import { ActiveRequests } from './ActiveRequests';
+import { getProviderTotalRandom } from '../../utils/graphQLquery';
 import './ProviderTable.css';
 
 interface ProviderExpandedDetailsProps {
@@ -35,6 +36,23 @@ export const ProviderExpandedDetails = ({
   const providerActivity = provider.providerActivity as ProviderActivity;
   // Cast provider details to our extended interface
   const providerDetails = providerInfo?.provider_details as ExtendedProviderDetails || {};
+  
+  // State for total random provided across all processes
+  const [totalRandomProvided, setTotalRandomProvided] = useState<number | null>(null);
+  
+  // Fetch total random provided when component mounts
+  useEffect(() => {
+    const fetchTotalRandom = async () => {
+      try {
+        const total = await getProviderTotalRandom(provider.providerId);
+        setTotalRandomProvided(total);
+      } catch (error) {
+        console.error('Error fetching total random provided:', error);
+      }
+    };
+    
+    fetchTotalRandom();
+  }, [provider.providerId]);
 
   return (
     <tr className="expanded-content">
@@ -103,10 +121,18 @@ export const ProviderExpandedDetails = ({
             </div>
             
             <div className="detail-group">
-              <label>Random Provided</label>
+              <label>Random Provided (Current Process)</label>
               <div className="detail-value">
                 {provider.totalFullfullilled !== undefined ? 
                   provider.totalFullfullilled : '0'}
+              </div>
+            </div>
+            
+            <div className="detail-group">
+              <label>Total Random Provided (All Time)</label>
+              <div className="detail-value">
+                {totalRandomProvided !== null ? 
+                  totalRandomProvided : 'Loading...'}
               </div>
             </div>
             

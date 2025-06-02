@@ -15,8 +15,6 @@ import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData } from 'a
 import { useWallet } from '../contexts/WalletContext';
 import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo, FiCpu, FiDatabase, FiServer } from 'react-icons/fi';
 import { ProviderDetailsModal } from '../components/ProviderDetailsModal';
-import { UnresolvedRandomRequests } from '../components/providers/UnresolvedRandomRequests';
-import { RequestFlowMinimal } from '../components/providers/RequestFlowMinimal';
 import './Providers.css';
 import './Admin.css';
 
@@ -108,22 +106,16 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
       // If provider_info is a string, try to parse it
       if (typeof providerInfo === 'string') {
         try {
-          const parsedData = JSON.parse(providerInfo);
-          console.log(`Successfully parsed data for ${provider.providerId}:`, parsedData);
-          return parsedData as MonitoringData;
+          return JSON.parse(providerInfo) as MonitoringData;
         } catch (parseError) {
-          console.error(`Failed to parse provider_info string for ${provider.providerId}:`, parseError);
+          console.error('Failed to parse provider_info string:', parseError);
           return undefined;
         }
-      } else if (providerInfo && typeof providerInfo === 'object') {
-        console.log(`Provider ${provider.providerId} has object data:`, providerInfo);
-        return providerInfo as MonitoringData;
       }
       
-      console.log(`Provider ${provider.providerId} has no monitoring data`);
-      return undefined;
+      return providerInfo as MonitoringData | undefined;
     } catch (error) {
-      console.error(`Error getting provider monitoring data for ${provider.providerId}:`, error);
+      console.error('Error getting provider monitoring data:', error);
       return undefined;
     }
   };
@@ -671,62 +663,32 @@ export default function Admin() {
     }
   };
 
-  // Function to refresh provider data - exposed so it can be called from child components
-  const refreshProviders = async (forceRefresh = false) => {
-    if (!isReady || isConnecting) return;
-    
-    setLoading(true);
-    setError(null);
-
-    try {
-      console.log('Refreshing providers data for admin...');
-      
-      // Get fresh provider data - bypass cache if refreshing
-      let fetchedProviders;
-      if (forceRefresh) {
-        // Get direct access to the services for a fresh fetch
-        const service = await aoHelpers.getRandAOService();
-        const randclient = await aoHelpers.getRandomClient();
-        
-        // Fetch fresh data
-        const providerInfo = await service.getAllProviderInfo();
-        const providerActivity = await randclient.getAllProviderActivity();
-        
-        // Process and merge data similar to aoHelpers.getAllProvidersInfo
-        fetchedProviders = providerInfo
-          .map(provider => {
-            const activityInfo = providerActivity.find(a => a.provider_id === provider.providerId);
-            return {
-              ...provider,
-              providerActivity: activityInfo
-            } as ProviderInfoAggregate;
-          });
-      } else {
-        // Use cached data for initial load
-        fetchedProviders = await aoHelpers.getAllProvidersInfo();
-      }
-      
-      console.log('Admin: All providers data:', fetchedProviders);
-      setProviders(fetchedProviders);
-    } catch (err) {
-      console.error('Error fetching providers:', err);
-      setError('Failed to load providers. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
   useEffect(() => {
     let mounted = true;
 
-    // Initial data fetch
-    const fetchInitialData = async () => {
+    const fetchProviders = async () => {
       if (!isReady || isConnecting) return;
-      
-      await refreshProviders();
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        console.log('Fetching providers data for admin...');
+        const fetchedProviders = await aoHelpers.getAllProvidersInfo();
+        console.log('Admin: All providers data:', fetchedProviders);
+
+        if (mounted) {
+          setProviders(fetchedProviders);
+        }
+      } catch (err) {
+        console.error('Error fetching providers:', err);
+        if (mounted) setError('Failed to load providers. Please try again later.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
 
-    fetchInitialData();
+    fetchProviders();
     
     // Also fetch wallet balance when address is available
     if (connectedAddress && isConnected) {
@@ -966,15 +928,6 @@ export default function Admin() {
                 onReinitializeProvider={handleReinitialize}
                 connectedAddress={connectedAddress} 
               />
-            </div>
-          )}
-
-          {isConnected && (
-            <div className="admin-section unresolved-requests-section">
-              <h2>Unresolved Random Requests Tracker</h2>
-              <p>Monitor the lifecycle of random requests as they move through the system</p>
-              {/* Ultra-lightweight request flow visualizer with minimal rendering */}
-              <RequestFlowMinimal />
             </div>
           )}
         </div>

@@ -1,19 +1,144 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { FiEdit2, FiGlobe, FiPower, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
+import { FiEdit2, FiGlobe, FiPower, FiCheck, FiCopy } from 'react-icons/fi'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { BiRefresh } from 'react-icons/bi'
 import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
-import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-process-clients'
+import { ProviderInfoAggregate } from 'ao-process-clients'
 import { ActiveRequests } from './ActiveRequests'
 import { useWallet } from '../../contexts/WalletContext'
 import './ProviderDetails.css'
+
+// Modal component for confirmation dialogs
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  title: string;
+  message: React.ReactNode;
+  confirmText: string;
+  cancelText: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+  isOpen,
+  title,
+  message,
+  confirmText,
+  cancelText,
+  onConfirm,
+  onCancel
+}) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <div className="modal-header">
+          <h3>{title}</h3>
+        </div>
+        <div className="modal-body">
+          {message}
+        </div>
+        <div className="modal-footer">
+          <button className="modal-cancel-btn" onClick={onCancel}>{cancelText}</button>
+          <button className="modal-confirm-btn" onClick={onConfirm}>{confirmText}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Define provider mode type outside the component to ensure consistent type checking
 type ProviderMode = 'view' | 'edit' | 'register';
 
 // Add CSS for stake status display
 const stakeStatusStyles = `
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background-color: white;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  margin-bottom: 15px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.modal-body {
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.modal-body ul {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+
+.modal-body li {
+  margin-bottom: 8px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-cancel-btn {
+  background-color: #f1f1f1;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.modal-confirm-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.modal-cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.modal-confirm-btn:hover {
+  background-color: #c82333;
+}
+
+.provider-status-section {
+  grid-column: 3 / -1;
+  width: 100%;
+}
+
 .stake-status {
   font-size: 12px;
   margin-top: 5px;
@@ -85,6 +210,23 @@ const stakeStatusStyles = `
 .max-stake-btn:hover {
   background-color: #1c54a8;
 }
+
+.description-group {
+  grid-column: 1 / 3;
+  width: 100%;
+}
+
+.status-message {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.status-actions {
+  display: flex;
+  flex-direction: column;
+}
 `;
 
 // Insert the styles into the document
@@ -125,10 +267,14 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const [availableRandom, setAvailableRandom] = useState<number | null>(null)
   const [isUpdatingRandom, setIsUpdatingRandom] = useState(false)
   const [randomUpdateSuccess, setRandomUpdateSuccess] = useState(false)
+  const [isClaimingRewards, setIsClaimingRewards] = useState(false)
+  const [claimSuccess, setClaimSuccess] = useState(false)
   const [activeRequests, setActiveRequests] = useState<{ challengeRequests: string[], outputRequests: string[] } | null>(null)
   const [loadingRequests, setLoadingRequests] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
   const [showStakingForm, setShowStakingForm] = useState(false)
+  const [showTurnOffModal, setShowTurnOffModal] = useState(false)
+  const [showUnstakeModal, setShowUnstakeModal] = useState(false)
   // Convert between display value (human readable) and raw value (with decimals)
   const rawToDisplayValue = (raw: string): string => {
     const rawNum = parseFloat(raw);
@@ -396,17 +542,32 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const handleUnstake = async () => {
     try {
       if (provider?.providerId) {
+        setShowUnstakeModal(false) // Close modal
         await aoHelpers.unstakeTokens(provider.providerId)
         window.location.reload() // Refresh to show updated state
       }
     } catch (err) {
       console.error('Error unstaking:', err)
+      setError('Error unstaking tokens. Please try again.')
     }
   }
 
   const handleUpdateAvailableRandom = async (value: number) => {
+    // If turning off provider, show confirmation modal
+    if (value === -1) {
+      setShowTurnOffModal(true);
+      return;
+    }
+    
+    // Otherwise proceed with update
+    await updateProviderStatus(value);
+  }
+  
+  const updateProviderStatus = async (value: number) => {
     setIsUpdatingRandom(true);
     setRandomUpdateSuccess(false);
+    setShowTurnOffModal(false); // Close modal if open
+    
     try {
       const result = await aoHelpers.updateProviderAvalibleRandom(value);
       if (result) {
@@ -419,6 +580,22 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       setError('Failed to update provider status');
     } finally {
       setIsUpdatingRandom(false);
+    }
+  }
+
+  const handleClaimRewards = async () => {
+    setIsClaimingRewards(true);
+    setClaimSuccess(false);
+    setError(null);
+    try {
+      await aoHelpers.claimRandomRewards();
+      setClaimSuccess(true);
+      setTimeout(() => setClaimSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error claiming rewards:', err);
+      setError('Failed to claim rewards');
+    } finally {
+      setIsClaimingRewards(false);
     }
   }
 
@@ -586,7 +763,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                 {isEditing && (
                   <button 
                     className="unstake-btn-small"
-                    onClick={() => setShowUnstakeWarning(true)}
+                    onClick={() => setShowUnstakeModal(true)}
                   >
                     <GiTwoCoins /> Unstake
                   </button>
@@ -750,45 +927,74 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
               </div>
             )}
           </div>
-        </div>
-
-        {/* Provider Status Section - Only shown for existing providers */}
-        {!isNewProviderSetup && !isRegisterMode(mode) && (
-          <div className="detail-group provider-status-section">
-            <label>Provider Status</label>
-            {availableRandom !== null ? (
-              <div className={`provider-status ${getRandomStatusMessage().className}`}>
-                <div className="status-message">
-                  <div>
-                    <p><strong>{getRandomStatusMessage().message}</strong></p>
-                    {getRandomStatusMessage().subMessage && (
-                      <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
-                        {getRandomStatusMessage().subMessage}
+          
+          {/* Provider Status Section - Only shown for existing providers */}
+          {!isNewProviderSetup && !isRegisterMode(mode) && (
+            <div className="detail-group provider-status-section">
+              <label>Provider Status</label>
+              {availableRandom !== null ? (
+                <div className={`provider-status ${getRandomStatusMessage().className}`}>
+                  <div className="status-message">
+                    <div>
+                      <p><strong>{getRandomStatusMessage().message}</strong></p>
+                      {getRandomStatusMessage().subMessage && (
+                        <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
+                          {getRandomStatusMessage().subMessage}
+                        </p>
+                      )}
+                      <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '10px' }}>
+                        <strong>Claimable rewards:</strong> {currentProvider?.providerActivity?.fulfillment_rewards ? (currentProvider.providerActivity.fulfillment_rewards/1000000000).toLocaleString() + " Test RNG": "0 Test RNG"}
                       </p>
+                    </div>
+                    <div className="status-actions">
+                      <button 
+                        className="status-action-btn"
+                        onClick={() => handleUpdateAvailableRandom(getRandomStatusMessage().value)}
+                        disabled={isUpdatingRandom}
+                      >
+                        {isUpdatingRandom ? (
+                          <span className="loading-spinner"><BiRefresh className="spin" /></span>
+                        ) : (
+                          <>
+                            <FiPower /> {getRandomStatusMessage().action}
+                          </>
+                        )}
+                      </button>
+                      <button 
+                        className="status-action-btn"
+                        onClick={handleClaimRewards}
+                        disabled={isClaimingRewards}
+                        style={{ marginTop: '8px' }}
+                      >
+                        {isClaimingRewards ? (
+                          <span className="loading-spinner"><BiRefresh className="spin" /></span>
+                        ) : (
+                          <>
+                            <GiTwoCoins /> Claim Rewards
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {randomUpdateSuccess && (
+                      <div className="success-message">Provider status updated successfully!</div>
+                    )}
+                    {claimSuccess && (
+                      <div className="success-message">Rewards claimed successfully!</div>
                     )}
                   </div>
-                  <button 
-                    className="status-action-btn"
-                    onClick={() => handleUpdateAvailableRandom(getRandomStatusMessage().value)}
-                    disabled={isUpdatingRandom}
-                  >
-                    {isUpdatingRandom ? (
-                      <span className="loading-spinner"><BiRefresh className="spin" /></span>
-                    ) : (
-                      <>
-                        <FiPower /> {getRandomStatusMessage().action}
-                      </>
-                    )}
-                  </button>
-                  {randomUpdateSuccess && (
-                    <div className="success-message">Provider status updated successfully!</div>
-                  )}
                 </div>
-              </div>
-            ) : (
-              <div className="detail-value">Loading status...</div>
-            )}
-          </div>
+              ) : (
+                <div className="detail-value">Loading status...</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Empty container to support the side-by-side layout */}
+        {!isNewProviderSetup && !isRegisterMode(mode) && (
+          <>
+            {/* Empty div to support layout */}
+          </>
         )}
 
         {/* Active Requests Section - Only shown for existing providers */}
@@ -877,28 +1083,47 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         )}
       </div>
 
-      {showUnstakeWarning && (
-        <div className="warning-modal">
-          <div className="warning-content">
-            <h3>Warning: Unstake Provider</h3>
-            <p>Are you sure you want to unstake and leave the network? This action cannot be undone.</p>
-            <div className="warning-actions">
-              <button 
-                className="cancel-btn"
-                onClick={() => setShowUnstakeWarning(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="unstake-btn"
-                onClick={handleUnstake}
-              >
-                Unstake and Leave Network
-              </button>
-            </div>
+      {/* Modals for confirmations */}
+      <ConfirmationModal
+        isOpen={showTurnOffModal}
+        title="Turn Off Provider"
+        message={
+          <div>
+            <p>Are you sure you want to turn off your provider?</p>
+            <p>When you turn off your provider:</p>
+            <ul>
+              <li>You will stop receiving rewards as you will no longer be providing random values</li>
+              <li>After all active random requests have been cleared from your node, you can safely turn off the docker container</li>
+              <li>Your staked tokens will remain locked</li>
+            </ul>
+            <p>You can turn your provider back on at any time.</p>
           </div>
-        </div>
-      )}
+        }
+        confirmText="Turn Off"
+        cancelText="Cancel"
+        onConfirm={() => updateProviderStatus(-1)}
+        onCancel={() => setShowTurnOffModal(false)}
+      />
+      
+      <ConfirmationModal
+        isOpen={showUnstakeModal}
+        title="Confirm Unstaking"
+        message={
+          <div>
+            <p>Are you sure you want to unstake your tokens?</p>
+            <ul>
+              <li>Your stake will be locked for a few days in an unstaking period</li>
+              <li>You will need to return to this page to claim your tokens after the unstaking period ends</li>
+              <li>Unstaking will make you <strong>ineligible for rewards</strong></li>
+              <li>You will no longer be a provider once the unstaking process completes</li>
+            </ul>
+          </div>
+        }
+        confirmText="Unstake"
+        cancelText="Cancel"
+        onConfirm={handleUnstake}
+        onCancel={() => setShowUnstakeModal(false)}
+      />
     </div>
   )
 }

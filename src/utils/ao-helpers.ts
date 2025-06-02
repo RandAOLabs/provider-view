@@ -294,7 +294,7 @@ class AOHelpers {
     // Get open random requests for a provider
     async getOpenRandomRequests(providerId?: string): Promise<GetOpenRandomRequestsResponse> {
         try {
-            const client = await this.getRandomClient();
+            const client = (await this.getRandomClient());
             return await client.getOpenRandomRequests(providerId || "");
         } catch (error) {
             console.error('Error getting open random requests:', error);
@@ -454,6 +454,20 @@ class AOHelpers {
             return id;
         } catch (error) {
             console.error(`Error reinitializing provider ${providerId}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Claim random rewards for a provider
+     * @returns Promise that resolves when rewards are claimed
+     */
+    async claimRandomRewards(): Promise<void> {
+        try {
+            const client = await this.getRandomClient();
+            await client.claimRewards();
+        } catch (error) {
+            console.error('Error claiming random rewards:', error);
             throw error;
         }
     }

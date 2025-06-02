@@ -171,3 +171,54 @@ export async function creditNoticeFetcher(callbackId: string) {
     return [];
   }
 }
+
+/**
+ * Fetches the total random count provided by a specific provider across all RANDOMPROCCESS values.
+ * 
+ * @param {string} provider_id - The provider's wallet address
+ * @returns {Promise<number>} The total count of random provided by this provider across all RANDOMPROCCESS
+ */
+export async function getProviderTotalRandom(provider_id: string) {
+  try {
+    console.log('Fetching provider total random count...');
+    
+    const queries = RANDOMPROCCESS.map(async (address) => {
+      const queryObject = {
+        query: `{
+          transactions(
+            recipients: ["${address}"],
+            owners: ["${provider_id}"],
+            tags: [
+              { name: "Action", values: ["Reveal-Puzzle-Params"] },
+              { name: "Data-Protocol", values: ["ao"] }
+            ]
+          ) {
+            count
+          }
+        }`
+      };
+
+      try {
+        const response = await arweave.api.post('/graphql', queryObject);
+        return response.data?.data?.transactions?.count || 0;
+      } catch (error) {
+        console.error(`Error fetching transaction count for ${address}:`, error);
+        return 0;
+      }
+    });
+
+    const results = await Promise.all(queries);
+    const total = results.reduce((sum, count) => sum + count, 0);
+
+    console.log('Provider total random count:', total);
+    return total;
+  } catch (error) {
+    console.error("Error fetching provider total random:", error);
+    console.error("Error details:", {
+      message: error.message,
+      response: error.response,
+      stack: error.stack
+    });
+    return 0;
+  }
+}
