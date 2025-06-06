@@ -9,24 +9,24 @@ import './About.css'
 
 const TEAM_MEMBERS = [
   {
-    name: "Ethan Goldsteinberg",
+    name: "Ethan Golds",
     role: "Core Developer",
-    avatar: '/ethan.avif',
+    avatar: '/Ethan.png',
     github: "https://github.com/Ethan-GoldS",
-    twitter: null
+    twitter: "https://x.com/Ethan_Gold_SP"
   },
   {
     name: "Kenny Swayzee",
     role: "Protocol Designer",
-    avatar: '/kenny.avif',
+    avatar: '/Kenny.png',
     github: "https://github.com/KennySwayzee93",
     twitter: "https://x.com/KennySwayzeeX"
   },
   {
-    name: "Caitly",
+    name: "Caitlyn",
     role: "Research Lead",
-    avatar: '/caitlyn.avif',
-    github: null,
+    avatar: '/Caitlyn.png',
+    github: "https://github.com/caitlynfteco",
     twitter: "https://x.com/CaitlyNFTLane"
   }
 ]
