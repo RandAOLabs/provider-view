@@ -1,4 +1,4 @@
-import { MonitoringData } from 'ao-process-clients';
+import { MonitoringData } from 'ao-js-sdk';
 
 // Legacy interface (kept for backward compatibility)
 export interface LegacyProviderMonitoringData {
@@ -41,5 +41,5 @@ export interface LegacyProviderMonitoringData {
   };
 }
 
-// Using the official MonitoringData type from ao-process-clients
+// Using the official MonitoringData type from ao-js-sdk
 export type ProviderMonitoringData = MonitoringData;

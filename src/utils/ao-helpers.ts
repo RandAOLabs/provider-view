@@ -15,7 +15,7 @@ import {
     LogLevel,
     BaseClientConfigBuilder,
     ProviderActivity,
-} from 'ao-process-clients';
+} from 'ao-js-sdk';
 import { connect, createDataItemSigner, dryrun, message } from "@permaweb/aoconnect";
 
 // Minimum tokens needed to stake for new stakers - 10000 tokens with 9 decimals

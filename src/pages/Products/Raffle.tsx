@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { aoHelpers } from '../../utils/ao-helpers';
-import { ViewPullsResponse, ViewEntrantsResponse } from 'ao-process-clients';
+import { ViewPullsResponse, ViewEntrantsResponse } from 'ao-js-sdk';
 import { useWallet } from '../../contexts/WalletContext';
 import { ConnectWallet } from '../../components/common/ConnectWallet';
 import { raffleRandomResponses, pullIdToMessage } from '../../utils/graphQLquery';

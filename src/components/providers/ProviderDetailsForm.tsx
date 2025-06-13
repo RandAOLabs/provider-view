@@ -1,6 +1,6 @@
 import React from 'react'
 import './ProviderDetailsForm.css'
-import { ProviderDetails } from 'ao-process-clients/dist/src/clients/staking/abstract/types'
+import { ProviderDetails } from 'ao-js-sdk/dist/src/clients/staking/abstract/types'
 
 interface ProviderDetailsFormProps {
   initialValues?: ProviderDetails

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
-import { FaucetClient } from 'ao-process-clients';
+import { FaucetClient } from 'ao-js-sdk';
 import UserBalanceSheet from '../components/UserBalanceSheet';
 import './Faucet.css';
 

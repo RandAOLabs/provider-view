@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiServer, FiCpu, FiHardDrive, FiActivity, FiHash, FiPower, FiCheck, FiAlertTriangle, FiClock } from 'react-icons/fi';
 import { BiRefresh } from 'react-icons/bi';
-import { MonitoringData } from 'ao-process-clients';
+import { MonitoringData } from 'ao-js-sdk';
 import { aoHelpers } from '../utils/ao-helpers';
 import './ProviderDetailsModal.css';
 

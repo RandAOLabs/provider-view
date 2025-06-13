@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { aoHelpers } from '../utils/ao-helpers'
-import { ProviderInfoAggregate } from 'ao-process-clients'
+import { ProviderInfoAggregate } from 'ao-js-sdk'
 import { useWallet } from './WalletContext'
 
 interface ProviderContextType {

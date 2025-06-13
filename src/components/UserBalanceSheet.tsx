@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { aoHelpers } from '../utils/ao-helpers';
-import { RandomClient, GetUserInfoResponse } from 'ao-process-clients';
+import { RandomClient, GetUserInfoResponse } from 'ao-js-sdk';
 import './UserBalanceSheet.css';
 
 // RNG token has 9 decimal places

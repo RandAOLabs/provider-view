@@ -12,7 +12,7 @@ import { connect, createDataItemSigner, message } from "@permaweb/aoconnect";
 import { ConnectWallet } from '../components/common/ConnectWallet';
 import { Spinner } from '../components/common/Spinner';
 import { ButtonSpinner } from '../components/common/ButtonSpinner';
-import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData } from 'ao-process-clients';
+import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData } from 'ao-js-sdk';
 import { useWallet } from '../contexts/WalletContext';
 import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo, FiCpu, FiDatabase, FiServer } from 'react-icons/fi';
 import { ProviderDetailsModal } from '../components/ProviderDetailsModal';

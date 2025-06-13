@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiCircle, FiCheck, FiCopy, FiLoader, FiRefreshCw, FiPlay, FiPause, FiAlertTriangle } from 'react-icons/fi';
-import { ProviderInfoAggregate, ProviderInfo, ProviderActivity, RequestList } from 'ao-process-clients';
+import { ProviderInfoAggregate, ProviderInfo, ProviderActivity, RequestList } from 'ao-js-sdk';
 import { aoHelpers } from '../../utils/ao-helpers';
 import './UnresolvedRandomRequests.css';
 

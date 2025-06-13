@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { FiEdit2, FiGlobe, FiPower, FiCheck, FiCopy } from 'react-icons/fi'
+import { FiEdit2, FiGlobe, FiPower, FiCheck, FiCopy, FiChevronUp, FiChevronDown, FiAlertTriangle } from 'react-icons/fi'
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { GiTwoCoins } from 'react-icons/gi'
 import { BiRefresh } from 'react-icons/bi'
 import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
-import { ProviderInfoAggregate } from 'ao-process-clients'
+import { ProviderInfoAggregate } from 'ao-js-sdk'
 import { ActiveRequests } from './ActiveRequests'
 import { useWallet } from '../../contexts/WalletContext'
 import { useProviders } from '../../contexts/ProviderContext'
@@ -55,6 +55,87 @@ type ProviderMode = 'view' | 'edit' | 'register';
 
 // Add CSS for stake status display
 const stakeStatusStyles = `
+/* Alert styles */
+.stake-alert {
+  display: flex;
+  align-items: center;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.stake-alert-icon {
+  margin-right: 8px;
+  color: #856404;
+}
+
+/* Increase stake styles */
+.increase-stake-section {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.increase-stake-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.increase-stake-value {
+  font-size: 15px;
+  font-weight: 500;
+  flex-grow: 1;
+  padding: 5px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  text-align: center;
+}
+
+.increase-stake-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  border-radius: 4px;
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.increase-stake-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.increase-stake-submit {
+  background-color: #2a6dc9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.increase-stake-submit:hover {
+  background-color: #1c54a8;
+}
+
+.increase-stake-submit:disabled {
+  background-color: #b0c9e8;
+  cursor: not-allowed;
+}
+
 /* Modal styles */
 .modal-overlay {
   position: fixed;
@@ -265,6 +346,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const [isEditing, setIsEditing] = useState(defaultIsEditing || false)
   const [showUnstakeWarning, setShowUnstakeWarning] = useState(false)
   const [changes, setChanges] = useState({})
+  const [isBelowMinimumStake, setIsBelowMinimumStake] = useState(false)
+  const [increaseStakeAmount, setIncreaseStakeAmount] = useState<string>('1000')
+  const [isIncreasingStake, setIsIncreasingStake] = useState(false)
   const [availableRandom, setAvailableRandom] = useState<number | null>(null)
   const [isUpdatingRandom, setIsUpdatingRandom] = useState(false)
   const [randomUpdateSuccess, setRandomUpdateSuccess] = useState(false)
@@ -297,6 +381,14 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     // If external provider was passed directly, use it
     if (externalCurrentProvider) {
       setProvider(externalCurrentProvider);
+      
+      // Check if provider's stake is below minimum required amount
+      const stakeAmount = externalCurrentProvider?.providerInfo?.stake?.amount || '0';
+      if (parseFloat(stakeAmount) < parseFloat(MINIMUM_STAKE_AMOUNT)) {
+        setIsBelowMinimumStake(true);
+      } else {
+        setIsBelowMinimumStake(false);
+      }
       
       // If this is a provider, also fetch wallet balance if not externally provided
       if (!externalWalletBalance && !providersLoading) {
@@ -606,6 +698,53 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       setIsClaimingRewards(false);
     }
   }
+  
+  // Handle increasing stake
+  const handleIncreaseStake = async () => {
+    if (!provider?.providerId) {
+      setError('Provider ID not found');
+      return;
+    }
+    
+    setIsIncreasingStake(true);
+    setError(null);
+    setSuccess('');
+    
+    try {
+      // Convert display value (e.g., 1000) to raw value with decimals
+      const rawIncreaseAmount = displayToRawValue(increaseStakeAmount);
+      
+      // Call stakeTokens function from ao-helpers
+      await aoHelpers.stakeTokens(rawIncreaseAmount);
+      
+      setSuccess(`Successfully increased stake by ${increaseStakeAmount} tokens!`);
+      
+      // Refresh providers to get updated stake amount
+      await refreshProviders();
+      
+      // Reset the increase amount to default
+      setIncreaseStakeAmount('1000');
+      
+      // Check if we're now above the minimum stake
+      if (isBelowMinimumStake) {
+        // Get the updated provider
+        if (walletAddress) {
+          const updatedProvider = providers.find(p => p.providerId === walletAddress);
+          if (updatedProvider) {
+            const stakeAmount = updatedProvider?.providerInfo?.stake?.amount || '0';
+            if (parseFloat(stakeAmount) >= parseFloat(MINIMUM_STAKE_AMOUNT)) {
+              setIsBelowMinimumStake(false);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error increasing stake:', err);
+      setError('Failed to increase stake. Please try again.');
+    } finally {
+      setIsIncreasingStake(false);
+    }
+  }
 
   // Get message based on available random value
   const getRandomStatusMessage = () => {
@@ -757,6 +896,11 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 6
                   }) : '0'}
+                  {walletBalance && (
+                    <div className="wallet-balance">
+                      Available Balance: {parseFloat(rawToDisplayValue(walletBalance)).toLocaleString()} tokens
+                    </div>
+                  )}
                   {provider?.providerInfo?.stake?.status && (
                     <div className={`stake-status ${provider.providerInfo.stake.status}`}>
                       {provider.providerInfo.stake.status}
@@ -765,6 +909,50 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                           {' - '}{formatTimeAgo(provider.providerInfo.stake.timestamp)}
                         </span>
                       )}
+                    </div>
+                  )}
+                  {isBelowMinimumStake && (
+                    <div className="stake-alert">
+                      <FiAlertTriangle className="stake-alert-icon" />
+                      <span>Your stake is below the minimum required amount. You are no longer active as a provider.</span>
+                    </div>
+                  )}
+                  
+                  {/* Increase stake section */}
+                  {(isViewMode(mode) || isEditMode(mode)) && (
+                    <div className="increase-stake-section">
+                      <label>Increase Stake:</label>
+                      <div className="increase-stake-controls">
+                        <button 
+                          className="increase-stake-btn" 
+                          onClick={() => {
+                            const current = parseFloat(increaseStakeAmount);
+                            if (current >= 2000) {
+                              setIncreaseStakeAmount((current - 1000).toString());
+                            }
+                          }}
+                          disabled={parseFloat(increaseStakeAmount) <= 1000}
+                        >
+                          ▼
+                        </button>
+                        <div className="increase-stake-value">{increaseStakeAmount} tokens</div>
+                        <button 
+                          className="increase-stake-btn" 
+                          onClick={() => {
+                            const current = parseFloat(increaseStakeAmount);
+                            setIncreaseStakeAmount((current + 1000).toString());
+                          }}
+                        >
+                          ▲
+                        </button>
+                      </div>
+                      <button 
+                        className="increase-stake-submit" 
+                        onClick={handleIncreaseStake}
+                        disabled={isIncreasingStake}
+                      >
+                        {isIncreasingStake ? 'Processing...' : 'Increase Stake'}
+                      </button>
                     </div>
                   )}
                 </div>

@@ -4,7 +4,7 @@ import { aoHelpers } from '../../utils/ao-helpers'
 import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
 import { ProviderExpandedDetails } from './ProviderExpandedDetails'
-import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-process-clients'
+import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-js-sdk'
 import './ProviderTable.css'
 
 interface ProviderTableProps {

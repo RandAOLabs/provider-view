@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiCheck, FiCopy, FiGlobe } from 'react-icons/fi';
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa';
-import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-process-clients';
+import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-js-sdk';
 import { ActiveRequests } from './ActiveRequests';
 import { getProviderTotalRandom } from '../../utils/graphQLquery';
 import './ProviderTable.css';

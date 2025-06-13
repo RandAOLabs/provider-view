@@ -1,7 +1,7 @@
-import { ProviderInfo } from 'ao-process-clients';
+import { ProviderInfo } from 'ao-js-sdk';
 
 // Extend the interfaces to include additional fields we need
-declare module 'ao-process-clients' {
+declare module 'ao-js-sdk' {
   interface ProviderInfo {
     provider_extra_data?: string;
   }
