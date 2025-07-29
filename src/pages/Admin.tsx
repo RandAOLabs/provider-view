@@ -12,7 +12,7 @@ import { connect, createDataItemSigner, message } from "@permaweb/aoconnect";
 import { ConnectWallet } from '../components/common/ConnectWallet';
 import { Spinner } from '../components/common/Spinner';
 import { ButtonSpinner } from '../components/common/ButtonSpinner';
-import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData } from 'ao-js-sdk';
+import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData, ProviderActivity } from 'ao-js-sdk';
 import { useWallet } from '../contexts/WalletContext';
 import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo, FiCpu, FiDatabase, FiServer } from 'react-icons/fi';
 import { ProviderDetailsModal } from '../components/ProviderDetailsModal';
@@ -61,7 +61,10 @@ interface ProviderManagementProps {
   reinitSuccessProviders: { [key: string]: boolean };
   reinitAllLoading: boolean;
   onReinitializeAll: () => void;
+  onRestartAll: () => void;
   onReinitializeProvider: (providerId: string) => void;
+  onRestartProvider: (providerId: string) => void;
+  onTurnOffProvider: (providerId: string) => void;
   connectedAddress?: string;
 }
 
@@ -73,7 +76,10 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
   reinitSuccessProviders,
   reinitAllLoading,
   onReinitializeAll,
+  onRestartAll,
   onReinitializeProvider,
+  onRestartProvider,
+  onTurnOffProvider,
   connectedAddress,
 }) => {
   const [selectedProviders, setSelectedProviders] = useState<ProviderInfoAggregate[]>([]);
@@ -284,6 +290,21 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
               <>
                 <FiRefreshCw />
                 <span>Reinitialize All Providers</span>
+              </>
+            )}
+          </button>
+          
+          <button 
+            className="reinit-all-button warning" 
+            onClick={onRestartAll}
+            disabled={reinitAllLoading || isLoading || providers.length === 0 || !isConnected}
+          >
+            {reinitAllLoading ? (
+              <ButtonSpinner />
+            ) : (
+              <>
+                <FiZap />
+                <span>Restart All Providers</span>
               </>
             )}
           </button>
@@ -502,15 +523,15 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
                     </div>
                     
                     <div className="provider-actions">
-                      {needsReinit && (
+                      <div className="action-buttons">
                         <button
-                          className="reinit-button"
+                          className={`action-button ${needsReinit ? 'primary' : 'secondary'}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             onReinitializeProvider(provider.providerId);
                           }}
                           disabled={isReinitializing}
-                          title="Reinitialize provider"
+                          title="Reinitialize provider (sets available to 0)"
                         >
                           {isReinitializing ? (
                             <ButtonSpinner />
@@ -520,7 +541,29 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
                             <FiRefreshCw />
                           )}
                         </button>
-                      )}
+                        <button
+                          className="action-button warning"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRestartProvider(provider.providerId);
+                          }}
+                          disabled={isReinitializing}
+                          title="Restart provider (sets available to -5)"
+                        >
+                          <FiZap />
+                        </button>
+                        <button
+                          className="action-button danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTurnOffProvider(provider.providerId);
+                          }}
+                          disabled={isReinitializing}
+                          title="Turn off provider (sets available to -3)"
+                        >
+                          <FiMinus />
+                        </button>
+                      </div>
                     </div>
                     
                     {isSelected && (
@@ -595,22 +638,47 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
                           </button>
                           
                           {needsReinit && (
-                            <button
-                              className="reinit-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onReinitializeProvider(provider.providerId);
-                              }}
-                              disabled={isReinitializing}
-                            >
-                              {isReinitializing ? (
-                                <ButtonSpinner />
-                              ) : isReinitSuccess ? (
-                                <FiCheck className="success-icon" />
-                              ) : (
-                                <FiRefreshCw />
-                              )}
-                            </button>
+<div className="table-actions">
+                              <button
+                                className="action-button small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onReinitializeProvider(provider.providerId);
+                                }}
+                                disabled={isReinitializing}
+                                title="Reinitialize (0)"
+                              >
+                                {isReinitializing ? (
+                                  <ButtonSpinner />
+                                ) : isReinitSuccess ? (
+                                  <FiCheck className="success-icon" />
+                                ) : (
+                                  <FiRefreshCw />
+                                )}
+                              </button>
+                              <button
+                                className="action-button small warning"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRestartProvider(provider.providerId);
+                                }}
+                                disabled={isReinitializing}
+                                title="Restart (-5)"
+                              >
+                                <FiZap />
+                              </button>
+                              <button
+                                className="action-button small danger"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTurnOffProvider(provider.providerId);
+                                }}
+                                disabled={isReinitializing}
+                                title="Turn Off (-3)"
+                              >
+                                <FiMinus />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -627,12 +695,10 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
 };
 
 export default function Admin() {
-  // Get providers data from context
-  const { providers, loading, error } = useProviders();
+  // State for provider management
   const [reinitializing, setReinitializing] = useState<{ [key: string]: boolean }>({});
   const [reinitSuccess, setReinitSuccess] = useState<{ [key: string]: boolean }>({});
   const [reinitAllLoading, setReinitAllLoading] = useState(false);
-  const { address: connectedAddress, isConnecting, isConnected, isReady } = useWallet();
   
   // Token transfer state
   const [walletBalance, setWalletBalance] = useState<string>('0');
@@ -642,7 +708,10 @@ export default function Admin() {
   const [transferSuccess, setTransferSuccess] = useState<boolean>(false);
   const [transferError, setTransferError] = useState<string | null>(null);
   const [loadingBalance, setLoadingBalance] = useState<boolean>(false);
-
+  
+  // Get providers data from context
+  const { providers, loading, error } = useProviders();
+  const { address: connectedAddress, isConnected, isConnecting, isReady } = useWallet();
   // Process ID for RandAO
   const RANDAO_PROCESS_ID = "8N08BvmC34q9Hxj-YS6eAOd_cSmYqGpezPPHUYWJBhg";
   // Token process ID
@@ -671,9 +740,24 @@ export default function Admin() {
     }
   }, [connectedAddress, isConnected]);
 
-  const handleReinitialize = async (providerId: string) => {
+  // Common function to handle provider actions
+  const handleProviderAction = async (providerId: string, action: 'reinit' | 'restart' | 'turnOff') => {
     if (!isConnected || !window.arweaveWallet) {
       alert('Please connect your wallet first.');
+      return;
+    }
+
+    // Determine the value to set based on action
+    const actionValue = {
+      reinit: 0,
+      restart: -5,
+      turnOff: -3
+    }[action];
+
+    // Get the provider info
+    const provider = providers.find(p => p.providerId === providerId);
+    if (!provider) {
+      alert('Provider not found');
       return;
     }
 
@@ -681,16 +765,30 @@ export default function Admin() {
     setReinitSuccess(prev => ({ ...prev, [providerId]: false }));
 
     try {
-      // Find the provider from our context data
-      const providerToReinit = providers.find(p => p.providerId === providerId);
+      // Create a properly typed provider activity object
+      const providerActivity = provider.providerActivity ? {
+        ...provider.providerActivity,
+        random_balance: actionValue,
+        // Ensure required fields are present to satisfy the ProviderActivity type
+        active_challenge_requests: provider.providerActivity.active_challenge_requests || [],
+        active_output_requests: provider.providerActivity.active_output_requests || [],
+        provider_id: provider.providerActivity.provider_id || providerId
+      } : {
+        // Create a minimal valid ProviderActivity if it doesn't exist
+        random_balance: actionValue,
+        active_challenge_requests: [],
+        active_output_requests: [],
+        provider_id: providerId,
+        active: 0,
+        created_at: Math.floor(Date.now() / 1000)
+      };
+
+      // Use the reinitProvider method with the appropriate target value
+      await aoHelpers.reinitProvider(providerId, window.arweaveWallet, {
+        ...provider,
+        providerActivity: providerActivity as ProviderActivity
+      });
       
-      // Make sure we have provider data
-      if (!providerToReinit) {
-        throw new Error(`Provider data not found for ${providerId}`);
-      }
-      
-      // Pass the provider data to avoid another API call
-      await aoHelpers.reinitProvider(providerId, window.arweaveWallet, providerToReinit);
       setReinitSuccess(prev => ({ ...prev, [providerId]: true }));
       
       // Reset success indicator after 3 seconds
@@ -702,8 +800,8 @@ export default function Admin() {
         });
       }, 3000);
     } catch (err) {
-      console.error('Error reinitializing provider:', err);
-      alert(`Failed to reinitialize provider: ${err}`);
+      console.error(`Error in ${action} provider:`, err);
+      alert(`Failed to ${action} provider: ${err}`);
     } finally {
       setReinitializing(prev => {
         const newState = { ...prev };
@@ -713,6 +811,11 @@ export default function Admin() {
     }
   };
 
+  // Wrapper functions for each action type
+  const handleReinitialize = (providerId: string) => handleProviderAction(providerId, 'reinit');
+  const handleRestartProvider = (providerId: string) => handleProviderAction(providerId, 'restart');
+  const handleTurnOffProvider = (providerId: string) => handleProviderAction(providerId, 'turnOff');
+
   const handleReinitializeAll = async () => {
     if (!isConnected || !window.arweaveWallet) {
       alert('Please connect your wallet first.');
@@ -720,45 +823,175 @@ export default function Admin() {
     }
 
     setReinitAllLoading(true);
-    const providersToReinit = providers.filter(provider => 
-      (provider.providerActivity?.random_balance || 0) < 0
-    );
-
+    const results = {
+      success: [] as string[],
+      failed: [] as Array<{id: string, reason: string}>
+    };
+    
     try {
+      // Find all providers with random_balance = -2
+      const providersToReinit = providers.filter(provider => 
+        provider.providerActivity?.random_balance === -2
+      );
+
       if (providersToReinit.length === 0) {
-        alert('No providers need reinitialization.');
+        alert('No providers with value -2 found for reinitialization.');
         return;
       }
 
-      for (const provider of providersToReinit) {
-        // Mark as in progress
-        setReinitializing(prev => ({ ...prev, [provider.providerId]: true }));
-        setReinitSuccess(prev => ({ ...prev, [provider.providerId]: false }));
-        
+      // Process all eligible providers in parallel
+      await Promise.all(providersToReinit.map(async (provider) => {
+        const providerId = provider.providerId;
         try {
-          // Provider data is already available from the filter above
-          // We can be sure it's not undefined
-          await aoHelpers.reinitProvider(provider.providerId, window.arweaveWallet, provider);
-          setReinitSuccess(prev => ({ ...prev, [provider.providerId]: true }));
+          // Mark as in progress
+          setReinitializing(prev => ({ ...prev, [providerId]: true }));
+          
+          // Use the reinitProvider method which sends the correct action format
+          await aoHelpers.reinitProvider(providerId, window.arweaveWallet, provider);
+          
+          setReinitSuccess(prev => ({ ...prev, [providerId]: true }));
+          results.success.push(providerId);
         } catch (err) {
-          console.error(`Failed to reinitialize provider ${provider.providerId}:`, err);
+          console.error(`Failed to reinitialize provider ${providerId}:`, err);
+          results.failed.push({
+            id: providerId,
+            reason: err instanceof Error ? err.message : String(err)
+          });
         } finally {
           setReinitializing(prev => {
             const newState = { ...prev };
-            delete newState[provider.providerId];
+            delete newState[providerId];
             return newState;
           });
         }
+      }));
+      
+      // Prepare summary message
+      let summary = '';
+      
+      // Add success message if any providers were reinitialized
+      if (results.success.length > 0) {
+        summary += `✅ Successfully reinitialized ${results.success.length} provider${results.success.length !== 1 ? 's' : ''}.`;
+      }
+      
+      // Add failed providers information if any
+      if (results.failed.length > 0) {
+        if (summary) summary += '\n\n';
+        summary += `❌ Failed to reinitialize ${results.failed.length} provider${results.failed.length !== 1 ? 's' : ''}:`;
+        results.failed.forEach(failure => {
+          summary += `\n- ${failure.id}: ${failure.reason}`;
+        });
+      }
+      
+      // Show the summary if there's something to report
+      if (summary) {
+        alert(summary);
       }
       
       // Clear success indicators after 3 seconds
       setTimeout(() => {
         setReinitSuccess({});
       }, 3000);
-
+      
     } catch (err) {
-      console.error('Error in bulk reinitialization:', err);
-      alert(`Error during bulk reinitialization: ${err}`);
+      console.error('Unexpected error during bulk reinitialization:', err);
+      alert('An error occurred during reinitialization. Please check the console for details.');
+    } finally {
+      setReinitAllLoading(false);
+    }
+  };
+
+  const handleRestartAll = async () => {
+    if (!isConnected || !window.arweaveWallet) {
+      alert('Please connect your wallet first.');
+      return;
+    }
+
+    setReinitAllLoading(true);
+    const results = {
+      success: [] as string[],
+      failed: [] as Array<{id: string, reason: string}>
+    };
+    
+    try {
+      // Process all providers and set them to -5
+      await Promise.all(providers.map(async (provider) => {
+        const providerId = provider.providerId;
+        try {
+          // Mark as in progress
+          setReinitializing(prev => ({ ...prev, [providerId]: true }));
+          
+          // Create a properly typed provider activity object with random_balance = -5
+          const providerActivity = provider.providerActivity ? {
+            ...provider.providerActivity,
+            random_balance: -5,
+            // Ensure required fields are present to satisfy the ProviderActivity type
+            active_challenge_requests: provider.providerActivity.active_challenge_requests || [],
+            active_output_requests: provider.providerActivity.active_output_requests || [],
+            provider_id: provider.providerActivity.provider_id || providerId
+          } : {
+            // Create a minimal valid ProviderActivity if it doesn't exist
+            random_balance: -5,
+            active_challenge_requests: [],
+            active_output_requests: [],
+            provider_id: providerId,
+            active: 0,
+            created_at: Math.floor(Date.now() / 1000)
+          };
+
+          // Use the reinitProvider method with the appropriate target value
+          await aoHelpers.reinitProvider(providerId, window.arweaveWallet, {
+            ...provider,
+            providerActivity: providerActivity as ProviderActivity
+          });
+          
+          setReinitSuccess(prev => ({ ...prev, [providerId]: true }));
+          results.success.push(providerId);
+        } catch (err) {
+          console.error(`Failed to restart provider ${providerId}:`, err);
+          results.failed.push({
+            id: providerId,
+            reason: err instanceof Error ? err.message : String(err)
+          });
+        } finally {
+          setReinitializing(prev => {
+            const newState = { ...prev };
+            delete newState[providerId];
+            return newState;
+          });
+        }
+      }));
+      
+      // Prepare summary message
+      let summary = '';
+      
+      // Add success message if any providers were restarted
+      if (results.success.length > 0) {
+        summary += `✅ Successfully restarted ${results.success.length} provider${results.success.length !== 1 ? 's' : ''}.`;
+      }
+      
+      // Add failed providers information if any
+      if (results.failed.length > 0) {
+        if (summary) summary += '\n\n';
+        summary += `❌ Failed to restart ${results.failed.length} provider${results.failed.length !== 1 ? 's' : ''}:`;
+        results.failed.forEach(failure => {
+          summary += `\n- ${failure.id}: ${failure.reason}`;
+        });
+      }
+      
+      // Show the summary if there's something to report
+      if (summary) {
+        alert(summary);
+      }
+      
+      // Clear success indicators after 3 seconds
+      setTimeout(() => {
+        setReinitSuccess({});
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Unexpected error during bulk restart:', err);
+      alert('An error occurred during restart. Please check the console for details.');
     } finally {
       setReinitAllLoading(false);
     }
@@ -906,7 +1139,10 @@ export default function Admin() {
                 reinitSuccessProviders={reinitSuccess}
                 reinitAllLoading={reinitAllLoading}
                 onReinitializeAll={handleReinitializeAll}
+                onRestartAll={handleRestartAll}
                 onReinitializeProvider={handleReinitialize}
+                onRestartProvider={handleRestartProvider}
+                onTurnOffProvider={handleTurnOffProvider}
                 connectedAddress={connectedAddress} 
               />
             </div>

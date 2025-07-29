@@ -253,18 +253,19 @@ class AOHelpers {
      * @returns The message ID
      */
     async reinitProvider(providerId: string, wallet: any, providerInfo: ProviderInfoAggregate): Promise<string> {
-        // Check if this provider has a random_balance of -2 before proceeding
         try {
             // We now require provider data to be passed from the ProviderContext
             if (!providerInfo) {
                 throw new Error('Provider information is required for reinitialization');
             }
+            
             const randClient = await this.getRandomClient();
             const processId = await randClient.getProcessId();
             const randomBalance = providerInfo?.providerActivity?.random_balance;
+            const targetValue = providerInfo?.providerActivity?.random_balance; // Get the target value from the provider activity
             
-            // Only allow reinitialization of providers with value -2
-            if (randomBalance !== -2) {
+            // Only check for -2 if we're doing a reinitialization (target = 0)
+            if (targetValue === 0 && randomBalance !== -2) {
                 throw new Error(`Provider ${providerId} has a value of ${randomBalance} which is not eligible for reinitialization. Only providers with value -2 can be reinitialized.`);
             }
             
@@ -276,11 +277,11 @@ class AOHelpers {
                 MODE: "legacy"
             });
             
-            // Include target value of 0 to explicitly set the provider to this state
+            // Set the target value based on the provider's current random_balance
             let tags = [
                 { name: "Action", value: "Reinitialize-Provider" },
                 { name: "ProviderId", value: providerId },
-                { name: "Target-Value", value: "0" },  // Explicitly set to 0
+                { name: "Target-Value", value: "0" },
             ];
 
             let id = await configuredMessage({
