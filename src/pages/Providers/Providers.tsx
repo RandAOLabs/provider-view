@@ -1,12 +1,12 @@
 import React from 'react'
-import { ProviderTable } from '../components/providers/ProviderTable'
-import { ProviderDetails } from '../components/providers/ProviderDetails'
-import { ConnectWallet } from '../components/common/ConnectWallet'
-import { Spinner } from '../components/common/Spinner'
-import { useWallet } from '../contexts/WalletContext'
-import { useProviders } from '../contexts/ProviderContext'
+import { ProviderTable } from '../../components/providers/ProviderTable'
+import { ProviderDetails } from '../../components/providers/ProviderDetails'
+import { ConnectWallet } from '../../components/common/ConnectWallet'
+import { Spinner } from '../../components/common/Spinner'
+import { useWallet } from '../../contexts/WalletContext'
+import { useProviders } from '../../contexts/ProviderContext'
 import './Providers.css'
-import { RequestFlowMinimal } from '../components/providers/RequestFlowMinimal'
+import { RequestFlowMinimal } from '../../components/providers/RequestFlowMinimal'
 
 export default function Providers() {
   const { address: connectedAddress, isConnecting, isReady } = useWallet()

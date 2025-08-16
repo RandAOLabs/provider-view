@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useWallet } from '../../contexts/WalletContext'
 import { useProviders } from '../../contexts/ProviderContext'
 import { useState, useEffect } from 'react'
+import rngLogo from '../../assets/rng-logo.svg'
 import './Sidebar.css'
 
 export const Sidebar = () => {
@@ -49,7 +50,7 @@ export const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="logo">
-        <img src="/rng-logo.svg" alt="RandAO Logo" />
+        <img src={rngLogo} alt="RandAO Logo" />
       </div>
       <nav className="main-nav">
         <Link to="/" className={`nav-item ${isActive('/') ? 'active' : ''}`}>

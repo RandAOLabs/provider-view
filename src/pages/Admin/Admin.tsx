@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { aoHelpers, TOKEN_DECIMALS } from '../utils/ao-helpers';
-import { useProviders } from '../contexts/ProviderContext';
+import { aoHelpers, TOKEN_DECIMALS } from '../../utils/ao-helpers';
+import { useProviders } from '../../contexts/ProviderContext';
 import { connect, createDataItemSigner, message } from "@permaweb/aoconnect";
-import { ConnectWallet } from '../components/common/ConnectWallet';
-import { Spinner } from '../components/common/Spinner';
-import { ButtonSpinner } from '../components/common/ButtonSpinner';
+import { ConnectWallet } from '../../components/common/ConnectWallet';
+import { Spinner } from '../../components/common/Spinner';
+import { ButtonSpinner } from '../../components/common/ButtonSpinner';
 import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData, ProviderActivity } from 'ao-js-sdk';
-import { useWallet } from '../contexts/WalletContext';
+import { useWallet } from '../../contexts/WalletContext';
 import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo, FiCpu, FiDatabase, FiServer } from 'react-icons/fi';
-import { ProviderDetailsModal } from '../components/ProviderDetailsModal';
-import './Providers.css';
+import { ProviderDetailsModal } from '../../components/ProviderDetailsModal';
 import './Admin.css';
 
 // Add type declaration for arweaveWallet on window object

@@ -2,30 +2,31 @@ import React, { useState, useEffect } from 'react'
 import { FiGithub, FiGlobe, FiLoader } from 'react-icons/fi'
 import { FaXTwitter } from 'react-icons/fa6'
 import { FaTelegram } from 'react-icons/fa'
-import { ConnectWallet } from '../components/common/ConnectWallet'
-import { useProviders } from '../contexts/ProviderContext'
-import { getTotalProvided } from '../utils/graphQLquery'
+import { ConnectWallet } from '../../components/common/ConnectWallet'
+import { useProviders } from '../../contexts/ProviderContext'
+import { getTotalProvided } from '../../utils/graphQLquery'
 import './About.css'
 
+// Using require-like import pattern for assets
 const TEAM_MEMBERS = [
   {
     name: "Ethan Golds",
     role: "Core Developer",
-    avatar: '/Ethan.png',
+    avatar: new URL('../../assets/Ethan.png', import.meta.url).href,
     github: "https://github.com/Ethan-GoldS",
     twitter: "https://x.com/Ethan_Gold_SP"
   },
   {
     name: "Kenny Swayzee",
     role: "Protocol Designer",
-    avatar: '/Kenny.png',
+    avatar: new URL('../../assets/Kenny.png', import.meta.url).href,
     github: "https://github.com/KennySwayzee93",
     twitter: "https://x.com/KennySwayzeeX"
   },
   {
     name: "Caitlyn",
     role: "Research Lead",
-    avatar: '/Caitlyn.png',
+    avatar: new URL('../../assets/Caitlyn.png', import.meta.url).href,
     github: "https://github.com/caitlynfteco",
     twitter: "https://x.com/CaitlyNFTLane"
   }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { FiBookOpen, FiChevronDown, FiChevronUp, FiLoader } from 'react-icons/fi'
-import { ConnectWallet } from '../components/common/ConnectWallet'
+import { ConnectWallet } from '../../components/common/ConnectWallet'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import axios from 'axios'
