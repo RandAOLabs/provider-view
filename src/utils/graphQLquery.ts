@@ -31,7 +31,7 @@ export async function getTotalProvided() {
   try {
     console.log('Fetching total transaction count for multiple addresses...');
 
-    //TODO MAKE WORK WITHrandom-responses
+    // Query each address in the RANDOMPROCCESS array
     const queries = RANDOMPROCCESS.map(async (address) => {
       const queryObject = {
         query: `{
@@ -49,16 +49,22 @@ export async function getTotalProvided() {
 
       try {
         const response = await arweave.api.post('/graphql', queryObject);
-        return response.data?.data?.transactions?.count || 0;
+        const rawCount = response.data?.data?.transactions?.count;
+        
+        // Convert count to number (handles both string and number returns from API)
+        return rawCount ? Number(rawCount) : 0;
       } catch (error) {
         console.error(`Error fetching transaction count for ${address}:`, error);
         return 0;
       }
     });
 
+    // Wait for all queries to complete
     const results = await Promise.all(queries);
-    const total = results.reduce((sum, count) => sum + count, 0);
-
+    
+    // Sum up all the results (ensure numeric addition)
+    const total = results.reduce((sum, count) => sum + Number(count), 0);
+    
     console.log('Total transactions count:', total);
     return total;
   } catch (error) {
@@ -184,6 +190,7 @@ export async function getProviderTotalRandom(provider_id: string) {
   try {
     console.log('Fetching provider total random count...');
     
+    // Query each address in the RANDOMPROCCESS array for this specific provider
     const queries = RANDOMPROCCESS.map(async (address) => {
       const queryObject = {
         query: `{
@@ -202,16 +209,22 @@ export async function getProviderTotalRandom(provider_id: string) {
 
       try {
         const response = await arweave.api.post('/graphql', queryObject);
-        return response.data?.data?.transactions?.count || 0;
+        const rawCount = response.data?.data?.transactions?.count;
+        
+        // Convert count to number (handles both string and number returns from API)
+        return rawCount ? Number(rawCount) : 0;
       } catch (error) {
         console.error(`Error fetching transaction count for ${address}:`, error);
         return 0;
       }
     });
 
+    // Wait for all queries to complete
     const results = await Promise.all(queries);
-    const total = results.reduce((sum, count) => sum + count, 0);
-
+    
+    // Sum up all the results (ensure numeric addition)
+    const total = results.reduce((sum, count) => sum + Number(count), 0);
+    
     console.log('Provider total random count:', total);
     return total;
   } catch (error) {

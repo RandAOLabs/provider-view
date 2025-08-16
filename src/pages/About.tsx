@@ -46,9 +46,9 @@ export default function About() {
     const fetchTransactions = async () => {
       try {
         console.log('Fetching transactions...');
+        // Get transaction count and ensure it's a valid number
         const totalTransactions = await getTotalProvided();
-        console.log('Total transactions fetched:', totalTransactions);
-        setTransactionCount(totalTransactions);
+        setTransactionCount(Number(totalTransactions) || 0);
       } catch (err) {
         console.error('Error fetching transactions:', err);
       } finally {

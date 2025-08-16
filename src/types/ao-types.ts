@@ -1,5 +1,5 @@
 import { ProviderInfo } from 'ao-js-sdk';
-
+// TODO clean up and remove
 // Extend the interfaces to include additional fields we need
 declare module 'ao-js-sdk' {
   interface ProviderInfo {

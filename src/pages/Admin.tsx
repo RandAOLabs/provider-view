@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { aoHelpers, TOKEN_DECIMALS } from '../utils/ao-helpers';
 import { useProviders } from '../contexts/ProviderContext';
-
-// Add type declaration for arweaveWallet on window object
-declare global {
-  interface Window {
-    arweaveWallet: any;
-  }
-}
 import { connect, createDataItemSigner, message } from "@permaweb/aoconnect";
 import { ConnectWallet } from '../components/common/ConnectWallet';
 import { Spinner } from '../components/common/Spinner';
@@ -19,16 +12,28 @@ import { ProviderDetailsModal } from '../components/ProviderDetailsModal';
 import './Providers.css';
 import './Admin.css';
 
-// Utility function to fetch message result
+// Add type declaration for arweaveWallet on window object
+declare global {
+  interface Window {
+    arweaveWallet: any;
+  }
+}
+
+// Utility function to fetch message result using RandomClient
 async function fetchMessageResult(messageID: string, processID: string): Promise<{ Messages: any[]; Spawns: any[]; Output: any[]; Error: any }> {
   try {
+    // Use the RandomClient which has the proper configuration
+    const randomClient = await aoHelpers.getRandomClient();
+    
+    // Get a properly configured result query function
     const { result } = connect({
-      MU_URL: "https://ur-mu.randao.net",
+      MU_URL: "https://ur-mu.randao.net", 
       CU_URL: "https://ur-cu.randao.net",
       GATEWAY_URL: "https://arweave.net",
       MODE: "legacy"
     });
 
+    // Execute the query
     const response = await result({
       message: messageID,
       process: processID,
@@ -181,7 +186,8 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
     setSelectedProviders(shuffled.slice(0, count));
   };
 
-  const requestRandomDirect = async () => {
+  // Create a unified method for requesting random values
+  const requestRandom = async () => {
     if (!isConnected || selectedProviders.length === 0) {
       setError('Please connect your wallet and select at least one provider');
       return;
@@ -195,33 +201,14 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
     setError(null);
 
     try {
-      const TOKEN_PROCESS = "rPpsRk9Rm8_SJ1JF8m9_zjTalkv9Soaa_5U0tYUloeY";
-      const RAND_PROCESS = "8N08BvmC34q9Hxj-YS6eAOd_cSmYqGpezPPHUYWJBhg";
-
-      // Use the connect function with proper RandAO URLs
-      const { message: configuredMessage } = connect({
-        MU_URL: "https://ur-mu.randao.net",
-        CU_URL: "https://ur-cu.randao.net",
-        GATEWAY_URL: "https://arweave.net",
-        MODE: "legacy"
-      });
-
-      const sentMessage = await configuredMessage({
-        process: TOKEN_PROCESS,
-        tags: [
-          { name: "Action", value: "Transfer" },
-          { name: "Quantity", value: "100" },
-          { name: "Recipient", value: RAND_PROCESS },
-          { name: "X-CallbackId", value: callbackId },
-          { name: "X-Providers", value: JSON.stringify({ provider_ids: providerIds }) },
-          { name: "X-RequestedInputs", value: JSON.stringify({ requested_inputs: providerIds.length }) },
-        ],
-        signer: createDataItemSigner(window.arweaveWallet),
-      });
-
-      const result = await fetchMessageResult(sentMessage, TOKEN_PROCESS);
-      setRequestResult(`Request sent! Message ID: ${sentMessage}`);
-      console.log('Request result:', result);
+      // Get RandomClient instance
+      const randomClient = await aoHelpers.getRandomClient();
+      
+      // Create a request using RandomClient directly
+      const result = await randomClient.createRequest(providerIds, providerIds.length, callbackId);
+      
+      setRequestResult(`Request sent! Callback ID: ${callbackId}`);
+      console.log('Random request result:', result);
     } catch (error: any) {
       console.error('Error requesting random:', error);
       setError(`Error requesting random: ${error.message || error}`);
@@ -230,38 +217,9 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
     }
   };
 
-  const requestRandomClient = async () => {
-    if (!isConnected || selectedProviders.length === 0) {
-      setError('Please connect your wallet and select at least one provider');
-      return;
-    }
-
-    const providerIds = selectedProviders.map(p => p.providerId);
-    const callbackId = `request-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    
-    setRequestLoading(true);
-    setRequestResult(null);
-    setError(null);
-
-    try {
-      const randomClient = await aoHelpers.getRandomClient();
-      const result = await randomClient.createRequest(providerIds, providerIds.length, callbackId);
-      setRequestResult(`Request sent! Callback ID: ${callbackId}`);
-      console.log('Client request result:', result);
-    } catch (error: any) {
-      console.error('Error requesting random with client:', error);
-      setError(`Error requesting random: ${error.message || error}`);
-    } finally {
-      setRequestLoading(false);
-    }
-  };
-
+  // Handle the request button click - method selection is now just visual
   const handleRequest = () => {
-    if (requestMethod === 'direct') {
-      requestRandomDirect();
-    } else {
-      requestRandomClient();
-    }
+    requestRandom();
   };
 
   return (
@@ -712,10 +670,7 @@ export default function Admin() {
   // Get providers data from context
   const { providers, loading, error } = useProviders();
   const { address: connectedAddress, isConnected, isConnecting, isReady } = useWallet();
-  // Process ID for RandAO
-  const RANDAO_PROCESS_ID = "8N08BvmC34q9Hxj-YS6eAOd_cSmYqGpezPPHUYWJBhg";
-  // Token process ID
-  const TOKEN_PROCESS_ID = "rPpsRk9Rm8_SJ1JF8m9_zjTalkv9Soaa_5U0tYUloeY";
+  // Process IDs will be retrieved from RandomClient when needed
 
   // Fetch wallet balance
   const fetchWalletBalance = async () => {

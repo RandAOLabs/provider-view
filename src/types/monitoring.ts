@@ -1,5 +1,5 @@
 import { MonitoringData } from 'ao-js-sdk';
-
+// TODO clean up and remove
 // Legacy interface (kept for backward compatibility)
 export interface LegacyProviderMonitoringData {
   providerVersion: string;
