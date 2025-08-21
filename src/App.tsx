@@ -11,6 +11,7 @@ import Providers from './pages/Providers/Providers'
 import InfoHow from './pages/Info/InfoHow'
 import Admin from './pages/Admin/Admin'
 import Faucet from './pages/Faucet/Faucet'
+import Setup from './pages/Setup/Setup'
 
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
             <Route path="/info/how" element={<InfoHow />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/faucet" element={<Faucet />} />
+            <Route path="/setup" element={<Setup />} />
             <Route path="/products" element={<Products />}>
               <Route index element={<Raffle />} />
               <Route path="randomdraw" element={<Raffle />} />
