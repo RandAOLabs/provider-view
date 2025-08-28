@@ -86,6 +86,26 @@ export const ProviderExpandedDetails = ({
             </div>
             
             <div className="detail-group">
+              <label>Owner</label>
+              <div 
+                className="detail-value monospace clickable"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyToClipboard(e, providerActivity?.owner || 'N/A');
+                }}
+                title="Click to copy owner address"
+              >
+                {providerActivity?.owner ? 
+                  truncateAddress(providerActivity.owner) : 'N/A'}
+                {copiedAddress === providerActivity?.owner ? (
+                  <FiCheck className="copy-icon success" />
+                ) : (
+                  <FiCopy className="copy-icon" />
+                )}
+              </div>
+            </div>
+            
+            <div className="detail-group">
               <label>Join Date</label>
               <div className="detail-value">
                 {providerInfo?.created_at ? 

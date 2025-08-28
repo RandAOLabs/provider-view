@@ -8,5 +8,6 @@ declare module 'ao-js-sdk' {
   
   interface ProviderActivity {
     provider_info?: string; // Contains the JSON stringified monitoring data
+    owner?: string; // The owning address of the provider
   }
 }

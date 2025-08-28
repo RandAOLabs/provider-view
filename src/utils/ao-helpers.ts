@@ -168,16 +168,43 @@ class AOHelpers {
             }
         }
 
-    // Stake tokens
-    async stakeTokens(amount: string, providerDetails?: ProviderDetailsInput): Promise<boolean> {
+    // Stake tokens with optional actorId
+    async stakeTokens(amount: string, providerDetails?: ProviderDetailsInput, actorId?: string): Promise<boolean> {
         try {
             const client = await this.getStakingClient();
             if (providerDetails) {
-                return await client.stakeWithDetails(amount, providerDetails);
+                // Pass actorId to stakeWithDetails if provided
+                return await client.stakeWithDetails(amount, providerDetails, actorId);
+            }
+            // Use new stake method signature with actorId parameter
+            if (actorId) {
+                return await (client as any).stake(amount, undefined, actorId);
             }
             return await client.stake(amount);
         } catch (error) {
             console.error('Error staking tokens:', error);
+            throw error;
+        }
+    }
+
+    // Stake with details and optional actorId
+    async stakeWithDetails(quantity: string, providerDetails?: ProviderDetailsInput, actorId?: string): Promise<boolean> {
+        try {
+            const client = await this.getStakingClient();
+            return await client.stakeWithDetails(quantity, providerDetails, actorId);
+        } catch (error) {
+            console.error('Error staking with details:', error);
+            throw error;
+        }
+    }
+
+    // Update provider actor
+    async updateProviderActor(providerId: string, actorId: string): Promise<boolean> {
+        try {
+            const client = await this.getStakingClient();
+            return await (client as any).updateProviderActor(providerId, actorId);
+        } catch (error) {
+            console.error('Error updating provider actor:', error);
             throw error;
         }
     }

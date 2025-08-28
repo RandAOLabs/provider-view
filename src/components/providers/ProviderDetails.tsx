@@ -1,13 +1,17 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { FiEdit2, FiGlobe, FiPower, FiCheck, FiCopy, FiChevronUp, FiChevronDown, FiAlertTriangle } from 'react-icons/fi'
-import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa'
-import { GiTwoCoins } from 'react-icons/gi'
-import { BiRefresh } from 'react-icons/bi'
-import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
-import { ProviderInfoAggregate } from 'ao-js-sdk'
-import { ActiveRequests } from './ActiveRequests'
+import React, { useState, useEffect, useMemo } from 'react'
+import { FiEdit } from 'react-icons/fi'
 import { useWallet } from '../../contexts/WalletContext'
 import { useProviders } from '../../contexts/ProviderContext'
+import { ProviderInfoAggregate } from 'ao-js-sdk'
+import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
+import { ActiveRequests } from './ActiveRequests'
+import { ProviderActorSection } from './ProviderActorSection'
+import { StakeSection } from './StakeSection'
+import { ProviderFormFields } from './ProviderFormFields'
+import { ProviderStatusSection } from './ProviderStatusSection'
+import { ProviderMetrics } from './ProviderMetrics'
+import { SocialLinksSection } from './SocialLinksSection'
+import { ProviderDescription } from './ProviderDescription'
 import './ProviderDetails.css'
 
 // Modal component for confirmation dialogs
@@ -51,269 +55,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 };
 
 // Define provider mode type outside the component to ensure consistent type checking
-type ProviderMode = 'view' | 'edit' | 'register';
+type ProviderMode = 'view' | 'setup';
 
-// Add CSS for stake status display
-const stakeStatusStyles = `
-/* Alert styles */
-.stake-alert {
-  display: flex;
-  align-items: center;
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeeba;
-  border-radius: 4px;
-  padding: 10px;
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.stake-alert-icon {
-  margin-right: 8px;
-  color: #856404;
-}
-
-/* Increase stake styles */
-.increase-stake-section {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.increase-stake-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.increase-stake-value {
-  font-size: 15px;
-  font-weight: 500;
-  flex-grow: 1;
-  padding: 5px 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  background-color: #f8f9fa;
-  text-align: center;
-}
-
-.increase-stake-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  width: 32px;
-  border-radius: 4px;
-  background-color: #f1f1f1;
-  border: 1px solid #ddd;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.increase-stake-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.increase-stake-submit {
-  background-color: #2a6dc9;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-weight: 500;
-  margin-top: 8px;
-}
-
-.increase-stake-submit:hover {
-  background-color: #1c54a8;
-}
-
-.increase-stake-submit:disabled {
-  background-color: #b0c9e8;
-  cursor: not-allowed;
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background-color: white;
-  border-radius: 8px;
-  width: 90%;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  margin-bottom: 15px;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #333;
-}
-
-.modal-body {
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-.modal-body ul {
-  padding-left: 20px;
-  margin: 10px 0;
-}
-
-.modal-body li {
-  margin-bottom: 8px;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.modal-cancel-btn {
-  background-color: #f1f1f1;
-  color: #333;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.modal-confirm-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.modal-cancel-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.modal-confirm-btn:hover {
-  background-color: #c82333;
-}
-
-.provider-status-section {
-  grid-column: 3 / -1;
-  width: 100%;
-}
-
-.stake-status {
-  font-size: 12px;
-  margin-top: 5px;
-  padding: 3px 6px;
-  border-radius: 4px;
-  display: inline-block;
-  text-transform: capitalize;
-}
-
-.stake-status.unstaking {
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeeba;
-}
-
-.stake-status.staked {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.stake-timestamp {
-  font-style: italic;
-  font-weight: normal;
-}
-
-.staking-input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stake-amount-input {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.stake-amount-input label {
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 2px;
-}
-
-.stake-amount-input .staking-info-note {
-  font-size: 12px;
-  color: #666;
-  margin-top: 2px;
-}
-
-.stake-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.max-stake-btn {
-  background-color: #2a6dc9;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  cursor: pointer;
-  height: 32px;
-  margin-top: 18px;
-}
-
-.max-stake-btn:hover {
-  background-color: #1c54a8;
-}
-
-.description-group {
-  grid-column: 1 / 3;
-  width: 100%;
-}
-
-.status-message {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  width: 100%;
-}
-
-.status-actions {
-  display: flex;
-  flex-direction: column;
-}
-`;
-
-// Insert the styles into the document
-const styleElement = document.createElement('style');
-styleElement.textContent = stakeStatusStyles;
-document.head.appendChild(styleElement);
+// Styles are now in ProviderDetails.css
 
 interface ProviderDetailsProps {
   currentProvider?: ProviderInfoAggregate;
@@ -323,6 +67,7 @@ interface ProviderDetailsProps {
   submitLabel?: string;
   walletBalance?: string | null;
   onCancel?: () => void;
+  mode?: ProviderMode;
 }
 
 export const ProviderDetails: React.FC<ProviderDetailsProps> = ({ 
@@ -332,7 +77,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   isSubmitting: externalIsSubmitting,
   submitLabel = 'Save Changes',
   walletBalance: externalWalletBalance,
-  onCancel: externalOnCancel
+  onCancel: externalOnCancel,
+  mode: externalMode
 }) => {
   const { address: walletAddress } = useWallet()
   const { providers, loading: providersLoading, error: providersError, refreshProviders } = useProviders()
@@ -378,6 +124,15 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
   // Initialize provider data
   useEffect(() => {
+    // If external mode is provided, use it
+    if (externalMode) {
+      setMode(externalMode);
+      if (externalCurrentProvider) {
+        setProvider(externalCurrentProvider);
+      }
+      return;
+    }
+
     // If external provider was passed directly, use it
     if (externalCurrentProvider) {
       setProvider(externalCurrentProvider);
@@ -410,7 +165,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       
       // Determine the appropriate mode
       if (defaultIsEditing) {
-        setMode('edit');
+        setMode('setup');
       } else {
         setMode('view');
       }
@@ -430,20 +185,20 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         setAvailableRandom(randomValue !== undefined ? randomValue : null);
         
         // Determine mode based on editing state
-        setMode(defaultIsEditing ? 'edit' : 'view');
+        setMode(defaultIsEditing ? 'setup' : 'view');
       } else if (walletAddress) {
-        // User is connected but not a provider - show registration form
-        setMode('register');
+        // User is connected but not a provider - default to view mode
+        setMode('view');
       }
     } else if (walletAddress) {
-      // If we don't have providers data yet but have wallet address, assume registration mode for now
-      setMode('register');
+      // If we don't have providers data yet but have wallet address, default to view mode
+      setMode('view');
     }
-  }, [externalCurrentProvider, walletAddress, defaultIsEditing, externalWalletBalance, providers, providersLoading]);
+  }, [externalCurrentProvider, walletAddress, defaultIsEditing, externalWalletBalance, providers, providersLoading, externalMode]);
   
   // Fetch wallet balance if showing the staking form
   useEffect(() => {
-    if ((mode === 'register' || showStakingForm) && walletAddress && !walletBalance) {
+    if ((mode === 'setup' || showStakingForm) && walletAddress && !walletBalance) {
       const fetchBalance = async () => {
         try {
           console.log('Fetching wallet balance for:', walletAddress);
@@ -506,6 +261,27 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     }
   };
 
+  // Format token amount for display
+  const formatTokenAmount = (amount: string): string => {
+    const parsed = parseFloat(amount || "0") / Math.pow(10, TOKEN_DECIMALS);
+    return parsed.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 6
+    });
+  };
+
+  // Helper functions for mode checking
+  const isSetupMode = (mode: ProviderMode) => mode === 'setup';
+  const isViewMode = (mode: ProviderMode) => mode === 'view';
+  
+  // Check if wallet is recognized as a provider owner
+  const isWalletRecognized = () => {
+    if (!walletAddress) return false;
+    return providers.some(p => p.providerId === walletAddress) || (provider && provider.providerId === walletAddress);
+  };
+  
+  const isNewProviderSetup = !provider && (mode === 'setup' || showStakingForm);
+
   const [formData, setFormData] = useState(() => ({
     name: parsedDetails.name || '',
     delegationFee: parsedDetails.commission || '',
@@ -513,8 +289,25 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     twitter: parsedDetails.twitter || '',
     discord: parsedDetails.discord || '',
     telegram: parsedDetails.telegram || '',
-    domain: parsedDetails.domain || ''
+    domain: parsedDetails.domain || '',
+    providerId: '' // Add providerId field for actor functionality
   }));
+
+  // Update formData when provider data changes or when switching to edit mode
+  useEffect(() => {
+    if (provider && parsedDetails) {
+      setFormData(prev => ({
+        name: parsedDetails.name || '',
+        delegationFee: parsedDetails.commission || '',
+        description: parsedDetails.description || '',
+        twitter: parsedDetails.twitter || '',
+        discord: parsedDetails.discord || '',
+        telegram: parsedDetails.telegram || '',
+        domain: parsedDetails.domain || '',
+        providerId: prev.providerId || '' // Preserve any custom providerId
+      }));
+    }
+  }, [provider, parsedDetails, isEditing]);
 
   // Track changes
   useEffect(() => {
@@ -528,9 +321,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     setChanges(newChanges);
   }, [formData, parsedDetails]);
   
-  // Determine if this is a new provider setup (no stake)
-  const isNewProviderSetup = mode === 'register' || (defaultIsEditing && 
-    (!provider?.providerInfo?.stake || parseFloat(provider?.providerInfo?.stake?.amount || '0') === 0));
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -540,40 +330,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     }))
     setError('') // Clear any previous error
   }
-
-  // Handle staking to become a provider
-  const handleStake = async (details) => {
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess('');
-
-    try {
-      // Use the user-defined stake amount - already in raw format with decimals
-      await aoHelpers.stakeTokens(stakeAmount, details);
-      setSuccess('Successfully staked and registered as a provider!');
-      
-      // Refresh provider details using the context
-      await refreshProviders();
-      
-      // After refresh, the providers list should include the new provider
-      // Find the provider that matches the wallet address
-      if (walletAddress) {
-        const updatedProvider = providers.find(p => p.providerId === walletAddress);
-        if (updatedProvider) {
-          setProvider(updatedProvider);
-          setMode('view');
-        }
-      }
-      
-      // Hide staking form after success
-      setShowStakingForm(false);
-    } catch (err) {
-      console.error('Error staking tokens:', err);
-      setError('Failed to stake tokens. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleSubmit = async () => {
     // Validate required fields
@@ -590,29 +346,34 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       return
     }
     
-    // Validate staking amount when in register mode
-    if (isRegisterMode(mode) || showStakingForm) {
-      if (!stakeAmount || stakeAmount === '') {
-        setError('Staking amount is required')
-        return
-      }
+    // Validate staking amount when in setup mode for new providers
+    if (isSetupMode(mode) || showStakingForm) {
+      const isEditingExistingProvider = isWalletRecognized();
       
-      const stakeAmountNum = parseInt(stakeAmount, 10)
-      const minAmount = parseInt(MINIMUM_STAKE_AMOUNT.toString(), 10)
-      
-      if (stakeAmountNum < minAmount) {
-        setError(`Minimum staking amount is ${parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())).toLocaleString()} tokens`)
-        return
-      }
-      
-      if (walletBalance && stakeAmountNum > parseInt(walletBalance, 10)) {
-        setError(`Staking amount exceeds your available balance of ${parseFloat(rawToDisplayValue(walletBalance)).toLocaleString()} tokens`)
-        return
+      // Only validate stake amount for new providers (not editing existing ones)
+      if (!isEditingExistingProvider) {
+        if (!stakeAmount || stakeAmount === '') {
+          setError('Staking amount is required')
+          return
+        }
+        
+        const stakeAmountNum = parseInt(stakeAmount, 10)
+        const minAmount = parseInt(MINIMUM_STAKE_AMOUNT.toString(), 10)
+        
+        if (stakeAmountNum < minAmount) {
+          setError(`Minimum staking amount is ${parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())).toLocaleString()} tokens`)
+          return
+        }
+        
+        if (walletBalance && stakeAmountNum > parseInt(walletBalance, 10)) {
+          setError(`Staking amount exceeds your available balance of ${parseFloat(rawToDisplayValue(walletBalance)).toLocaleString()} tokens`)
+          return
+        }
       }
     }
     
-    // For registration mode, handle staking
-    if (isRegisterMode(mode)) {
+    // For setup mode, handle staking
+    if (isSetupMode(mode)) {
       await handleStake(formData);
       return;
     }
@@ -630,9 +391,20 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         ...formData,
         delegationFee: String(formData.delegationFee)
       };
-      await aoHelpers.updateProviderDetails(updatedFormData)
+      // Use stakeWithDetails for provider updates with 0 quantity
+      const actorId = (formData as any).providerId || provider?.providerId;
+      const result = await aoHelpers.stakeWithDetails('0', updatedFormData, actorId);
+      
+      if (result) {
+        // Refresh providers to get updated data
+        await refreshProviders()
+      } else {
+        throw new Error('Update operation failed');
+      }
+      
       setIsEditing(false)
       setError('')
+      setSuccess('Provider details updated successfully!')
     } catch (error) {
       console.error('Error updating provider details:', error)
       setError('Failed to update provider details')
@@ -714,8 +486,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       // Convert display value (e.g., 1000) to raw value with decimals
       const rawIncreaseAmount = displayToRawValue(increaseStakeAmount);
       
-      // Call stakeTokens function from ao-helpers
-      await aoHelpers.stakeTokens(rawIncreaseAmount);
+      // Call stakeTokens function from ao-helpers with potential actor ID
+      const actorId = (formData as any).providerId || undefined;
+      await aoHelpers.stakeTokens(rawIncreaseAmount, undefined, actorId);
       
       setSuccess(`Successfully increased stake by ${increaseStakeAmount} tokens!`);
       
@@ -746,41 +519,55 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     }
   }
 
-  // Get message based on available random value
-  const getRandomStatusMessage = () => {
-    if (availableRandom === -1) {
-      return {
-        message: "Provider has been turned off by user",
-        action: "Click here to turn back on",
-        value: 0,
-        className: "provider-status-user-off"
-      };
-    } else if (availableRandom === -2) {
-      return {
-        message: "Provider has been turned off by random process",
-        subMessage: "Your provider failed to meet requirements. Contact team for more info.",
-        action: "Turn back on",
-        value: 0,
-        className: "provider-status-process-off"
-      };
-    } else if (availableRandom === -3) {
-      return {
-        message: "Provider has been turned off by team",
-        subMessage: "Contact team if you don't know why.",
-        action: "Turn back on",
-        value: 0,
-        className: "provider-status-team-off"
-      };
-    } else {
-      return {
-        message: `Provider is active`,
-        subMessage: `${availableRandom !== null ? `Available random values: ${availableRandom}` : ''}`,
-        action: "Turn off provider",
-        value: -1,
-        className: "provider-status-active"
-      };
+  // Handle staking to become a provider or update existing provider
+  const handleStake = async (details) => {
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess('');
+
+    try {
+      // Determine quantity based on mode:
+      // - 0 for edit mode (no stake change)
+      // - minimum 10k for registration
+      const isEditingExistingProvider = isWalletRecognized();
+      const quantity = isEditingExistingProvider ? '0' : stakeAmount;
+      
+      // Use provider ID as actor ID
+      const actorId = (details as any).providerId || walletAddress;
+      
+      // Use stakeWithDetails method
+      const result = await aoHelpers.stakeWithDetails(quantity, details, actorId);
+      
+      if (result) {
+        setSuccess(isEditingExistingProvider ? 'Successfully updated provider details!' : 'Successfully staked tokens and registered as provider!');
+        
+        // Refresh the providers list to get updated data
+        if (refreshProviders) {
+          await refreshProviders();
+        }
+        
+        // Find the updated/new provider and set it
+        if (walletAddress) {
+          const updatedProvider = providers.find(p => p.providerId === walletAddress);
+          if (updatedProvider) {
+            setProvider(updatedProvider);
+            setMode('view');
+          }
+        }
+        
+        // Hide staking form after success
+        setShowStakingForm(false);
+      } else {
+        throw new Error('Staking operation failed');
+      }
+    } catch (err) {
+      console.error('Error with staking operation:', err);
+      setError('Failed to process provider details. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-  }
+  };
+
 
   const changeCount = Object.keys(changes).length;
 
@@ -790,43 +577,55 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   }
 
   // Show nothing on error
-  if (error && !showStakingForm && mode !== 'register') {
+  if (error && !showStakingForm && mode !== 'setup') {
     return null;
   }
 
-  // Define a helper type guard function to check the mode type
-  const isRegisterMode = (m: ProviderMode): m is 'register' => m === 'register';
-  const isViewMode = (m: ProviderMode): m is 'view' => m === 'view';
-  const isEditMode = (m: ProviderMode): m is 'edit' => m === 'edit';
 
-  // Show 'Become a Provider' UI if the user is not connected or not ready to register
-  if (isRegisterMode(mode) && !showStakingForm) {
-    return (
-      <div className="add-provider">
-        <h2>Become a Provider</h2>
-        <p>By running a provider, you become a contributor to the ecosystem and can earn rewards.</p>
-        <button className="start-btn" onClick={() => setShowStakingForm(true)}>Become a Provider →</button>
-      </div>
-    );
+  // Handle view mode behavior based on wallet recognition
+  if (isViewMode(mode)) {
+    if (!isWalletRecognized()) {
+      // Wallet not recognized - show "Become a Provider" UI
+      return (
+        <div className="add-provider">
+          <h2>Become a Provider</h2>
+          <p>By running a provider, you become a contributor to the ecosystem and can earn rewards.</p>
+          <button className="start-btn" onClick={() => setMode('setup')}>Become a Provider →</button>
+        </div>
+      );
+    }
+    // Wallet recognized - continue with normal view mode
+  }
+
+  // Handle setup mode behavior based on wallet recognition
+  if (isSetupMode(mode)) {
+    if (!isWalletRecognized() && !showStakingForm) {
+      // New provider setup - show staking form
+      setShowStakingForm(true);
+    }
+    // If wallet is recognized, it will show edit form automatically
   }
 
   return (
     <div className="provider-details">
       <div className="provider-details-header">
-        <h2>{isRegisterMode(mode) ? 'Register as Provider' : 'Provider Details'}</h2>
+        <h2>
+          {isSetupMode(mode) ? (isWalletRecognized() ? 'Edit Provider Configuration' : 'Setup New Provider') :
+           'Provider Details'}
+        </h2>
         {isViewMode(mode) && (
           <button className="edit-btn" onClick={() => setIsEditing(!isEditing)}>
-            <FiEdit2 /> {isEditing ? 'Cancel Edit' : 'Edit Provider'}
+            <FiEdit /> {isEditing ? 'Cancel Edit' : 'Edit Provider'}
           </button>
         )}
         {isEditing && externalOnCancel && (
           <button className="edit-btn" onClick={externalOnCancel}>
-            <FiEdit2 /> Cancel
+            <FiEdit /> Cancel
           </button>
         )}
-        {showStakingForm && (
+        {showStakingForm && isSetupMode(mode) && isWalletRecognized() && (
           <button className="edit-btn" onClick={() => setShowStakingForm(false)}>
-            <FiEdit2 /> Cancel
+            <FiEdit /> Cancel
           </button>
         )}
       </div>
@@ -836,40 +635,28 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
       <div className="provider-details-content">
         <div className="provider-grid">
-          <div className="detail-group">
-            <label>Name *</label>
-            {isEditing || isRegisterMode(mode) || showStakingForm ? (
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="edit-input"
-                placeholder="Enter name (required)"
-                required
-              />
-            ) : (
-              <div className="detail-value">
-                {parsedDetails.name || 'N/A'}
-              </div>
-            )}
-          </div>
+          <ProviderFormFields
+            isEditing={isEditing || isSetupMode(mode)}
+            isRegisterMode={false}
+            showStakingForm={showStakingForm || isSetupMode(mode)}
+            formData={formData}
+            handleInputChange={handleInputChange}
+            parsedDetails={parsedDetails}
+          />
 
-          <div className="detail-group">
-            <label>Provider ID</label>
-            <div 
-              className="detail-value monospace clickable"
-              onClick={() => copyToClipboard(provider?.providerId || walletAddress || '')}
-              title="Click to copy address"
-            >
-              {truncateAddress(provider?.providerId || walletAddress || '')}
-              {copiedAddress === (provider?.providerId || walletAddress) ? (
-                <FiCheck className="copy-icon success" />
-              ) : (
-                <FiCopy className="copy-icon" />
-              )}
-            </div>
-          </div>
+          <ProviderActorSection
+            isEditing={isEditing || isSetupMode(mode)}
+            isRegisterMode={false}
+            showStakingForm={showStakingForm || isSetupMode(mode)}
+            formData={formData}
+            handleInputChange={handleInputChange}
+            provider={provider}
+            walletAddress={walletAddress}
+            copiedAddress={copiedAddress}
+            copyToClipboard={copyToClipboard}
+            truncateAddress={truncateAddress}
+            isSetupMode={isSetupMode(mode)}
+          />
 
           <div className="detail-group">
             <label>Join Date</label>
@@ -878,7 +665,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
-              }) : (mode === 'register' ? new Date().toLocaleDateString('en-US', {
+              }) : (isSetupMode(mode) ? new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -886,395 +673,90 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             </div>
           </div>
 
-          {/* Only show Total Staked for existing providers, not in register mode */}
-          {!isRegisterMode(mode) && !showStakingForm && (
-            <div className="detail-group">
-              <label>Total Staked</label>
-              <div className="stake-group">
-                <div className="detail-value">
-                  {provider?.providerInfo?.stake ? (parseFloat(provider.providerInfo.stake.amount || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 6
-                  }) : '0'}
-                  {walletBalance && (
-                    <div className="wallet-balance">
-                      Available Balance: {parseFloat(rawToDisplayValue(walletBalance)).toLocaleString()} tokens
-                    </div>
-                  )}
-                  {provider?.providerInfo?.stake?.status && (
-                    <div className={`stake-status ${provider.providerInfo.stake.status}`}>
-                      {provider.providerInfo.stake.status}
-                      {provider.providerInfo.stake.timestamp && (
-                        <span className="stake-timestamp">
-                          {' - '}{formatTimeAgo(provider.providerInfo.stake.timestamp)}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {isBelowMinimumStake && (
-                    <div className="stake-alert">
-                      <FiAlertTriangle className="stake-alert-icon" />
-                      <span>Your stake is below the minimum required amount. You are no longer active as a provider.</span>
-                    </div>
-                  )}
-                  
-                  {/* Increase stake section */}
-                  {(isViewMode(mode) || isEditMode(mode)) && (
-                    <div className="increase-stake-section">
-                      <label>Increase Stake:</label>
-                      <div className="increase-stake-controls">
-                        <button 
-                          className="increase-stake-btn" 
-                          onClick={() => {
-                            const current = parseFloat(increaseStakeAmount);
-                            if (current >= 2000) {
-                              setIncreaseStakeAmount((current - 1000).toString());
-                            }
-                          }}
-                          disabled={parseFloat(increaseStakeAmount) <= 1000}
-                        >
-                          ▼
-                        </button>
-                        <div className="increase-stake-value">{increaseStakeAmount} tokens</div>
-                        <button 
-                          className="increase-stake-btn" 
-                          onClick={() => {
-                            const current = parseFloat(increaseStakeAmount);
-                            setIncreaseStakeAmount((current + 1000).toString());
-                          }}
-                        >
-                          ▲
-                        </button>
-                      </div>
-                      <button 
-                        className="increase-stake-submit" 
-                        onClick={handleIncreaseStake}
-                        disabled={isIncreasingStake}
-                      >
-                        {isIncreasingStake ? 'Processing...' : 'Increase Stake'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {isEditing && (
-                  <button 
-                    className="unstake-btn-small"
-                    onClick={() => setShowUnstakeModal(true)}
-                  >
-                    <GiTwoCoins /> Unstake
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          <StakeSection
+            isRegisterMode={false}
+            showStakingForm={showStakingForm || isSetupMode(mode)}
+            isViewMode={isViewMode(mode)}
+            isEditMode={isSetupMode(mode)}
+            provider={provider}
+            formatTokenAmount={formatTokenAmount}
+            isBelowMinimumStake={isBelowMinimumStake}
+            increaseStakeAmount={increaseStakeAmount}
+            setIncreaseStakeAmount={setIncreaseStakeAmount}
+            handleIncreaseStake={handleIncreaseStake}
+            isIncreasingStake={isIncreasingStake}
+            displayStakeAmount={displayStakeAmount}
+            setDisplayStakeAmount={setDisplayStakeAmount}
+            stakeAmount={stakeAmount}
+            setStakeAmount={setStakeAmount}
+            walletBalance={walletBalance}
+            rawToDisplayValue={rawToDisplayValue}
+            displayToRawValue={displayToRawValue}
+            MINIMUM_STAKE_AMOUNT={MINIMUM_STAKE_AMOUNT}
+            TOKEN_DECIMALS={TOKEN_DECIMALS}
+            formatTimeAgo={formatTimeAgo}
+          />
           
-          {/* Show staking input for registration, wallet balance info for existing providers */}
-          {(isNewProviderSetup || isRegisterMode(mode) || showStakingForm) && (
-            <div className="detail-group wallet-status">
-              <label>{isRegisterMode(mode) || showStakingForm ? "Staking Amount" : "Staking Information"}</label>
-              {(isRegisterMode(mode) || showStakingForm) ? (
-                <div className="staking-input-container">
-                  <div className="staking-info-compact">
-                    <div className="staking-info-icon">
-                      <GiTwoCoins className="stake-icon" />
-                    </div>
-                    <div className="staking-info-content">
-                      <span className="staking-info-value">
-                        Available: {walletBalance !== null ? 
-                          `${parseFloat(rawToDisplayValue(walletBalance || "0")).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : 
-                          "0"} tokens
-                      </span>
-                    </div>
-                  </div>
-                  <div className="stake-amount-input">
-                    <label>Amount to Stake:</label>
-                    <div className="stake-input-wrapper">
-                      <input 
-                        type="number" 
-                        value={displayStakeAmount} 
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          const parsed = parseFloat(newValue);
-                          if (!isNaN(parsed)) {
-                            // Update display value
-                            setDisplayStakeAmount(newValue);
-                            
-                            // Convert to raw value with decimals
-                            const rawValue = displayToRawValue(newValue);
-                            const minRaw = parseInt(MINIMUM_STAKE_AMOUNT.toString(), 10);
-                            
-                            // Ensure minimum stake amount
-                            if (parseInt(rawValue, 10) >= minRaw) {
-                              setStakeAmount(rawValue);
-                            } else {
-                              setStakeAmount(MINIMUM_STAKE_AMOUNT.toString());
-                            }
-                          } else if (newValue === '') {
-                            setDisplayStakeAmount('');
-                            setStakeAmount('');
-                          } else {
-                            setDisplayStakeAmount(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString()));
-                            setStakeAmount(MINIMUM_STAKE_AMOUNT.toString());
-                          }
-                        }} 
-                        min={parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString()))}
-                        step="0.1"
-                        className="edit-input"
-                        placeholder="Enter amount to stake"
-                      />
-                      <button 
-                        type="button"
-                        className="max-stake-btn"
-                        onClick={() => {
-                          if (walletBalance) {
-                            // Set to maximum available balance
-                            setStakeAmount(walletBalance);
-                            setDisplayStakeAmount(rawToDisplayValue(walletBalance));
-                          }
-                        }}
-                      >
-                        MAX
-                      </button>
-                    </div>
-                    <p className="staking-info-note">Minimum {parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())).toLocaleString()} tokens required to become a provider</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="staking-info-compact">
-                  <div className="staking-info-icon">
-                    <GiTwoCoins className="stake-icon" />
-                  </div>
-                  <div className="staking-info-content">
-                    <span className="staking-info-value">
-                      {walletBalance !== null ? 
-                        `${(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : 
-                        "0"} tokens
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="detail-group">
-            <label>Delegation Fee *</label>
-            {isEditing || isRegisterMode(mode) || showStakingForm ? (
-              <input
-                type="number"
-                name="delegationFee"
-                value={formData.delegationFee}
-                onChange={handleInputChange}
-                min="0"
-                max="100"
-                className="edit-input"
-                placeholder="Enter fee percentage (required)"
-                required
-              />
-            ) : (
-              <div className="detail-value">
-                {parsedDetails.commission !== undefined ? `${parsedDetails.commission}%` : 'N/A'}
-              </div>
-            )}
-          </div>
-          
-          {/* Only show provider-specific metrics if not in setup/register mode */}
-          {!isNewProviderSetup && !isRegisterMode(mode) && (
-            <>
-              <div className="detail-group">
-                <label>Random Available</label>
-                <div className="detail-value">
-                  {provider?.providerActivity?.random_balance !== undefined ? 
-                    provider.providerActivity.random_balance : 'N/A'}
-                </div>
-              </div>
-              
-              <div className="detail-group">
-                <label>Random Provided</label>
-                <div className="detail-value">
-                  {provider?.totalFullfullilled !== undefined ? 
-                    provider.totalFullfullilled : '0'}
-                </div>
-              </div>
-              
-              <div className="detail-group">
-                <label>Random Value Fee</label>
-                <div className="detail-value">
-                  0
-                </div>
-              </div>
-            </>
+          {/* Only show provider-specific metrics if not in setup mode */}
+          {!isNewProviderSetup && !isSetupMode(mode) && (
+            <ProviderMetrics provider={provider} />
           )}
           
           {/* Description moved next to random value fee */}
-          <div className="detail-group description-group">
-            <label>Description *</label>
-            {isEditing || isRegisterMode(mode) || showStakingForm ? (
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="edit-input"
-                placeholder="Enter description (required)"
-                required
-              />
-            ) : (
-              <div className="detail-value description">
-                {parsedDetails.description || 'N/A'}
-              </div>
-            )}
-          </div>
+          <ProviderDescription
+            isEditing={isEditing || showStakingForm || isSetupMode(mode)}
+            formData={formData}
+            parsedDetails={parsedDetails}
+            onInputChange={handleInputChange}
+          />
           
           {/* Provider Status Section - Only shown for existing providers */}
-          {!isNewProviderSetup && !isRegisterMode(mode) && (
-            <div className="detail-group provider-status-section">
-              <label>Provider Status</label>
-              {availableRandom !== null ? (
-                <div className={`provider-status ${getRandomStatusMessage().className}`}>
-                  <div className="status-message">
-                    <div>
-                      <p><strong>{getRandomStatusMessage().message}</strong></p>
-                      {getRandomStatusMessage().subMessage && (
-                        <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
-                          {getRandomStatusMessage().subMessage}
-                        </p>
-                      )}
-                      <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '10px' }}>
-                        <strong>Claimable rewards:</strong> {provider?.providerActivity?.fulfillment_rewards ? (provider.providerActivity.fulfillment_rewards/1000000000).toLocaleString() + " Test RNG": "0 Test RNG"}
-                      </p>
-                    </div>
-                    <div className="status-actions">
-                      <button 
-                        className="status-action-btn"
-                        onClick={() => handleUpdateAvailableRandom(getRandomStatusMessage().value)}
-                        disabled={isUpdatingRandom}
-                      >
-                        {isUpdatingRandom ? (
-                          <span className="loading-spinner"><BiRefresh className="spin" /></span>
-                        ) : (
-                          <>
-                            <FiPower /> {getRandomStatusMessage().action}
-                          </>
-                        )}
-                      </button>
-                      <button 
-                        className="status-action-btn"
-                        onClick={handleClaimRewards}
-                        disabled={isClaimingRewards}
-                        style={{ marginTop: '8px' }}
-                      >
-                        {isClaimingRewards ? (
-                          <span className="loading-spinner"><BiRefresh className="spin" /></span>
-                        ) : (
-                          <>
-                            <GiTwoCoins /> Claim Rewards
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {randomUpdateSuccess && (
-                      <div className="success-message">Provider status updated successfully!</div>
-                    )}
-                    {claimSuccess && (
-                      <div className="success-message">Rewards claimed successfully!</div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="detail-value">Loading status...</div>
-              )}
-            </div>
+          {!isNewProviderSetup && !isSetupMode(mode) && (
+            <ProviderStatusSection
+              provider={provider}
+              availableRandom={availableRandom}
+              isUpdatingRandom={isUpdatingRandom}
+              randomUpdateSuccess={randomUpdateSuccess}
+              isClaimingRewards={isClaimingRewards}
+              claimSuccess={claimSuccess}
+              onUpdateAvailableRandom={handleUpdateAvailableRandom}
+              onClaimRewards={handleClaimRewards}
+            />
           )}
         </div>
 
         {/* Empty container to support the side-by-side layout */}
-        {!isNewProviderSetup && !isRegisterMode(mode) && (
+        {!isNewProviderSetup && !isSetupMode(mode) && (
           <>
             {/* Empty div to support layout */}
           </>
         )}
 
         {/* Active Requests Section - Only shown for existing providers */}
-        {!isNewProviderSetup && !isRegisterMode(mode) && provider?.providerId && (
+        {!isNewProviderSetup && !isSetupMode(mode) && provider?.providerId && (
           <div className="detail-group">
             <ActiveRequests providerId={provider.providerId} />
           </div>
         )}
 
-        <div className="social-group">
-          <div className="social-item">
-            <FaTwitter />
-            {isEditing || isRegisterMode(mode) || showStakingForm ? (
-              <input
-                type="text"
-                name="twitter"
-                value={formData.twitter}
-                onChange={handleInputChange}
-                placeholder="@username (optional)"
-                className="edit-input"
-              />
-            ) : (
-              <span>{parsedDetails.twitter || 'N/A'}</span>
-            )}
-          </div>
-
-          <div className="social-item">
-            <FaDiscord />
-            {isEditing || isRegisterMode(mode) || showStakingForm ? (
-              <input
-                type="text"
-                name="discord"
-                value={formData.discord}
-                onChange={handleInputChange}
-                placeholder="username#0000 (optional)"
-                className="edit-input"
-              />
-            ) : (
-              <span>{parsedDetails.discord || 'N/A'}</span>
-            )}
-          </div>
-
-          <div className="social-item">
-            <FaTelegram />
-            {isEditing || isRegisterMode(mode) || showStakingForm ? (
-              <input
-                type="text"
-                name="telegram"
-                value={formData.telegram}
-                onChange={handleInputChange}
-                placeholder="@username (optional)"
-                className="edit-input"
-              />
-            ) : (
-              <span>{parsedDetails.telegram || 'N/A'}</span>
-            )}
-          </div>
-
-          <div className="social-item">
-            <FiGlobe />
-            {isEditing || isRegisterMode(mode) || showStakingForm ? (
-              <input
-                type="text"
-                name="domain"
-                value={formData.domain}
-                onChange={handleInputChange}
-                placeholder="example.com (optional)"
-                className="edit-input"
-              />
-            ) : (
-              <span>{parsedDetails.domain || 'N/A'}</span>
-            )}
-          </div>
-        </div>
+        <SocialLinksSection
+          isEditing={isEditing || showStakingForm || isSetupMode(mode)}
+          formData={formData}
+          parsedDetails={parsedDetails}
+          onInputChange={handleInputChange}
+        />
 
         {/* Always show button in setup mode, otherwise only show when there are changes */}
-        {((isEditing || isRegisterMode(mode) || showStakingForm) && (isNewProviderSetup || isRegisterMode(mode) || changeCount > 0)) && (
+        {((isEditing || showStakingForm || isSetupMode(mode)) && (isNewProviderSetup || isSetupMode(mode) || changeCount > 0)) && (
           <button 
             type="button" 
             className="save-btn" 
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isRegisterMode(mode) || showStakingForm ? 'Stake and Become Provider' : (isNewProviderSetup ? submitLabel : `${submitLabel} (${changeCount} change${changeCount !== 1 ? 's' : ''})`)}
+            {showStakingForm || (isSetupMode(mode) && !isWalletRecognized()) ? 'Stake and Become Provider' : 
+             isSetupMode(mode) && isWalletRecognized() ? (submitLabel || 'Update Provider') :
+             (isNewProviderSetup ? submitLabel : `${submitLabel} (${changeCount} change${changeCount !== 1 ? 's' : ''})`)}
           </button>
         )}
       </div>

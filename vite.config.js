@@ -5,5 +5,11 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'build'
+  },
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['human-crypto-keys']
   }
 })

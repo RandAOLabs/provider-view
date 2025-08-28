@@ -2,10 +2,10 @@
 .provider-details {
   width: 70dvw;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  margin: 1rem auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+  margin: 0.5rem auto;
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
 }
@@ -14,8 +14,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #eee;
 }
 
@@ -56,15 +56,15 @@
 
 .provider-details-content {
   width: 100%;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   box-sizing: border-box;
 }
 
 .provider-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
   width: 100%;
 }
 
@@ -95,10 +95,10 @@
 
 /* Detail groups - common styling across all states */
 .detail-group {
-  margin-bottom: 1rem;
-  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
   background: #f8f9fa;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid #e9ecef;
   transition: all 0.2s ease;
 }
@@ -111,18 +111,18 @@
   display: block;
   font-weight: 600;
   color: #495057;
-  margin-bottom: 0.75rem;
-  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
 }
 
 /* Make values and inputs visually similar */
 .detail-value,
 .edit-input {
-  font-size: 1rem;
-  line-height: 1.5;
-  padding: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding: 0.4rem;
   background: #ffffff;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 1px solid #e9ecef;
   width: 100%;
   box-sizing: border-box;
@@ -192,10 +192,10 @@
 .staking-info-compact {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
+  gap: 0.75rem;
+  padding: 0.6rem;
   background-color: white;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid #e9ecef;
 }
 
@@ -203,8 +203,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background-color: #f0f4f8;
   border-radius: 50%;
   color: #333;
@@ -279,11 +279,11 @@ textarea.edit-input {
 .social-group {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
   background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1rem;
+  border-radius: 6px;
+  padding: 0.75rem;
   border: 1px solid #e9ecef;
 }
 
@@ -292,12 +292,12 @@ textarea.edit-input {
   align-items: center;
   gap: 0.5rem;
   color: #495057;
-  padding: 0.75rem;
-  border-radius: 4px;
+  padding: 0.5rem;
+  border-radius: 3px;
   transition: all 0.2s;
   background: white;
   border: 1px solid #e9ecef;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -315,16 +315,16 @@ textarea.edit-input {
 .save-btn {
   display: block;
   width: 100%;
-  padding: 1rem;
+  padding: 0.75rem;
   background: #0066cc;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .save-btn:hover:not(:disabled) {
@@ -399,19 +399,19 @@ textarea.edit-input {
 
 /* Provider Status Section - consistent styling across all states */
 .provider-status-section {
-  margin: 1rem 0;
+  margin: 0.75rem 0;
   padding-top: 0;
 }
 
 .provider-status {
-  padding: 1rem;
-  border-radius: 6px;
-  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
   border: 1px solid #e9ecef;
   background-color: #ffffff;
 }
@@ -440,10 +440,10 @@ textarea.edit-input {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
+  gap: 0.75rem;
+  padding: 0.6rem;
   background-color: #f8f9fa;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 1px solid #e9ecef;
 }
 
@@ -630,7 +630,7 @@ textarea.edit-input {
 /* Fix inconsistencies between active, inactive and editing states */
 .provider-form .provider-details,
 .content-container .provider-details {
-  padding: 1.5rem;
+  padding: 1rem;
   margin: 0;
   min-width: 75dvw;
   width: 100%;
@@ -648,13 +648,252 @@ textarea.edit-input {
 /* Consistent provider status section */
 .provider-status-section {
   background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 /* Fix welcome message */
 .welcome-message {
-  margin-bottom: 1rem;
-  padding: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+}
+
+/* Alert styles */
+.stake-alert {
+  display: flex;
+  align-items: center;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.stake-alert-icon {
+  margin-right: 8px;
+  color: #856404;
+}
+
+/* Increase stake styles */
+.increase-stake-section {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.increase-stake-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.increase-stake-value {
+  font-size: 15px;
+  font-weight: 500;
+  flex-grow: 1;
+  padding: 5px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  text-align: center;
+}
+
+.increase-stake-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  border-radius: 4px;
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.increase-stake-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.increase-stake-submit {
+  background-color: #2a6dc9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.increase-stake-submit:hover {
+  background-color: #1c54a8;
+}
+
+.increase-stake-submit:disabled {
+  background-color: #b0c9e8;
+  cursor: not-allowed;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  margin-bottom: 15px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.modal-body {
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.modal-body ul {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+
+.modal-body li {
+  margin-bottom: 8px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-cancel-btn {
+  background-color: #f1f1f1;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.modal-confirm-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.modal-cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.modal-confirm-btn:hover {
+  background-color: #c82333;
+}
+
+.stake-status {
+  font-size: 12px;
+  margin-top: 5px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.stake-status.unstaking {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.stake-status.staked {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.stake-timestamp {
+  font-style: italic;
+  font-weight: normal;
+}
+
+.staking-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stake-amount-input {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stake-amount-input label {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.stake-amount-input .staking-info-note {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.stake-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.max-stake-btn {
+  background-color: #2a6dc9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  margin-top: 18px;
+}
+
+.max-stake-btn:hover {
+  background-color: #1c54a8;
+}
+
+.form-help {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
 }
