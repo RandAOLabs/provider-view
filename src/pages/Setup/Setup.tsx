@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { FiWifi, FiMonitor, FiCheckCircle, FiDatabase, FiKey, FiPlus, FiEye, FiEyeOff, FiRefreshCw } from 'react-icons/fi'
+import { FiWifi, FiMonitor, FiCheckCircle, FiDatabase, FiKey, FiPlus, FiEye, FiEyeOff, FiRefreshCw, FiCopy, FiExternalLink, FiPower, FiClock } from 'react-icons/fi'
 import { ConnectWallet } from '../../components/common/ConnectWallet'
 import { getAddressFromMnemonic, jwkFromMnemonic, generateSeedPhrase } from '../../utils/walletUtils'
 import { ProviderDetails } from '../../components/providers/ProviderDetails'
@@ -54,6 +54,8 @@ export default function Setup() {
   const { address: walletAddress } = useWallet()
   const { providers, currentProvider, refreshProviders } = useProviders()
   const [showIframe, setShowIframe] = useState(false)
+  const [setupStep, setSetupStep] = useState<'wallet' | 'tokens' | 'device' | 'wifi' | 'ready'>('wallet')
+  const [addressCopied, setAddressCopied] = useState(false)
   const [envVars, setEnvVars] = useState<EnvVars | null>(null)
   const [showSeedPhrase, setShowSeedPhrase] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +110,20 @@ export default function Setup() {
     }
   }, [walletAddress, walletBalance])
 
+  // Determine setup step based on wallet connection and balance
+  useEffect(() => {
+    if (!walletAddress) {
+      setSetupStep('wallet')
+    } else if (walletBalance) {
+      const balanceNum = parseFloat(walletBalance) / Math.pow(10, TOKEN_DECIMALS)
+      if (balanceNum < 10000) {
+        setSetupStep('tokens')
+      } else {
+        setSetupStep('device')
+      }
+    }
+  }, [walletAddress, walletBalance])
+
   const handleShowInterface = async () => {
     setShowIframe(true)
     // Initialize portal integration
@@ -115,6 +131,22 @@ export default function Setup() {
     
     // Check for existing configuration
     await checkExistingConfiguration()
+  }
+
+  const copyAddress = async () => {
+    if (walletAddress) {
+      try {
+        await navigator.clipboard.writeText(walletAddress)
+        setAddressCopied(true)
+        setTimeout(() => setAddressCopied(false), 2000)
+      } catch (err) {
+        console.error('Failed to copy address:', err)
+      }
+    }
+  }
+
+  const handleReadyToSetup = () => {
+    setSetupStep('ready')
   }
 
   // Check if there's already configuration stored on the device
@@ -265,9 +297,6 @@ export default function Setup() {
       if (!details.description?.trim()) {
         throw new Error('Provider description is required')
       }
-      if (!details.commission || details.commission < 1 || details.commission > 100) {
-        throw new Error('Commission must be between 1% and 100%')
-      }
       
       // Check if we have a provider ID (generated address)
       const providerId = details.providerId || addressInfo.address || providerDetails.id
@@ -285,7 +314,6 @@ export default function Setup() {
         // Prepare provider details for update
         const providerDetailsForUpdate = {
           name: details.name,
-          delegationFee: details.commission.toString(),
           description: details.description || '',
           twitter: details.twitter || '',
           discord: details.discord || '',
@@ -328,7 +356,6 @@ export default function Setup() {
         // Prepare provider details for staking
         const providerDetailsForStaking = {
           name: details.name,
-          delegationFee: details.commission.toString(),
           description: details.description,
           twitter: details.twitter || '',
           discord: details.discord || '',
@@ -381,8 +408,8 @@ export default function Setup() {
       <main>
         <div className="hero-section">
           <div className="hero-content">
-            <h1>Device Setup</h1>
-            <p>Connect to the "DeviceSetup" WiFi network, then access your device configuration interface.</p>
+            <h1>Provider Setup</h1>
+            <p>Set up your RNG miner to become a provider on the network.</p>
           </div>
           <div className="setup-icon">
             <FiMonitor size={40} />
@@ -392,36 +419,147 @@ export default function Setup() {
         <section className="setup-section">
           <div className="setup-container">
             
-            {!showIframe ? (
+            {/* Step 1: Wallet Connection */}
+            {setupStep === 'wallet' && (
               <div className="setup-card">
                 <div className="card-header">
-                  <FiWifi />
-                  <h3>Connect to DeviceSetup Network</h3>
+                  <FiKey />
+                  <h3>Step 1: Connect Wander Wallet</h3>
                 </div>
                 <div className="card-content">
                   <div className="instructions">
-                    <h4>Instructions:</h4>
+                    <h4>Before setting up your provider, you need:</h4>
+                    <ol>
+                      <li>Install and connect your Wander wallet</li>
+                      <li>Have at least 10,000 tokens in your wallet</li>
+                    </ol>
+                    <p>Don't have Wander wallet yet?</p>
+                    <a 
+                      href="https://www.wander.app/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="download-link"
+                    >
+                      <FiExternalLink />
+                      Download Wander Wallet
+                    </a>
+                  </div>
+                  {!walletAddress && (
+                    <div className="wallet-status">
+                      <p>Please connect your wallet to continue.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Token Balance Check */}
+            {setupStep === 'tokens' && walletAddress && (
+              <div className="setup-card">
+                <div className="card-header">
+                  <FiDatabase />
+                  <h3>Step 2: Token Balance Required</h3>
+                </div>
+                <div className="card-content">
+                  <div className="instructions">
+                    <h4>You need 10,000 tokens to become a provider</h4>
+                    <div className="balance-info">
+                      <p>Current balance: {walletBalance ? `${(parseFloat(walletBalance) / Math.pow(10, TOKEN_DECIMALS)).toLocaleString()} tokens` : 'Loading...'}</p>
+                      <p>Required: 10,000 tokens</p>
+                    </div>
+                    <div className="address-section">
+                      <h4>Your wallet address:</h4>
+                      <div className="address-container">
+                        <span className="address-value">{walletAddress}</span>
+                        <button 
+                          onClick={copyAddress}
+                          className="copy-button"
+                          title="Copy address"
+                        >
+                          <FiCopy />
+                          {addressCopied ? 'Copied!' : 'Copy'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="token-options">
+                      <p><strong>To get tokens:</strong></p>
+                      <ul>
+                        <li>If you have AO tokens, visit the faucet to convert them</li>
+                        <li>Or contact our team with your address above for tokens</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Device Power */}
+            {setupStep === 'device' && (
+              <div className="setup-card">
+                <div className="card-header">
+                  <FiPower />
+                  <h3>Step 3: Power On Your RNG Miner</h3>
+                </div>
+                <div className="card-content">
+                  <div className="instructions">
+                    <h4>Device Setup Instructions:</h4>
+                    <ol>
+                      <li>Plug your RNG miner into power</li>
+                      <li>Wait for the device to boot up (about 3 minutes)</li>
+                      <li>The device will create a WiFi access point called "DeviceSetup"</li>
+                    </ol>
+                    <button onClick={() => setSetupStep('wifi')} className="power-button">
+                      <FiPower />
+                      I've Plugged In My Device - Continue to WiFi Setup
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: WiFi Connection */}
+            {setupStep === 'wifi' && (
+              <div className="setup-card">
+                <div className="card-header">
+                  <FiWifi />
+                  <h3>Step 4: Connect to Device WiFi</h3>
+                </div>
+                <div className="card-content">
+                  <div className="instructions">
+                    <h4>Connect to your device:</h4>
                     <ol>
                       <li>Open your device's WiFi settings</li>
                       <li>Look for a network named <strong>"DeviceSetup"</strong></li>
                       <li>Connect to the DeviceSetup network</li>
-                      <li>Click the button below to access the device interface</li>
+                      <li>Click the button below when connected</li>
                     </ol>
                   </div>
-                  <button onClick={handleShowInterface} className="connect-button">
+                  <button onClick={handleReadyToSetup} className="connect-button">
                     <FiCheckCircle />
-                    I've Connected - Show Device Interface
+                    I Have Connected and Am Ready to Setup Provider
                   </button>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {/* Step 5: Main Setup Interface */}
+            {setupStep === 'ready' && (
               <div className="setup-card iframe-card">
                 <div className="card-header">
                   <FiMonitor />
                   <h3>Device Configuration Interface</h3>
                 </div>
                 <div className="card-content">
-                  {/* Wallet Generation Section - Moved above iframe */}
+                  {/* Initialize portal integration when ready */}
+                  {(() => {
+                    if (!showIframe) {
+                      handleShowInterface()
+                      return null
+                    }
+                    return null
+                  })()}
+                  
+                  {/* Wallet Generation Section */}
                   <div className="env-vars-section">
                     <div className="env-vars-header">
                       <div className="env-vars-title">
@@ -539,6 +677,7 @@ export default function Setup() {
                           submitLabel="Stake and Become Provider"
                           isSubmitting={isSubmitting}
                           walletBalance={walletBalance}
+                          initialProviderId={walletInfo.walletJson?.address || addressInfo.address || providerDetails.id}
                         />
                       </div>
                     </div>

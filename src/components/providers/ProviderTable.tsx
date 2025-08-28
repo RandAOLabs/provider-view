@@ -28,8 +28,6 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
   const [stakingProvider, setStakingProvider] = useState<ProviderInfoAggregate | null>(null)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
   const [isRandomFeeLoading, setIsRandomFeeLoading] = useState(false)
-  const [activeRequests, setActiveRequests] = useState<{ [key: string]: any }>({})
-  const [loadingRequests, setLoadingRequests] = useState<{ [key: string]: boolean }>({})
   const [sortConfig, setSortConfig] = useState({
     key: 'active',
     direction: 'desc'
@@ -63,53 +61,10 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
     
     if (newExpandedRows.has(id)) {
       newExpandedRows.delete(id);
-      // Clear active requests when collapsing
-      const newActiveRequests = { ...activeRequests };
-      delete newActiveRequests[id];
-      setActiveRequests(newActiveRequests);
-      setExpandedRows(newExpandedRows);
     } else {
       newExpandedRows.add(id);
-      setExpandedRows(newExpandedRows);
-      // Fetch active requests when expanding
-      setLoadingRequests(prev => ({ ...prev, [id]: true }));
-      try {
-        console.log(`Fetching active requests for provider: ${id}`);
-        const response = await aoHelpers.getOpenRandomRequests(id);
-        console.log('Processing active requests response:', {
-          providerId: id,
-          hasResponse: !!response,
-          hasChallengeRequests: !!response?.activeChallengeRequests,
-          hasOutputRequests: !!response?.activeOutputRequests
-        });
-        
-        if (!response?.activeChallengeRequests?.request_ids || !response?.activeOutputRequests?.request_ids) {
-          console.error('Invalid response structure:', response);
-          throw new Error('Invalid response structure from getOpenRandomRequests');
-        }
-
-        setActiveRequests(prev => ({
-          ...prev,
-          [id]: {
-            challengeRequests: response.activeChallengeRequests.request_ids,
-            outputRequests: response.activeOutputRequests.request_ids
-          }
-        }));
-        console.log('Successfully updated active requests state');
-      } catch (error) {
-        console.error('Error fetching active requests:', error);
-        // Clear loading state and set empty requests on error
-        setActiveRequests(prev => ({
-          ...prev,
-          [id]: {
-            challengeRequests: [],
-            outputRequests: []
-          }
-        }));
-      } finally {
-        setLoadingRequests(prev => ({ ...prev, [id]: false }));
-      }
     }
+    setExpandedRows(newExpandedRows);
   }
 
   const formatTokenAmount = (amount: string) => {

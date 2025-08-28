@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiCheck, FiCopy, FiGlobe } from 'react-icons/fi';
 import { FaTwitter, FaDiscord, FaTelegram } from 'react-icons/fa';
 import { ProviderInfoAggregate, ProviderInfo, ProviderActivity } from 'ao-js-sdk';
-import { ActiveRequests } from './ActiveRequests';
+import { RequestFlowMinimal } from './RequestFlowMinimal';
 import { getProviderTotalRandom } from '../../utils/graphQLquery';
 import './ProviderTable.css';
 
@@ -216,7 +216,11 @@ export const ProviderExpandedDetails = ({
             )}
           </div>
 
-          <ActiveRequests providerId={provider.providerId} />
+          <RequestFlowMinimal 
+            providerId={provider.providerId} 
+            isMinimizable={true} 
+            title="Active Requests" 
+          />
         </div>
       </td>
     </tr>

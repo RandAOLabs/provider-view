@@ -5,6 +5,7 @@ import { Products } from './pages/Products'
 import { Raffle, Lootbox, CriticalStrike, Lottery, RandomNumber } from './pages/Products/ProductPages'
 import { WalletProvider } from './contexts/WalletContext'
 import { ProviderProvider } from './contexts/ProviderContext'
+import { RequestsContextProvider } from './contexts/RequestsContext'
 import './App.css'
 import About from './pages/About/About'
 import Providers from './pages/Providers/Providers'
@@ -18,6 +19,7 @@ function App() {
   return (
     <WalletProvider>
       <ProviderProvider>
+        <RequestsContextProvider>
         <Router>
         <div className="app-container">
           <Sidebar />
@@ -42,6 +44,7 @@ function App() {
         </main>
         </div>
         </Router>
+        </RequestsContextProvider>
       </ProviderProvider>
     </WalletProvider>
   )

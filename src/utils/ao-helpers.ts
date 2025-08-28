@@ -25,7 +25,6 @@ export const RAFFLEPROCESS = "0zuEwuXXnNBPQ6u-eUTGfMkKbSy1zeHKfxbiocvD_y0";
 // Logger.setLogLevel(LogLevel.DEBUG)
 export interface ProviderDetailsInput {
     name: string;
-    delegationFee: string;
     description?: string;
     twitter?: string;
     discord?: string;

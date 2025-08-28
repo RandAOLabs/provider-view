@@ -4,14 +4,12 @@ import { useWallet } from '../../contexts/WalletContext'
 import { useProviders } from '../../contexts/ProviderContext'
 import { ProviderInfoAggregate } from 'ao-js-sdk'
 import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
-import { ActiveRequests } from './ActiveRequests'
-import { ProviderActorSection } from './ProviderActorSection'
+import { RequestFlowMinimal } from './RequestFlowMinimal'
 import { StakeSection } from './StakeSection'
 import { ProviderFormFields } from './ProviderFormFields'
 import { ProviderStatusSection } from './ProviderStatusSection'
 import { ProviderMetrics } from './ProviderMetrics'
 import { SocialLinksSection } from './SocialLinksSection'
-import { ProviderDescription } from './ProviderDescription'
 import './ProviderDetails.css'
 
 // Modal component for confirmation dialogs
@@ -68,6 +66,7 @@ interface ProviderDetailsProps {
   walletBalance?: string | null;
   onCancel?: () => void;
   mode?: ProviderMode;
+  initialProviderId?: string;
 }
 
 export const ProviderDetails: React.FC<ProviderDetailsProps> = ({ 
@@ -78,7 +77,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   submitLabel = 'Save Changes',
   walletBalance: externalWalletBalance,
   onCancel: externalOnCancel,
-  mode: externalMode
+  mode: externalMode,
+  initialProviderId
 }) => {
   const { address: walletAddress } = useWallet()
   const { providers, loading: providersLoading, error: providersError, refreshProviders } = useProviders()
@@ -100,8 +100,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const [randomUpdateSuccess, setRandomUpdateSuccess] = useState(false)
   const [isClaimingRewards, setIsClaimingRewards] = useState(false)
   const [claimSuccess, setClaimSuccess] = useState(false)
-  const [activeRequests, setActiveRequests] = useState<{ challengeRequests: string[], outputRequests: string[] } | null>(null)
-  const [loadingRequests, setLoadingRequests] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
   const [showStakingForm, setShowStakingForm] = useState(false)
   const [showTurnOffModal, setShowTurnOffModal] = useState(false)
@@ -284,13 +282,13 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
   const [formData, setFormData] = useState(() => ({
     name: parsedDetails.name || '',
-    delegationFee: parsedDetails.commission || '',
     description: parsedDetails.description || '',
     twitter: parsedDetails.twitter || '',
     discord: parsedDetails.discord || '',
     telegram: parsedDetails.telegram || '',
     domain: parsedDetails.domain || '',
-    providerId: '' // Add providerId field for actor functionality
+    providerId: '', // Provider ID for identification
+    actorId: initialProviderId || '' // Actor ID from setup/injection - this is what gets passed from setup
   }));
 
   // Update formData when provider data changes or when switching to edit mode
@@ -298,13 +296,13 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     if (provider && parsedDetails) {
       setFormData(prev => ({
         name: parsedDetails.name || '',
-        delegationFee: parsedDetails.commission || '',
         description: parsedDetails.description || '',
         twitter: parsedDetails.twitter || '',
         discord: parsedDetails.discord || '',
         telegram: parsedDetails.telegram || '',
         domain: parsedDetails.domain || '',
-        providerId: prev.providerId || '' // Preserve any custom providerId
+        providerId: provider?.providerId || '', // Use existing provider ID
+        actorId: prev.actorId || initialProviderId || '' // Preserve actor ID from setup/injection
       }));
     }
   }, [provider, parsedDetails, isEditing]);
@@ -313,21 +311,40 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   useEffect(() => {
     const newChanges = {};
     Object.keys(formData).forEach(key => {
-      const originalValue = parsedDetails[key === 'delegationFee' ? 'commission' : key] || '';
+      // Skip actorId from change tracking since it's not stored in parsedDetails
+      if (key === 'actorId') return;
+      
+      const originalValue = key === 'providerId' ? (provider?.providerId || '') : (parsedDetails[key] || '');
       if (formData[key] !== originalValue) {
         newChanges[key] = true;
       }
     });
+    
+    // Special handling for actorId changes
+    const originalActorId = initialProviderId || '';
+    if ((formData as any).actorId !== originalActorId) {
+      newChanges.actorId = true;
+    }
+    
     setChanges(newChanges);
-  }, [formData, parsedDetails]);
+  }, [formData, parsedDetails, provider, initialProviderId]);
   
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      };
+      
+      // When provider ID changes in edit mode, it should also update the actor ID
+      if (name === 'providerId') {
+        updated.actorId = value;
+      }
+      
+      return updated;
+    })
     setError('') // Clear any previous error
   }
 
@@ -337,12 +354,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       setError('Name is required')
       return
     }
-    if (!formData.delegationFee) {
-      setError('Delegation Fee is required')
-      return
-    }
-    if (!formData.description?.trim()) {
-      setError('Description is required')
+    if (!(formData as any).providerId?.trim() && !walletAddress) {
+      setError('Provider ID is required')
       return
     }
     
@@ -386,13 +399,12 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     
     // Regular edit mode without external handler
     try {
-      // Convert delegationFee to string if it's a number
       const updatedFormData = {
-        ...formData,
-        delegationFee: String(formData.delegationFee)
+        ...formData
       };
       // Use stakeWithDetails for provider updates with 0 quantity
-      const actorId = (formData as any).providerId || provider?.providerId;
+      // Use actorId if provided, otherwise fall back to providerId or current provider ID
+      const actorId = (formData as any).actorId?.trim() || (formData as any).providerId || provider?.providerId;
       const result = await aoHelpers.stakeWithDetails('0', updatedFormData, actorId);
       
       if (result) {
@@ -487,7 +499,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       const rawIncreaseAmount = displayToRawValue(increaseStakeAmount);
       
       // Call stakeTokens function from ao-helpers with potential actor ID
-      const actorId = (formData as any).providerId || undefined;
+      const actorId = (formData as any).actorId?.trim() || (formData as any).providerId || undefined;
       await aoHelpers.stakeTokens(rawIncreaseAmount, undefined, actorId);
       
       setSuccess(`Successfully increased stake by ${increaseStakeAmount} tokens!`);
@@ -532,8 +544,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       const isEditingExistingProvider = isWalletRecognized();
       const quantity = isEditingExistingProvider ? '0' : stakeAmount;
       
-      // Use provider ID as actor ID
-      const actorId = (details as any).providerId || walletAddress;
+      // Use actor ID if provided, otherwise fall back to provider ID or wallet address
+      const actorId = (details as any).actorId?.trim() || (details as any).providerId || walletAddress;
       
       // Use stakeWithDetails method
       const result = await aoHelpers.stakeWithDetails(quantity, details, actorId);
@@ -642,36 +654,27 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             formData={formData}
             handleInputChange={handleInputChange}
             parsedDetails={parsedDetails}
-          />
-
-          <ProviderActorSection
-            isEditing={isEditing || isSetupMode(mode)}
-            isRegisterMode={false}
-            showStakingForm={showStakingForm || isSetupMode(mode)}
-            formData={formData}
-            handleInputChange={handleInputChange}
             provider={provider}
             walletAddress={walletAddress}
             copiedAddress={copiedAddress}
             copyToClipboard={copyToClipboard}
             truncateAddress={truncateAddress}
             isSetupMode={isSetupMode(mode)}
+            joinDate={provider?.providerInfo?.created_at ? new Date(provider.providerInfo.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : (isSetupMode(mode) ? new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : undefined)}
           />
 
-          <div className="detail-group">
-            <label>Join Date</label>
-            <div className="detail-value">
-              {provider?.providerInfo?.created_at ? new Date(provider.providerInfo.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              }) : (isSetupMode(mode) ? new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              }) : 'N/A')}
-            </div>
-          </div>
+          {/* Random Stats positioned next to description */}
+          {!isNewProviderSetup && !isSetupMode(mode) && (
+            <ProviderMetrics provider={provider} />
+          )}
 
           <StakeSection
             isRegisterMode={false}
@@ -697,18 +700,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             formatTimeAgo={formatTimeAgo}
           />
           
-          {/* Only show provider-specific metrics if not in setup mode */}
-          {!isNewProviderSetup && !isSetupMode(mode) && (
-            <ProviderMetrics provider={provider} />
-          )}
-          
-          {/* Description moved next to random value fee */}
-          <ProviderDescription
-            isEditing={isEditing || showStakingForm || isSetupMode(mode)}
-            formData={formData}
-            parsedDetails={parsedDetails}
-            onInputChange={handleInputChange}
-          />
           
           {/* Provider Status Section - Only shown for existing providers */}
           {!isNewProviderSetup && !isSetupMode(mode) && (
@@ -732,22 +723,42 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
           </>
         )}
 
+        {/* Social Links Section - Only shown for existing providers */}
+        {!isNewProviderSetup && !isSetupMode(mode) && (
+          <SocialLinksSection
+            isEditing={isEditing || showStakingForm || isSetupMode(mode)}
+            formData={formData}
+            parsedDetails={parsedDetails}
+            onInputChange={handleInputChange}
+          />
+        )}
+
         {/* Active Requests Section - Only shown for existing providers */}
         {!isNewProviderSetup && !isSetupMode(mode) && provider?.providerId && (
           <div className="detail-group">
-            <ActiveRequests providerId={provider.providerId} />
+            <RequestFlowMinimal 
+              providerId={provider.providerId} 
+              isMinimizable={true} 
+              title="Active Requests" 
+            />
           </div>
         )}
 
-        <SocialLinksSection
-          isEditing={isEditing || showStakingForm || isSetupMode(mode)}
-          formData={formData}
-          parsedDetails={parsedDetails}
-          onInputChange={handleInputChange}
-        />
 
-        {/* Always show button in setup mode, otherwise only show when there are changes */}
-        {((isEditing || showStakingForm || isSetupMode(mode)) && (isNewProviderSetup || isSetupMode(mode) || changeCount > 0)) && (
+        {/* Save button - show in edit mode when there are changes, or always in setup mode */}
+        {(isEditing && changeCount > 0) && (
+          <button 
+            type="button" 
+            className="save-btn" 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : `Save Changes (${changeCount} change${changeCount !== 1 ? 's' : ''})`}
+          </button>
+        )}
+        
+        {/* Setup/Staking button - show in setup mode or when staking form is visible */}
+        {((showStakingForm || isSetupMode(mode)) && (isNewProviderSetup || isSetupMode(mode))) && (
           <button 
             type="button" 
             className="save-btn" 
@@ -756,7 +767,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
           >
             {showStakingForm || (isSetupMode(mode) && !isWalletRecognized()) ? 'Stake and Become Provider' : 
              isSetupMode(mode) && isWalletRecognized() ? (submitLabel || 'Update Provider') :
-             (isNewProviderSetup ? submitLabel : `${submitLabel} (${changeCount} change${changeCount !== 1 ? 's' : ''})`)}
+             (isNewProviderSetup ? submitLabel : `${submitLabel} (${changeCount} change${changeCount !== 1 ? 's' : ''})`)}  
           </button>
         )}
       </div>

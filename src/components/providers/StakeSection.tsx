@@ -54,11 +54,16 @@ export const StakeSection: React.FC<StakeSectionProps> = ({
       {/* Only show Total Staked for existing providers, not in register mode */}
       {!isRegisterMode && !showStakingForm && (
         <div className="detail-group">
-          <label>Total Staked</label>
+          <label>Stake Amount *</label>
           <div className="stake-group">
             <div className="detail-value">
               {formatTokenAmount(provider?.providerInfo?.stake?.amount || "0")}
             </div>
+            {walletBalance !== null && (
+              <div className="available-balance-inline">
+                <small>Available: {(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })} tokens</small>
+              </div>
+            )}
             {provider?.providerInfo?.stake && (
               <div className="stake-status staked">
                 Staked
@@ -122,7 +127,7 @@ export const StakeSection: React.FC<StakeSectionProps> = ({
         <div className="detail-group">
           <div className="staking-input-container">
             <div className="stake-amount-input">
-              <label>Stake Amount (Tokens) *</label>
+              <label>Stake Amount *</label>
               <div className="stake-input-wrapper">
                 <input 
                   type="number" 
@@ -166,43 +171,14 @@ export const StakeSection: React.FC<StakeSectionProps> = ({
                   MAX
                 </button>
               </div>
+              {walletBalance !== null && (
+                <div className="available-balance-inline">
+                  <small>Available: {(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })} tokens</small>
+                </div>
+              )}
               <p className="staking-info-note">Minimum {parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())).toLocaleString()} tokens required to become a provider</p>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Wallet balance display */}
-      {walletBalance !== null && (
-        <div className="detail-group">
-          <label>Available Balance</label>
-          {(isRegisterMode || showStakingForm) ? (
-            <div className="staking-info-compact">
-              <div className="staking-info-icon">
-                <GiTwoCoins className="stake-icon" />
-              </div>
-              <div className="staking-info-content">
-                <span className="staking-info-value">
-                  {walletBalance !== null ? 
-                    `${(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : 
-                    "0"} tokens
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="staking-info-compact">
-              <div className="staking-info-icon">
-                <GiTwoCoins className="stake-icon" />
-              </div>
-              <div className="staking-info-content">
-                <span className="staking-info-value">
-                  {walletBalance !== null ? 
-                    `${(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : 
-                    "0"} tokens
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </>

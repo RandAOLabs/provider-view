@@ -42,8 +42,7 @@ export const ProviderActorSection: React.FC<ProviderActorSectionProps> = ({
             placeholder="Enter custom provider ID (optional)"
           />
           <small className="form-help">
-            If provided, this will be used as the actor ID for staking and updates. 
-            Leave empty to use your wallet address as the provider ID.
+            Optional custom actor ID. Leave empty to use wallet address.
           </small>
         </>
       ) : (

@@ -1,13 +1,27 @@
-/* Provider Details Component */
+/* Provider Details Component - Responsive */
 .provider-details {
-  width: 70dvw;
+  width: 100%;
+  max-width: 100%;
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
   padding: 1rem;
-  margin: 0.5rem auto;
+  margin: 0;
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Available balance inline styling */
+.available-balance-inline {
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+
+.available-balance-inline small {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 400;
 }
 
 .provider-details-header {
@@ -62,10 +76,11 @@
 
 .provider-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .social-item span,
@@ -80,6 +95,49 @@
   grid-column: span 2;
 }
 
+/* Required fields section */
+.required-fields {
+  display: contents;
+}
+
+/* Optional fields section */
+.optional-fields {
+  display: contents;
+}
+
+.optional-fields-toggle {
+  grid-column: 1 / -1;
+  margin: 0.3rem 0 0.2rem 0;
+  padding: 0.3rem 0.5rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.optional-fields-toggle:hover {
+  background: #e9ecef;
+}
+
+.optional-fields-toggle .toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.optional-fields-toggle.expanded .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.optional-fields.collapsed {
+  display: none;
+}
+
 .description-group .detail-value.description,
 .description-group textarea.edit-input {
   max-height: 100px;
@@ -88,41 +146,64 @@
 }
 
 @media (max-width: 640px) {
+  .provider-details {
+    padding: 0.5rem;
+  }
+  
+  .provider-grid {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  
   .description-group {
     grid-column: 1 / -1;
   }
+  
+  .detail-group {
+    padding: 0.2rem 0.3rem;
+  }
+  
+  .detail-group label {
+    font-size: 0.75rem;
+  }
+  
+  .detail-value,
+  .edit-input {
+    font-size: 0.8rem;
+    padding: 0.15rem 0.25rem;
+  }
 }
 
-/* Detail groups - common styling across all states */
+/* Detail groups - condensed styling */
 .detail-group {
-  margin-bottom: 0.5rem;
-  padding: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 4px;
+  margin-bottom: 0.25rem;
+  padding: 0.25rem 0.4rem;
+  background: #ffffff;
+  border-radius: 2px;
   border: 1px solid #e9ecef;
-  transition: all 0.2s ease;
+  transition: all 0.1s ease;
 }
 
 .detail-group:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: #dee2e6;
 }
 
 .detail-group label {
   display: block;
   font-weight: 600;
   color: #495057;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+  font-size: 0.8rem;
 }
 
-/* Make values and inputs visually similar */
+/* Make values and inputs visually similar - condensed */
 .detail-value,
 .edit-input {
-  font-size: 0.9rem;
-  line-height: 1.4;
-  padding: 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  padding: 0.2rem 0.3rem;
   background: #ffffff;
-  border-radius: 3px;
+  border-radius: 2px;
   border: 1px solid #e9ecef;
   width: 100%;
   box-sizing: border-box;
@@ -165,8 +246,8 @@
 .stake-group {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 0.2rem;
 }
 
 .unstake-btn-small {
@@ -188,14 +269,14 @@
   background: rgba(220, 53, 69, 0.1);
 }
 
-/* Staking Information Styles */
+/* Staking Information Styles - condensed */
 .staking-info-compact {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem;
-  background-color: white;
-  border-radius: 4px;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem;
+  background-color: #f8f9fa;
+  border-radius: 2px;
   border: 1px solid #e9ecef;
 }
 
@@ -203,16 +284,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background-color: #f0f4f8;
-  border-radius: 50%;
-  color: #333;
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  color: #0066cc;
   flex-shrink: 0;
 }
 
 .stake-icon {
-  font-size: 1.5rem;
+  font-size: 1rem;
   color: #0066cc;
 }
 
@@ -222,14 +302,14 @@
 }
 
 .staking-info-value {
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   color: #000000;
   font-weight: 500;
 }
 
 .staking-info-note {
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
   color: #666;
   font-style: italic;
 }
@@ -275,35 +355,33 @@ textarea.edit-input {
   resize: vertical;
 }
 
-/* Social Groups - uniform styling for all states */
+/* Social Groups - condensed styling */
 .social-group {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  padding: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  background: #ffffff;
+  border-radius: 3px;
+  padding: 0.4rem;
   border: 1px solid #e9ecef;
 }
 
 .social-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
   color: #495057;
-  padding: 0.5rem;
-  border-radius: 3px;
-  transition: all 0.2s;
-  background: white;
+  padding: 0.3rem 0.4rem;
+  border-radius: 2px;
+  transition: all 0.1s;
+  background: #f8f9fa;
   border: 1px solid #e9ecef;
-  font-size: 0.85rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-size: 0.8rem;
 }
 
 .social-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: #e9ecef;
 }
 
 .social-item svg {
@@ -397,27 +475,26 @@ textarea.edit-input {
   background: #c82333;
 }
 
-/* Provider Status Section - consistent styling across all states */
+/* Provider Status Section - condensed styling */
 .provider-status-section {
-  margin: 0.75rem 0;
+  margin: 0.3rem 0;
   padding-top: 0;
 }
 
 .provider-status {
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-top: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  padding: 0.3rem 0.4rem;
+  border-radius: 2px;
+  margin-top: 0.2rem;
+  transition: all 0.1s ease;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
   border: 1px solid #e9ecef;
   background-color: #ffffff;
 }
 
 .provider-status:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: #dee2e6;
 }
 
 /* Color indicators for status - subtle but distinct */
@@ -434,52 +511,52 @@ textarea.edit-input {
   border-left: 4px solid #dc3545;
 }
 
-/* Status message styling - consistent across all states */
+/* Status message styling - condensed */
 .status-message {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem;
   background-color: #f8f9fa;
-  border-radius: 3px;
+  border-radius: 2px;
   border: 1px solid #e9ecef;
 }
 
 .status-message > div {
   display: flex;
-  flex-direction: column; /* Changed to column for better readability */
-  gap: 0.25rem;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
 .status-message p {
   margin: 0;
   font-weight: 500;
-  line-height: 1.4;
-  font-size: 0.9rem;
+  line-height: 1.2;
+  font-size: 0.8rem;
   color: #212529;
 }
 
 .status-message p strong {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
-/* Standardized action button across all states */
+/* Standardized action button - condensed */
 .status-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  gap: 0.3rem;
+  padding: 0.3rem 0.5rem;
   background-color: #ffffff;
   border: 1px solid #dee2e6;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
+  transition: all 0.1s ease;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 
@@ -538,23 +615,24 @@ textarea.edit-input {
   border: 1px solid rgba(40, 167, 69, 0.2);
 }
 
-/* Active Requests Section */
+/* Active Requests Section - condensed */
 .active-requests-section {
-  margin-top: 24px;
-  margin-bottom: 24px;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
   border-top: 1px solid #eee;
-  padding-top: 24px;
+  padding-top: 0.5rem;
 }
 
 .active-requests-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 0.3rem;
 }
 
 .active-requests-header label {
   margin-bottom: 0;
+  font-size: 0.8rem;
 }
 
 .refresh-button {
@@ -562,12 +640,13 @@ textarea.edit-input {
   border: none;
   color: #6c757d;
   cursor: pointer;
-  padding: 8px;
+  padding: 0.3rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
-  border-radius: 4px;
+  transition: color 0.1s;
+  border-radius: 2px;
+  font-size: 0.8rem;
 }
 
 .refresh-button:hover:not(:disabled) {
@@ -590,30 +669,30 @@ textarea.edit-input {
 
 .requests-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.4rem;
 }
 
 .request-group h4 {
-  margin: 0 0 12px 0;
+  margin: 0 0 0.3rem 0;
   color: #495057;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
 .request-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.2rem;
 }
 
 .request-item {
   background: white;
-  padding: 8px 12px;
-  border-radius: 4px;
+  padding: 0.3rem 0.4rem;
+  border-radius: 2px;
   border: 1px solid #dee2e6;
   font-family: monospace;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 .copy-icon {
@@ -632,25 +711,30 @@ textarea.edit-input {
 .content-container .provider-details {
   padding: 1rem;
   margin: 0;
-  min-width: 75dvw;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-shadow: none;
   border: none;
+  box-sizing: border-box;
 }
 
 /* Make the provider details consistent in active and inactive states */
 .provider-form .provider-details-content,
 .content-container .provider-details-content {
   width: 100% !important;
-  min-width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
 }
 
-/* Consistent provider status section */
+/* Consistent provider status section - condensed */
 .provider-status-section {
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
+  background-color: #ffffff;
+  border-radius: 2px;
+  padding: 0.3rem;
+  margin-bottom: 0.3rem;
+  border: 1px solid #e9ecef;
 }
 
 /* Fix welcome message */
@@ -659,45 +743,46 @@ textarea.edit-input {
   padding: 0.75rem;
 }
 
-/* Alert styles */
+/* Alert styles - condensed */
 .stake-alert {
   display: flex;
   align-items: center;
   background-color: #fff3cd;
   color: #856404;
   border: 1px solid #ffeeba;
-  border-radius: 4px;
-  padding: 10px;
-  margin-top: 10px;
-  font-size: 14px;
+  border-radius: 2px;
+  padding: 0.3rem 0.4rem;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
 }
 
 .stake-alert-icon {
-  margin-right: 8px;
+  margin-right: 0.3rem;
   color: #856404;
+  font-size: 0.8rem;
 }
 
-/* Increase stake styles */
+/* Increase stake styles - condensed */
 .increase-stake-section {
-  margin-top: 10px;
+  margin-top: 0.3rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.2rem;
 }
 
 .increase-stake-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.3rem;
 }
 
 .increase-stake-value {
-  font-size: 15px;
+  font-size: 0.8rem;
   font-weight: 500;
   flex-grow: 1;
-  padding: 5px 10px;
+  padding: 0.2rem 0.4rem;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 2px;
   background-color: #f8f9fa;
   text-align: center;
 }
@@ -706,13 +791,14 @@ textarea.edit-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  width: 32px;
-  border-radius: 4px;
+  height: 24px;
+  width: 24px;
+  border-radius: 2px;
   background-color: #f1f1f1;
   border: 1px solid #ddd;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.1s ease;
+  font-size: 0.7rem;
 }
 
 .increase-stake-btn:hover {
@@ -723,12 +809,13 @@ textarea.edit-input {
   background-color: #2a6dc9;
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
+  border-radius: 2px;
+  padding: 0.3rem 0.6rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.1s ease;
   font-weight: 500;
-  margin-top: 8px;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
 }
 
 .increase-stake-submit:hover {
@@ -820,10 +907,10 @@ textarea.edit-input {
 }
 
 .stake-status {
-  font-size: 12px;
-  margin-top: 5px;
-  padding: 3px 6px;
-  border-radius: 4px;
+  font-size: 0.7rem;
+  margin-top: 0.1rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
   display: inline-block;
   text-transform: capitalize;
 }
@@ -848,43 +935,43 @@ textarea.edit-input {
 .staking-input-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.3rem;
 }
 
 .stake-amount-input {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0.2rem;
 }
 
 .stake-amount-input label {
-  font-size: 14px;
+  font-size: 0.8rem;
   font-weight: bold;
-  margin-bottom: 2px;
+  margin-bottom: 0.1rem;
 }
 
 .stake-amount-input .staking-info-note {
-  font-size: 12px;
+  font-size: 0.7rem;
   color: #666;
-  margin-top: 2px;
+  margin-top: 0.1rem;
 }
 
 .stake-input-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.3rem;
 }
 
 .max-stake-btn {
   background-color: #2a6dc9;
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
+  border-radius: 2px;
+  padding: 0.3rem 0.5rem;
   cursor: pointer;
   font-weight: 500;
-  transition: background-color 0.2s ease;
-  margin-top: 18px;
+  transition: background-color 0.1s ease;
+  font-size: 0.75rem;
 }
 
 .max-stake-btn:hover {
