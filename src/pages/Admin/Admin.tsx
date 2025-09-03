@@ -11,51 +11,6 @@ import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo
 import { ProviderDetailsModal } from '../../components/ProviderDetailsModal';
 import './Admin.css';
 
-// Add type declaration for arweaveWallet on window object
-declare global {
-  interface Window {
-    arweaveWallet: any;
-  }
-}
-
-// Utility function to fetch message result using RandomClient
-async function fetchMessageResult(messageID: string, processID: string): Promise<{ Messages: any[]; Spawns: any[]; Output: any[]; Error: any }> {
-  try {
-    // Use the RandomClient which has the proper configuration
-    const randomClient = await aoHelpers.getRandomClient();
-    
-    // Get a properly configured result query function
-    const { result } = connect({
-      MU_URL: "https://ur-mu.randao.net", 
-      CU_URL: "https://ur-cu.randao.net",
-      GATEWAY_URL: "https://arweave.net",
-      MODE: "legacy"
-    });
-
-    // Execute the query
-    const response = await result({
-      message: messageID,
-      process: processID,
-    });
-
-    return {
-      Messages: response.Messages || [],
-      Spawns: response.Spawns || [],
-      Output: response.Output || [],
-      Error: response.Error || null
-    };
-  } catch (error: any) {
-    if (error instanceof SyntaxError && error.message.includes("Unexpected token '<'")) {
-      console.error("CU timeout ratelimit error");
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-    } else {
-      console.error("Error fetching message result:", error);
-    }
-
-    return { Messages: [], Spawns: [], Output: [], Error: error };
-  }
-}
-
 // Combined Provider Management Component
 interface ProviderManagementProps {
   providers: ProviderInfoAggregate[];
@@ -99,7 +54,7 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
 
   // Filter providers by search term
   const filteredProviders = providers.filter(provider => {
-    const searchableText = `${provider.providerId} ${provider.providerInfo?.provider_details?.name || ''}`;
+    const searchableText = `${provider.owner} ${provider.providerId} ${provider.providerInfo?.provider_details?.name || ''}`;
     return searchableText.toLowerCase().includes(searchTerm.toLowerCase());
   });
   
@@ -200,11 +155,8 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
     setError(null);
 
     try {
-      // Get RandomClient instance
-      const randomClient = await aoHelpers.getRandomClient();
-      
-      // Create a request using RandomClient directly
-      const result = await randomClient.createRequest(providerIds, providerIds.length, callbackId);
+      // Use aoHelpers function instead of direct getRandomClient call
+      const result = await aoHelpers.createRandomRequest(providerIds, providerIds.length, callbackId);
       
       setRequestResult(`Request sent! Callback ID: ${callbackId}`);
       console.log('Random request result:', result);

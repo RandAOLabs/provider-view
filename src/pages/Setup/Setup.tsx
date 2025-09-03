@@ -88,7 +88,7 @@ export default function Setup() {
     if (!walletAddress) return 'setup'
     
     // Check if the wallet owns a provider
-    const ownedProvider = providers.find(p => p.providerId === walletAddress)
+    const ownedProvider = providers.find(p => p.owner === walletAddress)
     
     // Always use setup mode in the setup page context
     // The component will handle edit vs new provider setup internally
@@ -305,7 +305,7 @@ export default function Setup() {
       }
       
       // Check if provider already exists (update mode)
-      const existingProvider = currentProvider || providers.find(p => p.providerId === providerId)
+      const existingProvider = currentProvider || providers.find(p => p.owner === walletAddress)
       
       if (existingProvider) {
         // Update existing provider

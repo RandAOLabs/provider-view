@@ -81,8 +81,8 @@ export const StakeSection: React.FC<StakeSectionProps> = ({
               </div>
             )}
             
-            {/* Increase stake section */}
-            {(isViewMode || isEditMode) && (
+            {/* Increase stake section - only show in edit mode */}
+            {isEditMode && (
               <div className="increase-stake-section">
                 <label>Increase Stake:</label>
                 <div className="increase-stake-controls">

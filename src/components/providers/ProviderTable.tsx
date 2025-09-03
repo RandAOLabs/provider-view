@@ -3,7 +3,7 @@ import { FiCircle, FiChevronDown, FiChevronUp, FiCheck, FiCopy, FiLoader } from 
 import { aoHelpers } from '../../utils/ao-helpers'
 import { GiTwoCoins } from 'react-icons/gi'
 import { StakingModal } from './StakingModal'
-import { ProviderExpandedDetails } from './ProviderExpandedDetails'
+import { ProviderDetails } from './ProviderDetails'
 import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-js-sdk'
 import './ProviderTable.css'
 
@@ -222,6 +222,20 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
   }, [providers, sortConfig, isLoading]);
   
 
+  // Debug logging for provider objects in table
+  console.log('ProviderTable - All providers:', providers);
+  providers.forEach((provider, index) => {
+    console.log(`ProviderTable Provider ${index + 1}:`, {
+      providerId: provider.providerId,
+      owner: provider.owner,
+      hasOwner: !!provider.owner,
+      hasProviderId: !!provider.providerId,
+      ownerType: typeof provider.owner,
+      providerIdType: typeof provider.providerId,
+      fullProvider: provider
+    });
+  });
+
   return (
     <div className="provider-container">
       <div className="provider-table">
@@ -334,11 +348,11 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 <td>
                   <div 
                     className="address-cell"
-                    onClick={(e) => copyToClipboard(e, provider.providerId)}
-                    title="Click to copy address"
+                    onClick={(e) => copyToClipboard(e, provider.owner)}
+                    title="Click to copy owner address"
                   >
-                    <span>{truncateAddress(provider.providerId)}</span>
-                    {copiedAddress === provider.providerId ? (
+                    <span>{truncateAddress(provider.owner)}</span>
+                    {copiedAddress === provider.owner ? (
                       <FiCheck className="copy-icon success" />
                     ) : (
                       <FiCopy className="copy-icon" />
@@ -400,13 +414,16 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 </td>
               </tr>
               {expandedRows.has(provider.providerId) && (
-                <ProviderExpandedDetails
-                  provider={provider}
-                  copiedAddress={copiedAddress}
-                  copyToClipboard={copyToClipboard}
-                  formatTokenAmount={formatTokenAmount}
-                  truncateAddress={truncateAddress}
-                />
+                <tr className="expanded-content">
+                  <td colSpan={10}>
+                    <div className="expanded-details">
+                      <ProviderDetails
+                        currentProvider={provider}
+                        mode="view"
+                      />
+                    </div>
+                  </td>
+                </tr>
               )}
             </React.Fragment>
           ))}

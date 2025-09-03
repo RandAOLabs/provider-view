@@ -49,6 +49,19 @@ export const ProviderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       
       console.log('All providers data:', fetchedProviders);
+      
+      // Debug logging for provider object structure
+      fetchedProviders.forEach((provider, index) => {
+        console.log(`Provider ${index + 1}:`, {
+          providerId: provider.providerId,
+          owner: provider.owner,
+          fullProvider: provider,
+          providerInfo: provider.providerInfo,
+          providerActivity: provider.providerActivity,
+          totalFullfullilled: provider.totalFullfullilled
+        });
+      });
+      
       setProviders(fetchedProviders);
     } catch (err) {
       console.error('Error fetching providers:', err);
@@ -76,9 +89,9 @@ export const ProviderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [isReady, isConnecting, fetchProviders]); // Fetch providers only when wallet is ready
 
-  // Find the current provider based on the connected address
+  // Find the current provider based on the connected address (check owner field)
   const currentProvider = connectedAddress 
-    ? providers.find(p => p.providerId === connectedAddress) 
+    ? providers.find(p => p.owner === connectedAddress) 
     : undefined;
 
   return (

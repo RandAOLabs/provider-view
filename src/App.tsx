@@ -1,6 +1,5 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { Sidebar } from './components/layout/Sidebar'
 import { Products } from './pages/Products'
 import { Raffle, Lootbox, CriticalStrike, Lottery, RandomNumber } from './pages/Products/ProductPages'
 import { WalletProvider } from './contexts/WalletContext'
@@ -13,6 +12,7 @@ import InfoHow from './pages/Info/InfoHow'
 import Admin from './pages/Admin/Admin'
 import Faucet from './pages/Faucet/Faucet'
 import Setup from './pages/Setup/Setup'
+import { Sidebar } from './components/common/Sidebar'
 
 
 function App() {

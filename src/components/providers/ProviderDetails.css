@@ -40,6 +40,18 @@
   color: #333;
 }
 
+/* Address display styling */
+.address-display-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.secondary-address {
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
 .edit-btn {
   display: inline-flex;
   align-items: center;

@@ -16,7 +16,7 @@
     "@react-three/fiber": "^8.17.14",
     "@types/file-saver": "^2.0.7",
     "@types/three": "^0.173.0",
-    "ao-js-sdk": "^0.2.16",
+    "ao-js-sdk": "^0.2.24",
     "arweave": "^1.15.5",
     "axios": "^1.9.0",
     "bip39": "^3.1.0",

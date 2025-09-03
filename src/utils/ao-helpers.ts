@@ -271,6 +271,7 @@ class AOHelpers {
             }
 
     /**
+     * TODO put this in the client sdk so it not a raw call here
      * Reinitialize a provider by sending a message to the RandAO process
      * Only providers with value -2 can be reinitialized and will be set to 0
      * @param providerId The provider ID to reinitialize
@@ -333,6 +334,54 @@ class AOHelpers {
                 await client.claimRewards();
             } catch (error) {
                 console.error('Error claiming random rewards:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Get user info for a specific address
+         * @param address The wallet address to get info for
+         * @returns Promise that resolves to user info
+         */
+        async getUserInfo(address: string): Promise<any> {
+            try {
+                const client = await this.getRandomClient();
+                return await client.getUserInfo(address);
+            } catch (error) {
+                console.error('Error getting user info:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Prepay tokens for future random requests
+         * @param amount The amount to prepay (in raw token units)
+         * @param address The wallet address
+         * @returns Promise that resolves to prepay result
+         */
+        async prepayTokens(amount: number, address: string): Promise<any> {
+            try {
+                const client = await this.getRandomClient();
+                return await client.prepay(amount, address);
+            } catch (error) {
+                console.error('Error prepaying tokens:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Create a random request
+         * @param providerIds Array of provider IDs to use
+         * @param numProviders Number of providers needed
+         * @param callbackId Callback ID for the request
+         * @returns Promise that resolves to request result
+         */
+        async createRandomRequest(providerIds: string[], numProviders: number, callbackId: string): Promise<any> {
+            try {
+                const client = await this.getRandomClient();
+                return await client.createRequest(providerIds, numProviders, callbackId);
+            } catch (error) {
+                console.error('Error creating random request:', error);
                 throw error;
             }
         }

@@ -40,37 +40,71 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
       {/* Required Fields */}
       <div className="required-fields">
         <div className="detail-group">
-          <label>Provider ID / Actor ID *</label>
+          <label>Owner Address *</label>
           {isEditMode ? (
             <>
               <input
                 type="text"
-                name="providerId"
-                value={(formData as any).providerId || ''}
+                name="owner"
+                value={(formData as any).owner || walletAddress || ''}
                 onChange={handleInputChange}
                 className="edit-input"
-                placeholder="Enter provider ID (will be used as actor ID)"
+                placeholder="Enter owner address"
                 required
               />
               <small className="form-help">
-                This ID is used both for provider identification and as the actor ID for staking operations.
+                The owner address controls this provider and can make changes to its configuration.
               </small>
             </>
           ) : (
-            <div 
-              className="detail-value monospace clickable"
-              onClick={() => copyToClipboard(provider?.providerId || walletAddress || '')}
-              title="Click to copy address"
-            >
-              {truncateAddress(provider?.providerId || walletAddress || '')}
-              {copiedAddress === (provider?.providerId || walletAddress) ? (
-                <FiCheck className="copy-icon success" />
-              ) : (
-                <FiCopy className="copy-icon" />
+            <div className="address-display-group">
+              <div 
+                className="detail-value monospace clickable"
+                onClick={() => copyToClipboard(provider?.owner || walletAddress || '')}
+                title="Click to copy owner address"
+              >
+                <strong>Owner:</strong> {truncateAddress(provider?.owner || walletAddress || '')}
+                {copiedAddress === (provider?.owner || walletAddress) ? (
+                  <FiCheck className="copy-icon success" />
+                ) : (
+                  <FiCopy className="copy-icon" />
+                )}
+              </div>
+              {provider?.providerId && (
+                <div 
+                  className="detail-value monospace clickable secondary-address"
+                  onClick={() => copyToClipboard(provider.providerId)}
+                  title="Click to copy provider ID"
+                >
+                  <strong>Provider ID:</strong> {truncateAddress(provider.providerId)}
+                  {copiedAddress === provider.providerId ? (
+                    <FiCheck className="copy-icon success" />
+                  ) : (
+                    <FiCopy className="copy-icon" />
+                  )}
+                </div>
               )}
             </div>
           )}
         </div>
+
+        {isEditMode && (
+          <div className="detail-group">
+            <label>Provider ID / Actor ID *</label>
+            <input
+              type="text"
+              name="providerId"
+              value={(formData as any).providerId || ''}
+              onChange={handleInputChange}
+              className="edit-input"
+              placeholder="Enter provider ID (will be used as actor ID)"
+              required
+            />
+            <small className="form-help">
+              This ID is used for provider identification and as the actor ID for random generation.
+            </small>
+          </div>
+        )}
 
         <div className="detail-group">
           <label>Name *</label>

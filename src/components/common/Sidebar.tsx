@@ -20,7 +20,7 @@ export const Sidebar = () => {
       if (isConnected && providers.length > 0) {
         try {
           // Find the provider that matches the connected address using the context data
-          const currentProvider = providers.find(p => p.providerId === connectedAddress)
+          const currentProvider = providers.find(p => p.owner === connectedAddress)
           
           console.log("user data")
           console.log(currentProvider)

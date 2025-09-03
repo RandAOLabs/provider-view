@@ -122,6 +122,22 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
   // Initialize provider data
   useEffect(() => {
+    // Debug logging for provider data in ProviderDetails
+    console.log('ProviderDetails - External provider:', externalCurrentProvider);
+    console.log('ProviderDetails - All providers:', providers);
+    console.log('ProviderDetails - Wallet address:', walletAddress);
+    
+    if (externalCurrentProvider) {
+      console.log('ProviderDetails - External provider details:', {
+        providerId: externalCurrentProvider.providerId,
+        owner: externalCurrentProvider.owner,
+        hasOwner: !!externalCurrentProvider.owner,
+        hasProviderId: !!externalCurrentProvider.providerId,
+        ownerType: typeof externalCurrentProvider.owner,
+        providerIdType: typeof externalCurrentProvider.providerId,
+        fullProvider: externalCurrentProvider
+      });
+    }
     // If external mode is provided, use it
     if (externalMode) {
       setMode(externalMode);
@@ -147,7 +163,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       if (!externalWalletBalance && !providersLoading) {
         (async () => {
           try {
-            const balance = await aoHelpers.getWalletBalance(externalCurrentProvider.providerId);
+            const balance = await aoHelpers.getWalletBalance(externalCurrentProvider.owner);
             setWalletBalance(balance);
           } catch (err) {
             console.error('Error fetching wallet balance:', err);
@@ -170,8 +186,12 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     } 
     // Otherwise, if we have a wallet address and providers loaded, try to find the provider
     else if (walletAddress && !providersLoading && providers.length > 0) {
-      // Find provider that matches the wallet address
-      const foundProvider = providers.find(p => p.providerId === walletAddress);
+      // Find provider that matches the wallet address (check owner field)
+      console.log('ProviderDetails - Looking for provider with owner matching wallet:', walletAddress);
+      providers.forEach((p, idx) => {
+        console.log(`Provider ${idx}: owner=${p.owner}, providerId=${p.providerId}, matches=${p.owner === walletAddress}`);
+      });
+      const foundProvider = providers.find(p => p.owner === walletAddress);
       
       if (foundProvider) {
         setProvider(foundProvider);
@@ -275,7 +295,14 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   // Check if wallet is recognized as a provider owner
   const isWalletRecognized = () => {
     if (!walletAddress) return false;
-    return providers.some(p => p.providerId === walletAddress) || (provider && provider.providerId === walletAddress);
+    return providers.some(p => p.owner === walletAddress) || (provider && provider.owner === walletAddress);
+  };
+  
+  // Check if current wallet is the owner of the displayed provider
+  const isProviderOwner = () => {
+    if (!walletAddress || !provider) return false;
+    // Check if wallet address matches the owner field
+    return walletAddress === provider.owner;
   };
   
   const isNewProviderSetup = !provider && (mode === 'setup' || showStakingForm);
@@ -288,6 +315,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     telegram: parsedDetails.telegram || '',
     domain: parsedDetails.domain || '',
     providerId: '', // Provider ID for identification
+    owner: '', // Owner address - who can make changes to the provider
     actorId: initialProviderId || '' // Actor ID from setup/injection - this is what gets passed from setup
   }));
 
@@ -302,6 +330,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         telegram: parsedDetails.telegram || '',
         domain: parsedDetails.domain || '',
         providerId: provider?.providerId || '', // Use existing provider ID
+        owner: provider?.owner || '', // Use existing owner
         actorId: prev.actorId || initialProviderId || '' // Preserve actor ID from setup/injection
       }));
     }
@@ -314,7 +343,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       // Skip actorId from change tracking since it's not stored in parsedDetails
       if (key === 'actorId') return;
       
-      const originalValue = key === 'providerId' ? (provider?.providerId || '') : (parsedDetails[key] || '');
+      const originalValue = key === 'providerId' ? (provider?.providerId || '') : 
+                          key === 'owner' ? (provider?.owner || '') : (parsedDetails[key] || '');
       if (formData[key] !== originalValue) {
         newChanges[key] = true;
       }
@@ -425,9 +455,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
   const handleUnstake = async () => {
     try {
-      if (provider?.providerId) {
+      if (provider?.owner) {
         setShowUnstakeModal(false) // Close modal
-        await aoHelpers.unstakeTokens(provider.providerId)
+        await aoHelpers.unstakeTokens(provider.owner)
         window.location.reload() // Refresh to show updated state
       }
     } catch (err) {
@@ -485,8 +515,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   
   // Handle increasing stake
   const handleIncreaseStake = async () => {
-    if (!provider?.providerId) {
-      setError('Provider ID not found');
+    if (!provider?.owner) {
+      setError('Provider owner not found');
       return;
     }
     
@@ -514,7 +544,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       if (isBelowMinimumStake) {
         // Get the updated provider
         if (walletAddress) {
-          const updatedProvider = providers.find(p => p.providerId === walletAddress);
+          const updatedProvider = providers.find(p => p.owner === walletAddress);
           if (updatedProvider) {
             const stakeAmount = updatedProvider?.providerInfo?.stake?.amount || '0';
             if (parseFloat(stakeAmount) >= parseFloat(MINIMUM_STAKE_AMOUNT)) {
@@ -560,7 +590,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         
         // Find the updated/new provider and set it
         if (walletAddress) {
-          const updatedProvider = providers.find(p => p.providerId === walletAddress);
+          const updatedProvider = providers.find(p => p.owner === walletAddress);
           if (updatedProvider) {
             setProvider(updatedProvider);
             setMode('view');
@@ -596,8 +626,11 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
   // Handle view mode behavior based on wallet recognition
   if (isViewMode(mode)) {
-    if (!isWalletRecognized()) {
-      // Wallet not recognized - show "Become a Provider" UI
+    // If we have an external provider passed in, always show it (e.g., from provider table)
+    if (externalCurrentProvider) {
+      // Continue with normal view mode for external provider
+    } else if (!isWalletRecognized()) {
+      // No external provider and wallet not recognized - show "Become a Provider" UI
       return (
         <div className="add-provider">
           <h2>Become a Provider</h2>
@@ -625,9 +658,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
           {isSetupMode(mode) ? (isWalletRecognized() ? 'Edit Provider Configuration' : 'Setup New Provider') :
            'Provider Details'}
         </h2>
-        {isViewMode(mode) && (
+        {isViewMode(mode) && isProviderOwner() && (
           <button className="edit-btn" onClick={() => setIsEditing(!isEditing)}>
-            <FiEdit /> {isEditing ? 'Cancel Edit' : 'Edit Provider'}
+            <FiEdit /> {isEditing ? 'Cancel Edit' : 'Edit/Manage'}
           </button>
         )}
         {isEditing && externalOnCancel && (

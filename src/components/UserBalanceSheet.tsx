@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../contexts/WalletContext';
+import { useProviders } from '../contexts/ProviderContext';
 import { aoHelpers } from '../utils/ao-helpers';
-import { RandomClient, GetUserInfoResponse } from 'ao-js-sdk';
+import { GetUserInfoResponse } from 'ao-js-sdk';
 import './UserBalanceSheet.css';
 
 // RNG token has 9 decimal places
@@ -20,6 +21,7 @@ const ensureStringBalance = (balance: string | number | undefined): string => {
 
 const UserBalanceSheet: React.FC = () => {
   const { address, isConnected } = useWallet();
+  const { currentProvider } = useProviders();
   const [rngBalance, setRngBalance] = useState<string>('0');
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [prepayAmount, setPrepayAmount] = useState<number>(1);
@@ -53,9 +55,8 @@ const UserBalanceSheet: React.FC = () => {
       const balance = await aoHelpers.getWalletBalance(address);
       setRngBalance(balance);
       
-      // Fetch user info
-      const randomClient = await aoHelpers.getRandomClient();
-      const info: GetUserInfoResponse = await randomClient.getUserInfo(address);
+      // Fetch user info using aoHelpers function
+      const info: GetUserInfoResponse = await aoHelpers.getUserInfo(address);
       setUserInfo({
         balance: ensureStringBalance(info.balance),
         createdAt: info.created_at ? new Date(info.created_at).toLocaleString() : 'N/A'
@@ -81,8 +82,8 @@ const UserBalanceSheet: React.FC = () => {
       // Convert user-friendly amount to raw amount with 9 decimals
       const rawAmount = Math.floor(prepayAmount * Math.pow(10, TOKEN_DECIMALS));
       
-      const randomClient = await aoHelpers.getRandomClient();
-      const result = await randomClient.prepay(rawAmount, address);
+      // Use aoHelpers function instead of direct getRandomClient call
+      const result = await aoHelpers.prepayTokens(rawAmount, address);
       
       if (result) {
         setSuccess(`Successfully prepaid ${prepayAmount} RNG tokens for future random requests.`);
