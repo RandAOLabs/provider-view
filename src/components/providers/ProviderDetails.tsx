@@ -333,8 +333,15 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         owner: provider?.owner || '', // Use existing owner
         actorId: prev.actorId || initialProviderId || '' // Preserve actor ID from setup/injection
       }));
+    } else if (initialProviderId && !provider) {
+      // For new provider setup, inject the initial provider ID
+      setFormData(prev => ({
+        ...prev,
+        providerId: initialProviderId,
+        actorId: initialProviderId
+      }));
     }
-  }, [provider, parsedDetails, isEditing]);
+  }, [provider, parsedDetails, isEditing, initialProviderId]);
 
   // Track changes
   useEffect(() => {
@@ -352,8 +359,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     
     // Special handling for actorId changes
     const originalActorId = initialProviderId || '';
-    if ((formData as any).actorId !== originalActorId) {
-      newChanges.actorId = true;
+    if (formData.actorId !== originalActorId) {
+      (newChanges as any).actorId = true;
     }
     
     setChanges(newChanges);
@@ -702,6 +709,15 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
               month: 'long',
               day: 'numeric'
             }) : undefined)}
+            displayStakeAmount={displayStakeAmount}
+            setDisplayStakeAmount={setDisplayStakeAmount}
+            stakeAmount={stakeAmount}
+            setStakeAmount={setStakeAmount}
+            walletBalance={walletBalance}
+            rawToDisplayValue={rawToDisplayValue}
+            displayToRawValue={displayToRawValue}
+            MINIMUM_STAKE_AMOUNT={MINIMUM_STAKE_AMOUNT}
+            TOKEN_DECIMALS={TOKEN_DECIMALS}
           />
 
           {/* Random Stats positioned next to description */}

@@ -122,65 +122,7 @@ export const StakeSection: React.FC<StakeSectionProps> = ({
         </div>
       )}
 
-      {/* Show staking input for register mode or staking form */}
-      {(isRegisterMode || showStakingForm) && (
-        <div className="detail-group">
-          <div className="staking-input-container">
-            <div className="stake-amount-input">
-              <label>Stake Amount *</label>
-              <div className="stake-input-wrapper">
-                <input 
-                  type="number" 
-                  value={displayStakeAmount} 
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    const parsed = parseFloat(newValue);
-                    if (!isNaN(parsed)) {
-                      setDisplayStakeAmount(newValue);
-                      const rawValue = displayToRawValue(newValue);
-                      const minRaw = parseInt(MINIMUM_STAKE_AMOUNT.toString(), 10);
-                      
-                      if (parseInt(rawValue, 10) >= minRaw) {
-                        setStakeAmount(rawValue);
-                      } else {
-                        setStakeAmount(MINIMUM_STAKE_AMOUNT.toString());
-                      }
-                    } else if (newValue === '') {
-                      setDisplayStakeAmount('');
-                      setStakeAmount('');
-                    } else {
-                      setDisplayStakeAmount(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString()));
-                      setStakeAmount(MINIMUM_STAKE_AMOUNT.toString());
-                    }
-                  }} 
-                  min={parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString()))}
-                  step="0.1"
-                  className="edit-input"
-                  placeholder="Enter amount to stake"
-                />
-                <button 
-                  type="button"
-                  className="max-stake-btn"
-                  onClick={() => {
-                    if (walletBalance) {
-                      setStakeAmount(walletBalance);
-                      setDisplayStakeAmount(rawToDisplayValue(walletBalance));
-                    }
-                  }}
-                >
-                  MAX
-                </button>
-              </div>
-              {walletBalance !== null && (
-                <div className="available-balance-inline">
-                  <small>Available: {(parseFloat(walletBalance || "0") / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })} tokens</small>
-                </div>
-              )}
-              <p className="staking-info-note">Minimum {parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())).toLocaleString()} tokens required to become a provider</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Stake amount input is now handled in ProviderFormFields component */}
     </>
   );
 };

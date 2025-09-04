@@ -803,6 +803,227 @@ main {
   cursor: not-allowed;
 }
 
+/* Loading container */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Management container styles */
+.management-container {
+  width: 100%;
+}
+
+.management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+.header-content h2 {
+  margin: 0 0 0.5rem 0;
+  color: #000000;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header-content p {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 1rem;
+}
+
+.management-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.toggle-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #000000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggle-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: translateY(-2px);
+}
+
+/* Balance info styles */
+.balance-info {
+  background: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.balance-info p {
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+
+.balance-info p:first-child {
+  color: #000000;
+}
+
+.balance-info p:last-child {
+  color: #000000;
+}
+
+/* Address section styles */
+.address-section {
+  margin: 1.5rem 0;
+}
+
+.address-section h4 {
+  margin-bottom: 0.75rem;
+  color: #000000;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.address-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #000000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.copy-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Token options styles */
+.token-options {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+}
+
+.token-options p {
+  margin: 0 0 0.75rem 0;
+  color: #000000;
+  font-weight: 500;
+}
+
+.token-options ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #856404;
+}
+
+.token-options li {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+/* Download link styles */
+.download-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #000000;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.download-link:hover {
+  color: rgba(0, 0, 0, 0.7);
+  text-decoration: underline;
+}
+
+/* Wallet status styles */
+.wallet-status {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.wallet-status p {
+  margin: 0;
+  color: #856404;
+  font-weight: 500;
+}
+
+/* Power button styles */
+.power-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #000000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1.5rem;
+}
+
+.power-button:hover {
+  background: #ff4757;
+  transform: scale(1.05);
+}
+
+.management-hint {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.management-hint p {
+  margin: 0;
+  color: #6c757d;
+  font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .hero-section {
