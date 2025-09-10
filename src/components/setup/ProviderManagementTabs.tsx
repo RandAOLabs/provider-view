@@ -6,6 +6,7 @@ import { useProviders } from '../../contexts/ProviderContext'
 import PortalIntegration, { PortalConfig, WalletJson } from '../../utils/portalIntegration'
 import WalletGenerationSection from './WalletGenerationSection'
 import SimpleTabs from './SimpleTabs'
+import StepCard from './StepCard'
 
 interface ProviderManagementTabsProps {
   walletAddress: string
@@ -228,40 +229,40 @@ export default function ProviderManagementTabs({
 
       case 'wallet':
         return (
-          <div className="wallet-content">
-            <div className="info-section">
-              <WalletGenerationSection
-                walletInfo={walletInfo}
-                isCheckingExisting={isCheckingExisting}
-                isGenerating={isGenerating}
-                generationStep={generationStep}
-                error={error}
-                generatedSeedPhrase={generatedSeedPhrase}
-                showSeedPhrase={showSeedPhrase}
-                existingConfigStatus={existingConfigStatus}
-                onGenerateAndInject={handleGenerateAndInject}
-                onToggleShowSeedPhrase={() => setShowSeedPhrase(!showSeedPhrase)}
-              />
-            </div>
-          </div>
+          <StepCard icon={FiKey} title="Device Wallet Generation">
+            <WalletGenerationSection
+              walletInfo={walletInfo}
+              isCheckingExisting={isCheckingExisting}
+              isGenerating={isGenerating}
+              generationStep={generationStep}
+              error={error}
+              generatedSeedPhrase={generatedSeedPhrase}
+              showSeedPhrase={showSeedPhrase}
+              existingConfigStatus={existingConfigStatus}
+              onGenerateAndInject={handleGenerateAndInject}
+              onToggleShowSeedPhrase={() => setShowSeedPhrase(!showSeedPhrase)}
+            />
+          </StepCard>
         )
 
       case 'device':
         return (
-          <div className="device-content">
-            <div className="device-ip">
-              <span>Device IP: </span>
-              <code>{deviceIp}</code>
-            </div>
-            <div className="device-iframe-wrapper">
+          <StepCard icon={FiMonitor} title="Device Iframe">
+            <div className="iframe-container">
               <iframe
                 src={`http://${deviceIp}/2`}
-                title="Device Management"
+                title="Device Configuration"
                 className="device-iframe"
                 sandbox="allow-same-origin allow-scripts allow-forms"
               />
             </div>
-          </div>
+            <div className="iframe-info">
+              <p>
+                <FiMonitor />
+                Device management interface for IP: {deviceIp}
+              </p>
+            </div>
+          </StepCard>
         )
 
       default:
