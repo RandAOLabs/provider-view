@@ -1,61 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { FiEdit } from 'react-icons/fi'
-import { useWallet } from '../../contexts/WalletContext'
-import { useProviders } from '../../contexts/ProviderContext'
 import { ProviderInfoAggregate } from 'ao-js-sdk'
-import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
 import { RequestFlowMinimal } from './RequestFlowMinimal'
-import { StakeSection } from './StakeSection'
 import { ProviderFormFields } from './ProviderFormFields'
 import { ProviderStatusSection } from './ProviderStatusSection'
 import { ProviderMetrics } from './ProviderMetrics'
 import { SocialLinksSection } from './SocialLinksSection'
+import { TurnOffProviderModal } from './TurnOffProviderModal'
+import { UnstakeProviderModal } from './UnstakeProviderModal'
+import { SaveChangesModal } from './SaveChangesModal'
+import { useProviderActions } from '../../hooks/useProviderActions'
+import { useWallet } from '../../contexts/WalletContext'
+import { useProviders } from '../../contexts/ProviderContext'
+import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
 import './ProviderDetails.css'
 
-// Modal component for confirmation dialogs
-interface ConfirmationModalProps {
-  isOpen: boolean;
-  title: string;
-  message: React.ReactNode;
-  confirmText: string;
-  cancelText: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
-  isOpen,
-  title,
-  message,
-  confirmText,
-  cancelText,
-  onConfirm,
-  onCancel
-}) => {
-  if (!isOpen) return null;
-  
-  return (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <div className="modal-header">
-          <h3>{title}</h3>
-        </div>
-        <div className="modal-body">
-          {message}
-        </div>
-        <div className="modal-footer">
-          <button className="modal-cancel-btn" onClick={onCancel}>{cancelText}</button>
-          <button className="modal-confirm-btn" onClick={onConfirm}>{confirmText}</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Define provider mode type outside the component to ensure consistent type checking
-type ProviderMode = 'view' | 'setup';
-
-// Styles are now in ProviderDetails.css
+type ProviderMode = 'view' | 'setup' | 'edit';
 
 interface ProviderDetailsProps {
   currentProvider?: ProviderInfoAggregate;
@@ -82,155 +42,93 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 }) => {
   const { address: walletAddress } = useWallet()
   const { providers, loading: providersLoading, error: providersError, refreshProviders } = useProviders()
-  const [mode, setMode] = useState<ProviderMode>('view')
-  const [provider, setProvider] = useState<ProviderInfoAggregate | null>(null)
-  const [error, setError] = useState<string | null>(providersError)
+  
+  // Simple state management
+  const [mode, setMode] = useState<ProviderMode>(externalMode || 'view')
+  const [provider, setProvider] = useState<ProviderInfoAggregate | null>(externalCurrentProvider || null)
+  const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState('')
-  const isLoading = providersLoading
-  const [walletBalance, setWalletBalance] = useState<string | null>(externalWalletBalance || null)
   const [isSubmitting, setIsSubmitting] = useState(externalIsSubmitting || false)
-  const [isEditing, setIsEditing] = useState(defaultIsEditing || false)
-  const [showUnstakeWarning, setShowUnstakeWarning] = useState(false)
-  const [changes, setChanges] = useState({})
-  const [isBelowMinimumStake, setIsBelowMinimumStake] = useState(false)
-  const [increaseStakeAmount, setIncreaseStakeAmount] = useState<string>('1000')
-  const [isIncreasingStake, setIsIncreasingStake] = useState(false)
+  const [walletBalance, setWalletBalance] = useState<string | null>(externalWalletBalance || null)
+  const [showTurnOffModal, setShowTurnOffModal] = useState(false)
+  const [showUnstakeModal, setShowUnstakeModal] = useState(false)
+  const [showSaveChangesModal, setShowSaveChangesModal] = useState(false)
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+  
+  // Additional state for provider actions
   const [availableRandom, setAvailableRandom] = useState<number | null>(null)
   const [isUpdatingRandom, setIsUpdatingRandom] = useState(false)
   const [randomUpdateSuccess, setRandomUpdateSuccess] = useState(false)
   const [isClaimingRewards, setIsClaimingRewards] = useState(false)
   const [claimSuccess, setClaimSuccess] = useState(false)
-  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
-  const [showStakingForm, setShowStakingForm] = useState(false)
-  const [showTurnOffModal, setShowTurnOffModal] = useState(false)
-  const [showUnstakeModal, setShowUnstakeModal] = useState(false)
-  // Convert between display value (human readable) and raw value (with decimals)
-  const rawToDisplayValue = (raw: string): string => {
-    const rawNum = parseFloat(raw);
-    return (rawNum / Math.pow(10, TOKEN_DECIMALS)).toString();
+  const [isIncreasingStake, setIsIncreasingStake] = useState(false)
+  const [increaseStakeAmount, setIncreaseStakeAmount] = useState('1000')
+  const [isBelowMinimumStake, setIsBelowMinimumStake] = useState(false)
+  
+  
+  // Form data
+  const parsedDetails = useMemo(() => {
+    try {
+      return provider?.providerInfo?.provider_details || {};
+    } catch (err) {
+      return {};
+    }
+  }, [provider?.providerInfo?.provider_details]);
+
+  const [formData, setFormData] = useState(() => ({
+    name: parsedDetails.name || '',
+    description: parsedDetails.description || '',
+    twitter: parsedDetails.twitter || '',
+    discord: parsedDetails.discord || '',
+    telegram: parsedDetails.telegram || '',
+    domain: parsedDetails.domain || '',
+    providerId: provider?.providerId || initialProviderId || '',
+    owner: provider?.owner || '',
+    actorId: initialProviderId || '',
+    providerStatus: (() => {
+      const balance = provider?.providerActivity?.random_balance ?? 0;
+      if (balance >= 0) return '0';
+      return balance.toString();
+    })()
+  }));
+
+  // Track original form data for change detection
+  const [originalFormData, setOriginalFormData] = useState(() => ({
+    name: parsedDetails.name || '',
+    description: parsedDetails.description || '',
+    twitter: parsedDetails.twitter || '',
+    discord: parsedDetails.discord || '',
+    telegram: parsedDetails.telegram || '',
+    domain: parsedDetails.domain || '',
+    providerId: provider?.providerId || initialProviderId || '',
+    owner: provider?.owner || '',
+    actorId: initialProviderId || '',
+    providerStatus: (() => {
+      const balance = provider?.providerActivity?.random_balance ?? 0;
+      if (balance >= 0) return '0';
+      return balance.toString();
+    })()
+  }));
+
+  // Track original stake amounts for change detection - always start from 0
+  const [originalStakeAmount, setOriginalStakeAmount] = useState<string>('0');
+  const [originalDisplayStakeAmount, setOriginalDisplayStakeAmount] = useState<string>('0');
+
+  // Stake amount state - always start from 0
+  const [stakeAmount, setStakeAmount] = useState<string>('0');
+  const [displayStakeAmount, setDisplayStakeAmount] = useState<string>('0');
+
+  // Helper functions
+  const isWalletRecognized = (): boolean => {
+    if (!walletAddress) return false;
+    return providers.some(p => p.owner === walletAddress) || Boolean(provider && provider.owner === walletAddress);
+  };
+  
+  const isProviderOwner = () => {
+    if (!walletAddress || !provider) return false;
+    return walletAddress === provider.owner;
   };
 
-  const displayToRawValue = (display: string): string => {
-    const displayNum = parseFloat(display);
-    return Math.floor(displayNum * Math.pow(10, TOKEN_DECIMALS)).toString();
-  };
-
-  // Initialize with minimum stake amount in raw format
-  const [stakeAmount, setStakeAmount] = useState<string>(MINIMUM_STAKE_AMOUNT.toString());
-  // Separate display value for the input field
-  const [displayStakeAmount, setDisplayStakeAmount] = useState<string>(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString()))
-
-  // Initialize provider data
-  useEffect(() => {
-    // Debug logging for provider data in ProviderDetails
-    console.log('ProviderDetails - External provider:', externalCurrentProvider);
-    console.log('ProviderDetails - All providers:', providers);
-    console.log('ProviderDetails - Wallet address:', walletAddress);
-    
-    if (externalCurrentProvider) {
-      console.log('ProviderDetails - External provider details:', {
-        providerId: externalCurrentProvider.providerId,
-        owner: externalCurrentProvider.owner,
-        hasOwner: !!externalCurrentProvider.owner,
-        hasProviderId: !!externalCurrentProvider.providerId,
-        ownerType: typeof externalCurrentProvider.owner,
-        providerIdType: typeof externalCurrentProvider.providerId,
-        fullProvider: externalCurrentProvider
-      });
-    }
-    // If external mode is provided, use it
-    if (externalMode) {
-      setMode(externalMode);
-      if (externalCurrentProvider) {
-        setProvider(externalCurrentProvider);
-      }
-      return;
-    }
-
-    // If external provider was passed directly, use it
-    if (externalCurrentProvider) {
-      setProvider(externalCurrentProvider);
-      
-      // Check if provider's stake is below minimum required amount
-      const stakeAmount = externalCurrentProvider?.providerInfo?.stake?.amount || '0';
-      if (parseFloat(stakeAmount) < parseFloat(MINIMUM_STAKE_AMOUNT)) {
-        setIsBelowMinimumStake(true);
-      } else {
-        setIsBelowMinimumStake(false);
-      }
-      
-      // If this is a provider, also fetch wallet balance if not externally provided
-      if (!externalWalletBalance && !providersLoading) {
-        (async () => {
-          try {
-            const balance = await aoHelpers.getWalletBalance(externalCurrentProvider.owner);
-            setWalletBalance(balance);
-          } catch (err) {
-            console.error('Error fetching wallet balance:', err);
-          }
-        })();
-      }
-      
-      // Get random balance from provider activity
-      const randomValue = externalCurrentProvider.providerActivity?.random_balance;
-      console.log('Available random value:', randomValue);
-      // Convert undefined to null for state
-      setAvailableRandom(randomValue !== undefined ? randomValue : null);
-      
-      // Determine the appropriate mode
-      if (defaultIsEditing) {
-        setMode('setup');
-      } else {
-        setMode('view');
-      }
-    } 
-    // Otherwise, if we have a wallet address and providers loaded, try to find the provider
-    else if (walletAddress && !providersLoading && providers.length > 0) {
-      // Find provider that matches the wallet address (check owner field)
-      console.log('ProviderDetails - Looking for provider with owner matching wallet:', walletAddress);
-      providers.forEach((p, idx) => {
-        console.log(`Provider ${idx}: owner=${p.owner}, providerId=${p.providerId}, matches=${p.owner === walletAddress}`);
-      });
-      const foundProvider = providers.find(p => p.owner === walletAddress);
-      
-      if (foundProvider) {
-        setProvider(foundProvider);
-        
-        // Get random balance from provider activity
-        const randomValue = foundProvider.providerActivity?.random_balance;
-        console.log('Available random value:', randomValue);
-        // Convert undefined to null for state
-        setAvailableRandom(randomValue !== undefined ? randomValue : null);
-        
-        // Determine mode based on editing state
-        setMode(defaultIsEditing ? 'setup' : 'view');
-      } else if (walletAddress) {
-        // User is connected but not a provider - default to view mode
-        setMode('view');
-      }
-    } else if (walletAddress) {
-      // If we don't have providers data yet but have wallet address, default to view mode
-      setMode('view');
-    }
-  }, [externalCurrentProvider, walletAddress, defaultIsEditing, externalWalletBalance, providers, providersLoading, externalMode]);
-  
-  // Fetch wallet balance if showing the staking form
-  useEffect(() => {
-    if ((mode === 'setup' || showStakingForm) && walletAddress && !walletBalance) {
-      const fetchBalance = async () => {
-        try {
-          console.log('Fetching wallet balance for:', walletAddress);
-          const balance = await aoHelpers.getWalletBalance(walletAddress);
-          console.log('Wallet balance received:', balance);
-          setWalletBalance(balance);
-        } catch (err) {
-          console.error('Error fetching wallet balance:', err);
-        }
-      };
-      fetchBalance();
-    }
-  }, [mode, showStakingForm, walletAddress, walletBalance]);
-  
   const copyToClipboard = async (address: string) => {
     try {
       await navigator.clipboard.writeText(address);
@@ -246,465 +144,299 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
-  // Parse provider details once and memoize
-  const parsedDetails = useMemo(() => {
-    try {
-      // Access provider details from the new structure
-      return provider?.providerInfo?.provider_details || {};
-    } catch (err) {
-      console.error('Error parsing provider details:', err);
-      return {};
-    }
-  }, [provider?.providerInfo?.provider_details]);
+  const rawToDisplayValue = (raw: string): string => {
+    const rawNum = parseFloat(raw);
+    return (rawNum / Math.pow(10, TOKEN_DECIMALS)).toString();
+  };
 
-  // Format timestamp to show how long ago it was
-  const formatTimeAgo = (timestamp: number): string => {
-    const now = Date.now();
-    const diffMs = now - timestamp;
+  const displayToRawValue = (display: string): string => {
+    const displayNum = parseFloat(display);
+    return Math.floor(displayNum * Math.pow(10, TOKEN_DECIMALS)).toString();
+  };
+
+  // Check if form has changes
+  const hasFormChanges = useMemo(() => {
+    const fieldsToCompare = ['name', 'description', 'twitter', 'discord', 'telegram', 'domain', 'providerStatus'];
+    const hasFormFieldChanges = fieldsToCompare.some(field => formData[field as keyof typeof formData] !== originalFormData[field as keyof typeof originalFormData]);
+    const hasStakeChanges = displayStakeAmount !== originalDisplayStakeAmount;
+    const hasProviderIdChanges = formData.providerId !== originalFormData.providerId;
+    return hasFormFieldChanges || hasStakeChanges || hasProviderIdChanges;
+  }, [formData, originalFormData, displayStakeAmount, originalDisplayStakeAmount]);
+
+  // Get list of changes for confirmation modal
+  const getFormChanges = () => {
+    const fieldsToCompare = ['name', 'description', 'twitter', 'discord', 'telegram', 'domain', 'providerStatus'];
+    const fieldLabels = {
+      name: 'Name',
+      description: 'Description',
+      twitter: 'Twitter',
+      discord: 'Discord',
+      telegram: 'Telegram',
+      domain: 'Domain',
+      providerStatus: 'Provider Status'
+    };
     
-    // Convert to seconds, minutes, hours, days
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHrs = Math.floor(diffMin / 60);
-    const diffDays = Math.floor(diffHrs / 24);
-    
-    if (diffDays > 0) {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-    } else if (diffHrs > 0) {
-      return `${diffHrs} hour${diffHrs !== 1 ? 's' : ''} ago`;
-    } else if (diffMin > 0) {
-      return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
-    } else {
-      return 'just now';
+    const changes = fieldsToCompare
+      .filter(field => formData[field as keyof typeof formData] !== originalFormData[field as keyof typeof originalFormData])
+      .map(field => ({
+        field: fieldLabels[field as keyof typeof fieldLabels],
+        before: field === 'providerStatus' 
+          ? (() => {
+              const val = originalFormData[field as keyof typeof originalFormData] as string;
+              if (val === '0') return 'Active (0)';
+              if (val === '-1') return 'Turned Off (-1)';
+              if (val === '-2') return 'Slashed (-2)';
+              if (val === '-3') return 'Team Disabled (-3)';
+              if (val === '-4') return 'Stale (-4)';
+              return `Status (${val})`;
+            })()
+          : originalFormData[field as keyof typeof originalFormData],
+        after: field === 'providerStatus'
+          ? (() => {
+              const val = formData[field as keyof typeof formData] as string;
+              if (val === '0') return 'Active (0)';
+              if (val === '-1') return 'Turned Off (-1)';
+              if (val === '-2') return 'Slashed (-2)';
+              if (val === '-3') return 'Team Disabled (-3)';
+              if (val === '-4') return 'Stale (-4)';
+              return `Status (${val})`;
+            })()
+          : formData[field as keyof typeof formData]
+      }));
+
+    // Add provider ID changes if they exist
+    if (formData.providerId !== originalFormData.providerId) {
+      changes.push({
+        field: 'Provider ID',
+        before: originalFormData.providerId || '(empty)',
+        after: formData.providerId || '(empty)'
+      });
     }
+
+    // Add stake amount changes if they exist
+    if (displayStakeAmount !== originalDisplayStakeAmount) {
+      changes.push({
+        field: 'Stake Amount',
+        before: `${originalDisplayStakeAmount} tokens`,
+        after: `${displayStakeAmount} tokens`
+      });
+    }
+
+    return changes;
   };
 
-  // Format token amount for display
-  const formatTokenAmount = (amount: string): string => {
-    const parsed = parseFloat(amount || "0") / Math.pow(10, TOKEN_DECIMALS);
-    return parsed.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 6
-    });
-  };
-
-  // Helper functions for mode checking
-  const isSetupMode = (mode: ProviderMode) => mode === 'setup';
-  const isViewMode = (mode: ProviderMode) => mode === 'view';
-  
-  // Check if wallet is recognized as a provider owner
-  const isWalletRecognized = () => {
-    if (!walletAddress) return false;
-    return providers.some(p => p.owner === walletAddress) || (provider && provider.owner === walletAddress);
-  };
-  
-  // Check if current wallet is the owner of the displayed provider
-  const isProviderOwner = () => {
-    if (!walletAddress || !provider) return false;
-    // Check if wallet address matches the owner field
-    return walletAddress === provider.owner;
-  };
-  
-  const isNewProviderSetup = !provider && (mode === 'setup' || showStakingForm);
-
-  const [formData, setFormData] = useState(() => ({
-    name: parsedDetails.name || '',
-    description: parsedDetails.description || '',
-    twitter: parsedDetails.twitter || '',
-    discord: parsedDetails.discord || '',
-    telegram: parsedDetails.telegram || '',
-    domain: parsedDetails.domain || '',
-    providerId: '', // Provider ID for identification
-    owner: '', // Owner address - who can make changes to the provider
-    actorId: initialProviderId || '' // Actor ID from setup/injection - this is what gets passed from setup
-  }));
-
-  // Update formData when provider data changes or when switching to edit mode
+  // Initialize provider data
   useEffect(() => {
-    if (provider && parsedDetails) {
-      setFormData(prev => ({
+    if (externalCurrentProvider) {
+      setProvider(externalCurrentProvider);
+      setMode(defaultIsEditing ? 'edit' : 'view');
+    } else if (walletAddress && !providersLoading && providers.length > 0) {
+      const foundProvider = providers.find(p => p.owner === walletAddress);
+      if (foundProvider) {
+        setProvider(foundProvider);
+        setMode(defaultIsEditing ? 'edit' : 'view');
+      } else {
+        setMode('view'); // Show "Become a Provider" UI
+      }
+    }
+  }, [externalCurrentProvider, walletAddress, providers, providersLoading, defaultIsEditing]);
+
+  // Update form data when provider changes
+  useEffect(() => {
+    if (provider) {
+      const newFormData = {
         name: parsedDetails.name || '',
         description: parsedDetails.description || '',
         twitter: parsedDetails.twitter || '',
         discord: parsedDetails.discord || '',
         telegram: parsedDetails.telegram || '',
         domain: parsedDetails.domain || '',
-        providerId: provider?.providerId || '', // Use existing provider ID
-        owner: provider?.owner || '', // Use existing owner
-        actorId: prev.actorId || initialProviderId || '' // Preserve actor ID from setup/injection
-      }));
-    } else if (initialProviderId && !provider) {
-      // For new provider setup, inject the initial provider ID
+        providerId: provider.providerId || '',
+        owner: provider.owner || '',
+        actorId: provider.providerId || '',
+        providerStatus: (() => {
+          const balance = provider.providerActivity?.random_balance ?? 0;
+          if (balance >= 0) return '0';
+          return balance.toString();
+        })()
+      };
+      setFormData(newFormData);
+      setOriginalFormData(newFormData);
+      
+      // Always keep original stake amounts as 0 for change detection
+      setOriginalStakeAmount('0');
+      setOriginalDisplayStakeAmount('0');
+      setStakeAmount('0');
+      setDisplayStakeAmount('0');
+    } else if (initialProviderId) {
       setFormData(prev => ({
         ...prev,
         providerId: initialProviderId,
-        actorId: initialProviderId
+        actorId: initialProviderId,
+        providerStatus: '0'
       }));
-    }
-  }, [provider, parsedDetails, isEditing, initialProviderId]);
-
-  // Track changes
-  useEffect(() => {
-    const newChanges = {};
-    Object.keys(formData).forEach(key => {
-      // Skip actorId from change tracking since it's not stored in parsedDetails
-      if (key === 'actorId') return;
-      
-      const originalValue = key === 'providerId' ? (provider?.providerId || '') : 
-                          key === 'owner' ? (provider?.owner || '') : (parsedDetails[key] || '');
-      if (formData[key] !== originalValue) {
-        newChanges[key] = true;
-      }
-    });
-    
-    // Special handling for actorId changes
-    const originalActorId = initialProviderId || '';
-    if (formData.actorId !== originalActorId) {
-      (newChanges as any).actorId = true;
-    }
-    
-    setChanges(newChanges);
-  }, [formData, parsedDetails, provider, initialProviderId]);
-  
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => {
-      const updated = {
+      setOriginalFormData(prev => ({
         ...prev,
-        [name]: value
-      };
-      
-      // When provider ID changes in edit mode, it should also update the actor ID
+        providerId: initialProviderId,
+        actorId: initialProviderId,
+        providerStatus: '0'
+      }));
+      // Keep original stake amounts as 0 for new providers
+      setOriginalStakeAmount('0');
+      setOriginalDisplayStakeAmount('0');
+    }
+  }, [provider, parsedDetails, initialProviderId]);
+
+  // Fetch wallet balance when needed
+  useEffect(() => {
+    if ((mode === 'setup' || mode === 'edit') && walletAddress && !walletBalance) {
+      aoHelpers.getWalletBalance(walletAddress)
+        .then(setWalletBalance)
+        .catch(err => console.error('Error fetching wallet balance:', err));
+    }
+  }, [mode, walletAddress, walletBalance]);
+
+  // Use actions hook for complex operations
+  const actions = useProviderActions({
+    provider,
+    walletAddress,
+    providers,
+    formData,
+    stakeAmount,
+    walletBalance,
+    mode,
+    showStakingForm: mode === 'setup',
+    isWalletRecognized,
+    rawToDisplayValue,
+    displayToRawValue,
+    refreshProviders,
+    setProvider,
+    setMode,
+    setShowStakingForm: () => {}, // Not needed in simplified version
+    setSuccess,
+    setError,
+    setIsSubmitting,
+    setIsEditing: () => {}, // Not needed in simplified version
+    setAvailableRandom,
+    setIsUpdatingRandom,
+    setRandomUpdateSuccess,
+    setIsClaimingRewards,
+    setClaimSuccess,
+    setIsIncreasingStake,
+    setIncreaseStakeAmount,
+    setIsBelowMinimumStake,
+    setShowTurnOffModal,
+    setShowUnstakeModal,
+    increaseStakeAmount,
+    isBelowMinimumStake
+  });
+
+  const { handleSubmit, handleUnstake, updateProviderStatus, handleClaimRewards, handleUpdateAvailableRandom } = actions;
+
+
+  // Handle form input changes
+  const handleFormInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    console.log('📝 Form input changed:', { name, value });
+    
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
       if (name === 'providerId') {
         updated.actorId = value;
+        console.log('🆔 Provider ID changed, also updating actorId:', value);
       }
-      
+      console.log('📋 Updated form data:', updated);
       return updated;
-    })
-    setError('') // Clear any previous error
-  }
+    });
+    setError('');
+  };
 
-  const handleSubmit = async () => {
-    // Validate required fields
-    if (!formData.name?.trim()) {
-      setError('Name is required')
-      return
-    }
-    if (!(formData as any).providerId?.trim() && !walletAddress) {
-      setError('Provider ID is required')
-      return
-    }
+  // Handle submit
+  const handleFormSubmit = async () => {
+    console.log('🎯 handleFormSubmit called');
+    console.log('📊 hasFormChanges:', hasFormChanges);
+    console.log('📋 Current formData:', formData);
+    console.log('📋 Original formData:', originalFormData);
     
-    // Validate staking amount when in setup mode for new providers
-    if (isSetupMode(mode) || showStakingForm) {
-      const isEditingExistingProvider = isWalletRecognized();
-      
-      // Only validate stake amount for new providers (not editing existing ones)
-      if (!isEditingExistingProvider) {
-        if (!stakeAmount || stakeAmount === '') {
-          setError('Staking amount is required')
-          return
-        }
-        
-        const stakeAmountNum = parseInt(stakeAmount, 10)
-        const minAmount = parseInt(MINIMUM_STAKE_AMOUNT.toString(), 10)
-        
-        if (stakeAmountNum < minAmount) {
-          setError(`Minimum staking amount is ${parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())).toLocaleString()} tokens`)
-          return
-        }
-        
-        if (walletBalance && stakeAmountNum > parseInt(walletBalance, 10)) {
-          setError(`Staking amount exceeds your available balance of ${parseFloat(rawToDisplayValue(walletBalance)).toLocaleString()} tokens`)
-          return
-        }
-      }
-    }
-    
-    // For setup mode, handle staking
-    if (isSetupMode(mode)) {
-      await handleStake(formData);
-      return;
-    }
-
-    // For edit mode with external handler
-    if (onSave) {
-      await onSave(formData)
-      return;
-    }
-    
-    // Regular edit mode without external handler
-    try {
-      const updatedFormData = {
-        ...formData
-      };
-      // Use stakeWithDetails for provider updates with 0 quantity
-      // Use actorId if provided, otherwise fall back to providerId or current provider ID
-      const actorId = (formData as any).actorId?.trim() || (formData as any).providerId || provider?.providerId;
-      const result = await aoHelpers.stakeWithDetails('0', updatedFormData, actorId);
-      
-      if (result) {
-        // Refresh providers to get updated data
-        await refreshProviders()
-      } else {
-        throw new Error('Update operation failed');
-      }
-      
-      setIsEditing(false)
-      setError('')
-      setSuccess('Provider details updated successfully!')
-    } catch (error) {
-      console.error('Error updating provider details:', error)
-      setError('Failed to update provider details')
-    }
-  }
-
-  const handleUnstake = async () => {
-    try {
-      if (provider?.owner) {
-        setShowUnstakeModal(false) // Close modal
-        await aoHelpers.unstakeTokens(provider.owner)
-        window.location.reload() // Refresh to show updated state
-      }
-    } catch (err) {
-      console.error('Error unstaking:', err)
-      setError('Error unstaking tokens. Please try again.')
-    }
-  }
-
-  const handleUpdateAvailableRandom = async (value: number) => {
-    // If turning off provider, show confirmation modal
-    if (value === -1) {
-      setShowTurnOffModal(true);
-      return;
-    }
-    
-    // Otherwise proceed with update
-    await updateProviderStatus(value);
-  }
-  
-  const updateProviderStatus = async (value: number) => {
-    setIsUpdatingRandom(true);
-    setRandomUpdateSuccess(false);
-    setShowTurnOffModal(false); // Close modal if open
-    
-    try {
-      const result = await aoHelpers.updateProviderAvalibleRandom(value);
-      if (result) {
-        setAvailableRandom(value);
-        setRandomUpdateSuccess(true);
-        setTimeout(() => setRandomUpdateSuccess(false), 3000);
-      }
-    } catch (err) {
-      console.error('Error updating available random:', err);
-      setError('Failed to update provider status');
-    } finally {
-      setIsUpdatingRandom(false);
-    }
-  }
-
-  const handleClaimRewards = async () => {
-    setIsClaimingRewards(true);
-    setClaimSuccess(false);
-    setError(null);
-    try {
-      await aoHelpers.claimRandomRewards();
-      setClaimSuccess(true);
-      setTimeout(() => setClaimSuccess(false), 3000);
-    } catch (err) {
-      console.error('Error claiming rewards:', err);
-      setError('Failed to claim rewards');
-    } finally {
-      setIsClaimingRewards(false);
-    }
-  }
-  
-  // Handle increasing stake
-  const handleIncreaseStake = async () => {
-    if (!provider?.owner) {
-      setError('Provider owner not found');
-      return;
-    }
-    
-    setIsIncreasingStake(true);
-    setError(null);
-    setSuccess('');
-    
-    try {
-      // Convert display value (e.g., 1000) to raw value with decimals
-      const rawIncreaseAmount = displayToRawValue(increaseStakeAmount);
-      
-      // Call stakeTokens function from ao-helpers with potential actor ID
-      const actorId = (formData as any).actorId?.trim() || (formData as any).providerId || undefined;
-      await aoHelpers.stakeTokens(rawIncreaseAmount, undefined, actorId);
-      
-      setSuccess(`Successfully increased stake by ${increaseStakeAmount} tokens!`);
-      
-      // Refresh providers to get updated stake amount
-      await refreshProviders();
-      
-      // Reset the increase amount to default
-      setIncreaseStakeAmount('1000');
-      
-      // Check if we're now above the minimum stake
-      if (isBelowMinimumStake) {
-        // Get the updated provider
-        if (walletAddress) {
-          const updatedProvider = providers.find(p => p.owner === walletAddress);
-          if (updatedProvider) {
-            const stakeAmount = updatedProvider?.providerInfo?.stake?.amount || '0';
-            if (parseFloat(stakeAmount) >= parseFloat(MINIMUM_STAKE_AMOUNT)) {
-              setIsBelowMinimumStake(false);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error increasing stake:', err);
-      setError('Failed to increase stake. Please try again.');
-    } finally {
-      setIsIncreasingStake(false);
-    }
-  }
-
-  // Handle staking to become a provider or update existing provider
-  const handleStake = async (details) => {
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess('');
-
-    try {
-      // Determine quantity based on mode:
-      // - 0 for edit mode (no stake change)
-      // - minimum 10k for registration
-      const isEditingExistingProvider = isWalletRecognized();
-      const quantity = isEditingExistingProvider ? '0' : stakeAmount;
-      
-      // Use actor ID if provided, otherwise fall back to provider ID or wallet address
-      const actorId = (details as any).actorId?.trim() || (details as any).providerId || walletAddress;
-      
-      // Use stakeWithDetails method
-      const result = await aoHelpers.stakeWithDetails(quantity, details, actorId);
-      
-      if (result) {
-        setSuccess(isEditingExistingProvider ? 'Successfully updated provider details!' : 'Successfully staked tokens and registered as provider!');
-        
-        // Refresh the providers list to get updated data
-        if (refreshProviders) {
-          await refreshProviders();
-        }
-        
-        // Find the updated/new provider and set it
-        if (walletAddress) {
-          const updatedProvider = providers.find(p => p.owner === walletAddress);
-          if (updatedProvider) {
-            setProvider(updatedProvider);
-            setMode('view');
-          }
-        }
-        
-        // Hide staking form after success
-        setShowStakingForm(false);
-      } else {
-        throw new Error('Staking operation failed');
-      }
-    } catch (err) {
-      console.error('Error with staking operation:', err);
-      setError('Failed to process provider details. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    if (hasFormChanges) {
+      console.log('💾 Changes detected, showing save changes modal');
+      setShowSaveChangesModal(true);
+    } else {
+      console.log('❌ No changes detected, calling handleSubmit directly');
+      await handleSubmit(onSave);
     }
   };
 
+  // Handle confirmed submit
+  const handleConfirmedSubmit = async () => {
+    console.log('✅ handleConfirmedSubmit called - user confirmed changes');
+    console.log('📋 Form data being submitted:', formData);
+    console.log('🔄 Calling handleSubmit with onSave:', onSave);
+    
+    setShowSaveChangesModal(false);
+    await handleSubmit(onSave);
+  };
 
-  const changeCount = Object.keys(changes).length;
 
-  // Show nothing while loading
-  if (isLoading) {
-    return null;
+  // Show loading state
+  if (providersLoading) {
+    return <div className="provider-details">Loading...</div>;
   }
 
-  // Show nothing on error
-  if (error && !showStakingForm && mode !== 'setup') {
-    return null;
-  }
-
-
-  // Handle view mode behavior based on wallet recognition
-  if (isViewMode(mode)) {
-    // If we have an external provider passed in, always show it (e.g., from provider table)
-    if (externalCurrentProvider) {
-      // Continue with normal view mode for external provider
-    } else if (!isWalletRecognized()) {
-      // No external provider and wallet not recognized - show "Become a Provider" UI
-      return (
-        <div className="add-provider">
-          <h2>Become a Provider</h2>
-          <p>By running a provider, you become a contributor to the ecosystem and can earn rewards.</p>
-          <button className="start-btn" onClick={() => setMode('setup')}>Become a Provider →</button>
-        </div>
-      );
-    }
-    // Wallet recognized - continue with normal view mode
-  }
-
-  // Handle setup mode behavior based on wallet recognition
-  if (isSetupMode(mode)) {
-    if (!isWalletRecognized() && !showStakingForm) {
-      // New provider setup - show staking form
-      setShowStakingForm(true);
-    }
-    // If wallet is recognized, it will show edit form automatically
+  // Show "Become a Provider" UI for non-providers in view mode
+  if (mode === 'view' && !externalCurrentProvider && !isWalletRecognized()) {
+    return (
+      <div className="add-provider">
+        <h2>Become a Provider</h2>
+        <p>By running a provider, you become a contributor to the ecosystem and can earn rewards.</p>
+        <button className="start-btn" onClick={() => setMode('setup')}>Become a Provider →</button>
+      </div>
+    );
   }
 
   return (
     <div className="provider-details">
       <div className="provider-details-header">
-        <h2>
-          {isSetupMode(mode) ? (isWalletRecognized() ? 'Edit Provider Configuration' : 'Setup New Provider') :
-           'Provider Details'}
-        </h2>
-        {isViewMode(mode) && isProviderOwner() && (
-          <button className="edit-btn" onClick={() => setIsEditing(!isEditing)}>
-            <FiEdit /> {isEditing ? 'Cancel Edit' : 'Edit/Manage'}
-          </button>
+        {mode === 'view' && provider && isProviderOwner() && (
+          <button className="edit-btn" onClick={() => setMode('edit')}>Edit Provider</button>
         )}
-        {isEditing && externalOnCancel && (
-          <button className="edit-btn" onClick={externalOnCancel}>
-            <FiEdit /> Cancel
-          </button>
+        {mode === 'edit' && (
+          <div className="header-actions">
+            <button className="cancel-btn" onClick={() => {
+              setMode('view');
+              externalOnCancel?.();
+            }}>Cancel</button>
+          </div>
         )}
-        {showStakingForm && isSetupMode(mode) && isWalletRecognized() && (
-          <button className="edit-btn" onClick={() => setShowStakingForm(false)}>
-            <FiEdit /> Cancel
-          </button>
+        {mode === 'setup' && (
+          <div className="header-actions">
+            <button className="cancel-btn" onClick={() => setMode('view')}>Cancel</button>
+          </div>
         )}
       </div>
-
-      {success && <div className="success-message">{success}</div>}
       {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
       <div className="provider-details-content">
         <div className="provider-grid">
           <ProviderFormFields
-            isEditing={isEditing || isSetupMode(mode)}
+            isEditing={mode === 'edit' || mode === 'setup'}
             isRegisterMode={false}
-            showStakingForm={showStakingForm || isSetupMode(mode)}
+            showStakingForm={mode === 'setup'}
             formData={formData}
-            handleInputChange={handleInputChange}
+            handleInputChange={handleFormInputChange}
             parsedDetails={parsedDetails}
             provider={provider}
             walletAddress={walletAddress}
             copiedAddress={copiedAddress}
             copyToClipboard={copyToClipboard}
             truncateAddress={truncateAddress}
-            isSetupMode={isSetupMode(mode)}
+            isSetupMode={mode === 'setup'}
             joinDate={provider?.providerInfo?.created_at ? new Date(provider.providerInfo.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
-            }) : (isSetupMode(mode) ? new Date().toLocaleDateString('en-US', {
+            }) : (mode === 'setup' ? new Date().toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
@@ -718,72 +450,36 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             displayToRawValue={displayToRawValue}
             MINIMUM_STAKE_AMOUNT={MINIMUM_STAKE_AMOUNT}
             TOKEN_DECIMALS={TOKEN_DECIMALS}
+            providerStatus={formData.providerStatus}
+            onStatusChange={(status: string) => setFormData(prev => ({ ...prev, providerStatus: status }))}
+            // ProviderStatusSection props
+            availableRandom={availableRandom}
+            isUpdatingRandom={isUpdatingRandom}
+            randomUpdateSuccess={randomUpdateSuccess}
+            isClaimingRewards={isClaimingRewards}
+            claimSuccess={claimSuccess}
+            onUpdateAvailableRandom={handleUpdateAvailableRandom}
+            onClaimRewards={handleClaimRewards}
           />
 
-          {/* Random Stats positioned next to description */}
-          {!isNewProviderSetup && !isSetupMode(mode) && (
+          {/* Show metrics for existing providers in view mode */}
+          {mode === 'view' && provider && (
             <ProviderMetrics provider={provider} />
-          )}
-
-          <StakeSection
-            isRegisterMode={false}
-            showStakingForm={showStakingForm || isSetupMode(mode)}
-            isViewMode={isViewMode(mode)}
-            isEditMode={isSetupMode(mode)}
-            provider={provider}
-            formatTokenAmount={formatTokenAmount}
-            isBelowMinimumStake={isBelowMinimumStake}
-            increaseStakeAmount={increaseStakeAmount}
-            setIncreaseStakeAmount={setIncreaseStakeAmount}
-            handleIncreaseStake={handleIncreaseStake}
-            isIncreasingStake={isIncreasingStake}
-            displayStakeAmount={displayStakeAmount}
-            setDisplayStakeAmount={setDisplayStakeAmount}
-            stakeAmount={stakeAmount}
-            setStakeAmount={setStakeAmount}
-            walletBalance={walletBalance}
-            rawToDisplayValue={rawToDisplayValue}
-            displayToRawValue={displayToRawValue}
-            MINIMUM_STAKE_AMOUNT={MINIMUM_STAKE_AMOUNT}
-            TOKEN_DECIMALS={TOKEN_DECIMALS}
-            formatTimeAgo={formatTimeAgo}
-          />
-          
-          
-          {/* Provider Status Section - Only shown for existing providers */}
-          {!isNewProviderSetup && !isSetupMode(mode) && (
-            <ProviderStatusSection
-              provider={provider}
-              availableRandom={availableRandom}
-              isUpdatingRandom={isUpdatingRandom}
-              randomUpdateSuccess={randomUpdateSuccess}
-              isClaimingRewards={isClaimingRewards}
-              claimSuccess={claimSuccess}
-              onUpdateAvailableRandom={handleUpdateAvailableRandom}
-              onClaimRewards={handleClaimRewards}
-            />
           )}
         </div>
 
-        {/* Empty container to support the side-by-side layout */}
-        {!isNewProviderSetup && !isSetupMode(mode) && (
-          <>
-            {/* Empty div to support layout */}
-          </>
-        )}
-
-        {/* Social Links Section - Only shown for existing providers */}
-        {!isNewProviderSetup && !isSetupMode(mode) && (
+        {/* Social Links Section */}
+        {provider && mode !== 'setup' && (
           <SocialLinksSection
-            isEditing={isEditing || showStakingForm || isSetupMode(mode)}
+            isEditing={mode === 'edit'}
             formData={formData}
             parsedDetails={parsedDetails}
-            onInputChange={handleInputChange}
+            onInputChange={handleFormInputChange}
           />
         )}
 
-        {/* Active Requests Section - Only shown for existing providers */}
-        {!isNewProviderSetup && !isSetupMode(mode) && provider?.providerId && (
+        {/* Active Requests Section */}
+        {mode === 'view' && provider?.providerId && (
           <div className="detail-group">
             <RequestFlowMinimal 
               providerId={provider.providerId} 
@@ -794,73 +490,40 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         )}
 
 
-        {/* Save button - show in edit mode when there are changes, or always in setup mode */}
-        {(isEditing && changeCount > 0) && (
-          <button 
-            type="button" 
-            className="save-btn" 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : `Save Changes (${changeCount} change${changeCount !== 1 ? 's' : ''})`}
-          </button>
-        )}
-        
-        {/* Setup/Staking button - show in setup mode or when staking form is visible */}
-        {((showStakingForm || isSetupMode(mode)) && (isNewProviderSetup || isSetupMode(mode))) && (
-          <button 
-            type="button" 
-            className="save-btn" 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {showStakingForm || (isSetupMode(mode) && !isWalletRecognized()) ? 'Stake and Become Provider' : 
-             isSetupMode(mode) && isWalletRecognized() ? (submitLabel || 'Update Provider') :
-             (isNewProviderSetup ? submitLabel : `${submitLabel} (${changeCount} change${changeCount !== 1 ? 's' : ''})`)}  
-          </button>
+        {/* Submit Actions */}
+        {(mode === 'edit' || mode === 'setup') && (
+          <div className="provider-actions">
+            {(mode === 'setup' || hasFormChanges) && (
+              <button 
+                className="submit-btn"
+                onClick={handleFormSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Saving...' : submitLabel}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Modals for confirmations */}
-      <ConfirmationModal
+      {/* Confirmation Modals */}
+      <TurnOffProviderModal
         isOpen={showTurnOffModal}
-        title="Turn Off Provider"
-        message={
-          <div>
-            <p>Are you sure you want to turn off your provider?</p>
-            <p>When you turn off your provider:</p>
-            <ul>
-              <li>You will stop receiving rewards as you will no longer be providing random values</li>
-              <li>After all active random requests have been cleared from your node, you can safely turn off the docker container</li>
-              <li>Your staked tokens will remain locked</li>
-            </ul>
-            <p>You can turn your provider back on at any time.</p>
-          </div>
-        }
-        confirmText="Turn Off"
-        cancelText="Cancel"
         onConfirm={() => updateProviderStatus(-1)}
         onCancel={() => setShowTurnOffModal(false)}
       />
       
-      <ConfirmationModal
+      <UnstakeProviderModal
         isOpen={showUnstakeModal}
-        title="Confirm Unstaking"
-        message={
-          <div>
-            <p>Are you sure you want to unstake your tokens?</p>
-            <ul>
-              <li>Your stake will be locked for a few days in an unstaking period</li>
-              <li>You will need to return to this page to claim your tokens after the unstaking period ends</li>
-              <li>Unstaking will make you <strong>ineligible for rewards</strong></li>
-              <li>You will no longer be a provider once the unstaking process completes</li>
-            </ul>
-          </div>
-        }
-        confirmText="Unstake"
-        cancelText="Cancel"
         onConfirm={handleUnstake}
         onCancel={() => setShowUnstakeModal(false)}
+      />
+      
+      <SaveChangesModal
+        isOpen={showSaveChangesModal}
+        onConfirm={handleConfirmedSubmit}
+        onCancel={() => setShowSaveChangesModal(false)}
+        changes={getFormChanges()}
       />
     </div>
   )

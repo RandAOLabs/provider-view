@@ -1,0 +1,150 @@
+.save-changes-modal {
+  max-width: 600px;
+  width: 90%;
+}
+
+.save-changes-modal .modal-header h3 {
+  color: #333;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.save-changes-modal .modal-body {
+  padding: 1.5rem 0;
+}
+
+.save-changes-modal .modal-body p {
+  margin: 0 0 1rem 0;
+  color: #666;
+}
+
+.changes-list {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.change-item {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.change-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.change-field {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  text-transform: capitalize;
+}
+
+.change-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.before-value,
+.after-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.before-value .label,
+.after-value .label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.before-value .value {
+  padding: 0.5rem;
+  background: #fff2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  color: #dc2626;
+  font-family: monospace;
+  font-size: 0.875rem;
+  word-break: break-all;
+}
+
+.after-value .value {
+  padding: 0.5rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  color: #16a34a;
+  font-family: monospace;
+  font-size: 0.875rem;
+  word-break: break-all;
+}
+
+.confirmation-text {
+  font-weight: 500;
+  color: #333;
+  margin-top: 1rem !important;
+}
+
+.save-changes-modal .modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.save-changes-modal .cancel-btn {
+  padding: 0.75rem 1.5rem;
+  background: #f8f9fa;
+  color: #666;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.save-changes-modal .cancel-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.save-changes-modal .confirm-btn {
+  padding: 0.75rem 1.5rem;
+  background: #007bff;
+  color: white;
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.save-changes-modal .confirm-btn:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+  .change-comparison {
+    grid-template-columns: 1fr;
+  }
+  
+  .save-changes-modal .modal-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .save-changes-modal .cancel-btn,
+  .save-changes-modal .confirm-btn {
+    width: 100%;
+  }
+}

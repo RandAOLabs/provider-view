@@ -28,11 +28,6 @@ export default function Providers() {
             <div className="error">{error}</div>
           ) : providers.length > 0 ? (
             <>
-              {/* {isReady && !isConnecting && (
-                <ProviderDetails 
-                  currentProvider={currentProvider}
-                />
-              )} */}
               <ProviderTable providers={providers} />
               <div className="admin-section unresolved-requests-section">
                 <h2>Unresolved Random Requests Tracker</h2>

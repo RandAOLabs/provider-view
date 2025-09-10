@@ -8,8 +8,8 @@ import { ButtonSpinner } from '../../components/common/ButtonSpinner';
 import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData, ProviderActivity } from 'ao-js-sdk';
 import { useWallet } from '../../contexts/WalletContext';
 import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo, FiCpu, FiDatabase, FiServer } from 'react-icons/fi';
-import { ProviderDetailsModal } from '../../components/ProviderDetailsModal';
 import './Admin.css';
+import { ProviderMonitoringDisplay } from '../../components/providers/ProviderMonitoringDisplay';
 
 // Combined Provider Management Component
 interface ProviderManagementProps {
@@ -177,7 +177,7 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
     <div className="provider-management-section">
       {/* Provider Details Modal */}
       {modalOpen && selectedProviderForModal && (
-        <ProviderDetailsModal 
+        <ProviderMonitoringDisplay 
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           providerId={selectedProviderForModal}

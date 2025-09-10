@@ -95,13 +95,13 @@
   font-style: italic;
 }
 
-/* Redesigned Stake Management Styles */
+/* Legacy Redesigned Stake Management Styles - Updated for Black/White Theme */
 .stake-management {
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 1.5rem 0;
-  background: #f8f9fa;
+  border: 1px solid #000000;
+  border-radius: 4px;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: #ffffff;
 }
 
 .stake-overview {
@@ -825,6 +825,10 @@ textarea.edit-input {
   border-left: 4px solid #dc3545;
 }
 
+.provider-status-stale {
+  border-left: 4px solid #ffc107;
+}
+
 /* Status message styling - condensed */
 .status-message {
   display: flex;
@@ -886,14 +890,16 @@ textarea.edit-input {
 
 .provider-status-user-off .status-action-btn,
 .provider-status-process-off .status-action-btn,
-.provider-status-team-off .status-action-btn {
+.provider-status-team-off .status-action-btn,
+.provider-status-stale .status-action-btn {
   color: #28a745;
   border-color: #28a745;
 }
 
 .provider-status-user-off .status-action-btn:hover,
 .provider-status-process-off .status-action-btn:hover,
-.provider-status-team-off .status-action-btn:hover {
+.provider-status-team-off .status-action-btn:hover,
+.provider-status-stale .status-action-btn:hover {
   background-color: rgba(40, 167, 69, 0.1);
 }
 
@@ -1297,4 +1303,292 @@ textarea.edit-input {
   color: #666;
   margin-top: 4px;
   display: block;
+}
+
+
+/* Unified Stake Section Styles - Black and White Theme */
+.stake-unified {
+  background: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 4px;
+  padding: 0.75rem;
+  grid-column: 1 / -1; /* Span full width of grid */
+  width: 100%;
+}
+
+.stake-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.stake-current {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stake-amount {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.stake-status {
+  font-size: 0.75rem;
+  color: #666666;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.stake-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.stake-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stake-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #000000;
+  transition: all 0.1s ease;
+}
+
+.stake-btn:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.stake-btn:disabled {
+  background: #f5f5f5;
+  color: #cccccc;
+  border-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.stake-btn.max {
+  width: auto;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
+}
+
+.stake-input-field {
+  width: 100px;
+  padding: 0.4rem;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #000000;
+  background: #ffffff;
+}
+
+.stake-input-field:focus {
+  outline: none;
+  border-color: #333333;
+}
+
+.stake-info {
+  font-size: 0.7rem;
+  color: #666666;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stake-sufficient {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.stake-sufficient-text {
+  font-size: 0.85rem;
+  color: #28a745;
+  font-weight: 500;
+}
+
+/* Responsive design for unified stake section */
+@media (max-width: 768px) {
+  .stake-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .stake-input {
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .stake-controls {
+    flex-wrap: wrap;
+  }
+  
+  .stake-info {
+    text-align: left;
+  }
+}
+
+/* Status indicator styles for ProviderDetails */
+.status-indicator-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.status-indicator-row .status-indicator {
+  width: 14px;
+  height: 14px;
+}
+
+.status-indicator-row .status-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.status-indicator-row .random-balance {
+  font-size: 0.8125rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Status colors for ProviderDetails (same as ProviderTable) */
+.status-indicator.status-ready {
+  color: #28a745; /* Green */
+}
+
+.status-indicator.status-inactive {
+  color: #ffc107; /* Yellow */
+}
+
+.status-indicator.status-turned-off {
+  color: #6f42c1; /* Purple */
+}
+
+.status-indicator.status-slashed {
+  color: #dc3545; /* Red */
+}
+
+.status-indicator.status-team-disabled {
+  color: #6f42c1; /* Purple */
+}
+
+.status-indicator.status-unknown {
+  color: #6c757d; /* Gray */
+}
+
+/* Status header and tooltip styles for ProviderDetails */
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.status-info-container {
+  position: relative;
+  display: inline-block;
+}
+
+.status-info-icon {
+  width: 14px;
+  height: 14px;
+  color: #6c757d;
+  cursor: help;
+  transition: color 0.2s;
+}
+
+.status-info-icon:hover {
+  color: #495057;
+}
+
+.status-info-container:hover .status-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.status-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  right: 100%;
+  margin-right: 8px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transition: opacity 0.2s, visibility 0.2s;
+  min-width: 280px;
+  max-width: 320px;
+}
+
+.status-legend {
+  padding: 12px;
+}
+
+.status-legend h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #212529;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding: 2px 0;
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-indicator {
+  width: 12px;
+  height: 12px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legend-text strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.legend-text span {
+  font-size: 0.6875rem;
+  color: #6c757d;
+  line-height: 1.2;
 }

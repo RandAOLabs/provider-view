@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react'
-import { FiCircle, FiChevronDown, FiChevronUp, FiCheck, FiCopy, FiLoader } from 'react-icons/fi'
+import { FiCircle, FiChevronDown, FiChevronUp, FiCheck, FiCopy, FiLoader, FiInfo } from 'react-icons/fi'
 import { aoHelpers } from '../../utils/ao-helpers'
 import { GiTwoCoins } from 'react-icons/gi'
-import { StakingModal } from './StakingModal'
 import { ProviderDetails } from './ProviderDetails'
 import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-js-sdk'
+import rngLogo from '../../assets/rng-logo.svg'
 import './ProviderTable.css'
 
 interface ProviderTableProps {
@@ -37,6 +37,65 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
     if (!address) return ''
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
+
+  // Status logic for provider random_balance values
+  const getProviderStatus = (randomBalance: number | undefined) => {
+    const balance = randomBalance || 0;
+    
+    if (balance > 0) {
+      return {
+        color: 'ready', // Green
+        label: 'Ready for Requests',
+        description: 'Provider software is active and ready to fulfill random requests'
+      };
+    } else if (balance === 0) {
+      return {
+        color: 'inactive', // Yellow
+        label: 'Inactive',
+        description: 'No issues but provider software is not up and active'
+      };
+    } else if (balance === -1) {
+      return {
+        color: 'turned-off', // Purple
+        label: 'Turned Off',
+        description: 'Provider owner has turned the provider off at contract level'
+      };
+    } else if (balance === -2) {
+      return {
+        color: 'slashed', // Red
+        label: 'Recently Slashed',
+        description: 'Provider was recently slashed due to policy violations'
+      };
+    } else if (balance === -3) {
+      return {
+        color: 'team-disabled', // Purple
+        label: 'Team Disabled',
+        description: 'Team has disabled this provider - contact support'
+      };
+    } else if (balance === -4) {
+      return {
+        color: 'inactive', // Yellow - treat stale as inactive
+        label: 'Stale (Inactive)',
+        description: 'Device has become stale and is considered inactive - can be reactivated'
+      };
+    } else {
+      return {
+        color: 'unknown', // Gray
+        label: 'Unknown Status',
+        description: 'Provider status is unknown'
+      };
+    }
+  };
+
+  // Status legend for tooltip
+  const statusLegend = [
+    { color: 'ready', label: 'Ready', description: '>0: Active & fulfilling requests' },
+    { color: 'inactive', label: 'Inactive', description: '0: Software not running' },
+    { color: 'turned-off', label: 'Turned Off', description: '-1: Owner disabled' },
+    { color: 'slashed', label: 'Slashed', description: '-2: Recently penalized' },
+    { color: 'team-disabled', label: 'Team Disabled', description: '-3: Contact support' },
+    { color: 'inactive', label: 'Stale', description: '-4: Device stale, can reactivate' }
+  ];
 
   const copyToClipboard = async (e: React.MouseEvent, address: string) => {
     e.stopPropagation()
@@ -110,6 +169,30 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
     
     // Default fallback
     return '';
+  };
+
+  // Helper function to check if provider has network IP set
+  const hasNetworkIp = (provider: ProviderInfoAggregate): boolean => {
+    if (!provider.providerActivity?.provider_info) return false;
+    
+    const info = provider.providerActivity.provider_info;
+    
+    // If it's a string, try to parse as JSON
+    if (typeof info === 'string') {
+      try {
+        const providerInfo = JSON.parse(info);
+        return !!(providerInfo.networkIp);
+      } catch (e) {
+        return false;
+      }
+    }
+    
+    // If it's an object, check networkIp directly
+    if (typeof info === 'object' && info !== null) {
+      return !!((info as any).networkIp);
+    }
+    
+    return false;
   };
 
   // Helper function to compare version strings
@@ -222,19 +305,40 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
   }, [providers, sortConfig, isLoading]);
   
 
-  // Debug logging for provider objects in table
-  console.log('ProviderTable - All providers:', providers);
-  providers.forEach((provider, index) => {
-    console.log(`ProviderTable Provider ${index + 1}:`, {
-      providerId: provider.providerId,
-      owner: provider.owner,
-      hasOwner: !!provider.owner,
-      hasProviderId: !!provider.providerId,
-      ownerType: typeof provider.owner,
-      providerIdType: typeof provider.providerId,
-      fullProvider: provider
-    });
-  });
+  // // Debug logging for provider objects in table - COMPLETE OBJECT DUMP
+  // console.log('ProviderTable - All providers array:', providers);
+  // console.log('ProviderTable - Total providers count:', providers.length);
+  
+  // providers.forEach((provider, index) => {
+  //   console.log(`\n=== PROVIDER ${index + 1} COMPLETE OBJECT ===`);
+  //   console.log('Full provider object:', provider);
+  //   console.log('Provider keys:', Object.keys(provider));
+    
+  //   // Log each top-level property individually
+  //   console.log('providerId:', provider.providerId);
+  //   console.log('owner:', provider.owner);
+  //   console.log('totalFullfullilled:', provider.totalFullfullilled);
+    
+  //   // Log providerInfo structure
+  //   console.log('providerInfo:', provider.providerInfo);
+  //   if (provider.providerInfo) {
+  //     console.log('providerInfo keys:', Object.keys(provider.providerInfo));
+  //     console.log('providerInfo.stake:', provider.providerInfo.stake);
+  //     console.log('providerInfo.provider_details:', provider.providerInfo.provider_details);
+  //     console.log('providerInfo.created_at:', provider.providerInfo.created_at);
+  //   }
+    
+  //   // Log providerActivity structure
+  //   console.log('providerActivity:', provider.providerActivity);
+  //   if (provider.providerActivity) {
+  //     console.log('providerActivity keys:', Object.keys(provider.providerActivity));
+  //     console.log('providerActivity.active:', provider.providerActivity.active);
+  //     console.log('providerActivity.random_balance:', provider.providerActivity.random_balance);
+  //     console.log('providerActivity.provider_info:', provider.providerActivity.provider_info);
+  //   }
+    
+  //   console.log(`=== END PROVIDER ${index + 1} ===\n`);
+  // });
 
   return (
     <div className="provider-container">
@@ -243,11 +347,31 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
         <thead>
           <tr>
             <th onClick={() => handleSort('status')} className="sortable">
-              Status {sortConfig.key === 'status' && (
-                <span className="sort-indicator">
-                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                </span>
-              )}
+              <div className="status-header">
+                Status
+                <div className="status-info-container">
+                  <FiInfo className="status-info-icon" />
+                  <div className="status-tooltip">
+                    <div className="status-legend">
+                      <h4>Status Colors</h4>
+                      {statusLegend.map((status, index) => (
+                        <div key={index} className="legend-item">
+                          <FiCircle className={`legend-indicator status-indicator status-${status.color}`} />
+                          <div className="legend-text">
+                            <strong>{status.label}</strong>
+                            <span>{status.description}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {sortConfig.key === 'status' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
             </th>
             <th>Name</th>
             <th>Address</th>
@@ -305,11 +429,28 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
               >
                 <td>
                   <div className="status-container">
-                    <FiCircle 
-                      className={`status-indicator ${(provider.providerActivity?.random_balance || 0) > 1 ? 'online' : 'offline'}`}
-                    />
+                    {(() => {
+                      const status = getProviderStatus(provider.providerActivity?.random_balance);
+                      return (
+                        <>
+                          <FiCircle 
+                            className={`status-indicator status-${status.color}`}
+                            title={`${status.label}: ${status.description}`}
+                          />
+                          <span className="status-label">{status.label}</span>
+                        </>
+                      );
+                    })()}
                     {provider.providerActivity?.provider_info && (
                       <span className="provider-version">
+                        {hasNetworkIp(provider) && (
+                          <img 
+                            src={rngLogo} 
+                            alt="RNG" 
+                            className="rng-logo"
+                            style={{ width: '16px', height: '16px', marginRight: '4px' }}
+                          />
+                        )}
                         {(() => {
                           const info = provider.providerActivity.provider_info;
                           
@@ -430,12 +571,6 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
         </tbody>
         </table>
       </div>
-      {stakingProvider && (
-        <StakingModal 
-          provider={stakingProvider} 
-          onClose={() => setStakingProvider(null)} 
-        />
-      )}
     </div>
   )
 }

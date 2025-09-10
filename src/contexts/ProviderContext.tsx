@@ -39,7 +39,7 @@ export const ProviderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const service = await aoHelpers.getRandAOService();
       
       // Fetch provider info directly from the service (simplified approach)
-      const providerInfo = await service.getAllProviderInfo();
+      const providerInfo: ProviderInfoAggregate[] = await service.getAllProviderInfo();
       
       // Process provider data
       const fetchedProviders = providerInfo
@@ -47,20 +47,6 @@ export const ProviderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const stakeAmount = Number(provider.providerInfo?.stake?.amount || "0");
           return stakeAmount > 0;
         });
-      
-      console.log('All providers data:', fetchedProviders);
-      
-      // Debug logging for provider object structure
-      fetchedProviders.forEach((provider, index) => {
-        console.log(`Provider ${index + 1}:`, {
-          providerId: provider.providerId,
-          owner: provider.owner,
-          fullProvider: provider,
-          providerInfo: provider.providerInfo,
-          providerActivity: provider.providerActivity,
-          totalFullfullilled: provider.totalFullfullilled
-        });
-      });
       
       setProviders(fetchedProviders);
     } catch (err) {

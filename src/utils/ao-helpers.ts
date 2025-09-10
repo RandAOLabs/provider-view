@@ -157,10 +157,10 @@ class AOHelpers {
     }
 
         // Update provider details
-        async updateProviderAvalibleRandom(amount:number): Promise<boolean> {
+        async updateProviderAvalibleRandom(amount: number, providerId?: string): Promise<boolean> {
             try {
                 const client = await this.getRandomClient();
-                return await client.updateProviderAvailableValues(amount)
+                return await client.updateProviderAvailableValues(amount, providerId)
             } catch (error) {
                 console.error('Error updating provider avalible values:', error);
                 throw error;

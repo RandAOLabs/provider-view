@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { FiChevronDown, FiCheck, FiCopy, FiMinus, FiPlus } from 'react-icons/fi';
+import { FiChevronDown, FiCheck, FiCopy } from 'react-icons/fi';
+import { StakeComponent } from './StakeComponent';
+import { ProviderStatusSection } from './ProviderStatusSection';
+
+// Add interface for profile client
+interface ProfileClient {
+  updateDetails: (details: any) => Promise<any>;
+}
+
+// Declare providerprofileclient as available
+declare const providerprofileclient: ProfileClient;
 
 interface ProviderFormFieldsProps {
   isEditing: boolean;
@@ -25,6 +35,17 @@ interface ProviderFormFieldsProps {
   displayToRawValue?: (value: string) => string;
   MINIMUM_STAKE_AMOUNT?: string;
   TOKEN_DECIMALS?: number;
+  // Provider status props
+  providerStatus?: string;
+  onStatusChange?: (status: string) => void;
+  // ProviderStatusSection props
+  availableRandom?: number | null;
+  isUpdatingRandom?: boolean;
+  randomUpdateSuccess?: boolean;
+  isClaimingRewards?: boolean;
+  claimSuccess?: boolean;
+  onUpdateAvailableRandom?: (value: number) => void;
+  onClaimRewards?: () => void;
 }
 
 export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
@@ -50,10 +71,22 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
   rawToDisplayValue,
   displayToRawValue,
   MINIMUM_STAKE_AMOUNT,
-  TOKEN_DECIMALS
+  TOKEN_DECIMALS,
+  // Provider status props
+  providerStatus,
+  onStatusChange,
+  // ProviderStatusSection props
+  availableRandom,
+  isUpdatingRandom,
+  randomUpdateSuccess,
+  isClaimingRewards,
+  claimSuccess,
+  onUpdateAvailableRandom,
+  onClaimRewards
 }) => {
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const isEditMode = isEditing || isRegisterMode || showStakingForm;
+  const isInSetupMode = isSetupMode || showStakingForm;
 
   return (
     <>
@@ -140,172 +173,42 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
             </div>
           )}
         </div>
+
+        {/* Provider Status Section - show for existing providers */}
+        {!isInSetupMode && provider && (
+          <ProviderStatusSection
+            provider={provider}
+            availableRandom={availableRandom || provider.providerActivity?.random_balance || null}
+            isUpdatingRandom={isUpdatingRandom || false}
+            randomUpdateSuccess={randomUpdateSuccess || false}
+            isClaimingRewards={isClaimingRewards || false}
+            claimSuccess={claimSuccess || false}
+            onUpdateAvailableRandom={onUpdateAvailableRandom || (() => {})}
+            onClaimRewards={onClaimRewards || (() => {})}
+            isEditMode={isEditMode}
+            providerStatus={providerStatus}
+            onStatusChange={onStatusChange}
+          />
+        )}
       </div>
 
-      {/* Redesigned Stake Management Section */}
+      {/* Stake Section */}
       {isEditMode && (
-        <div className="detail-group stake-management">
-          <label>Stake Management *</label>
-          <div className="stake-overview">
-            {/* Current Stake Display */}
-            <div className="stake-info-card">
-              <div className="stake-info-header">
-                <h4>Current Stake</h4>
-                <div className="current-stake-amount">
-                  {provider?.providerInfo?.stake?.amount 
-                    ? (parseFloat(provider.providerInfo.stake.amount) / Math.pow(10, TOKEN_DECIMALS || 12)).toLocaleString()
-                    : '0'
-                  } tokens
-                </div>
-              </div>
-              <div className="stake-status">
-                {provider?.providerInfo?.stake?.amount 
-                  ? (parseFloat(provider.providerInfo.stake.amount) >= parseFloat(MINIMUM_STAKE_AMOUNT || '0') 
-                      ? '✅ Active Provider' 
-                      : '⚠️ Below Minimum')
-                  : '🔄 Not Staked'
-                }
-              </div>
-            </div>
-
-            {/* Available Balance */}
-            <div className="balance-info-card">
-              <div className="balance-info-header">
-                <h4>Available Balance</h4>
-                <div className="available-balance-amount">
-                  {walletBalance && TOKEN_DECIMALS
-                    ? (parseFloat(walletBalance) / Math.pow(10, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 })
-                    : '0'
-                  } tokens
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Stake Action Controls */}
-          {(isRegisterMode || showStakingForm) && (
-            <div className="stake-controls">
-              <div className="stake-action-header">
-                <h4>Stake Amount to Add</h4>
-                <p>Enter the amount you want to stake to become a provider</p>
-              </div>
-              
-              <div className="stake-input-section">
-                <div className="stake-amount-controls">
-                  <button 
-                    type="button"
-                    className="stake-adjust-btn decrease"
-                    onClick={() => {
-                      if (setDisplayStakeAmount && displayStakeAmount && MINIMUM_STAKE_AMOUNT && rawToDisplayValue) {
-                        const current = parseFloat(displayStakeAmount);
-                        const minimum = parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString()));
-                        const newAmount = Math.max(minimum, current - 1000);
-                        setDisplayStakeAmount(newAmount.toString());
-                        if (setStakeAmount && displayToRawValue) {
-                          setStakeAmount(displayToRawValue(newAmount.toString()));
-                        }
-                      }
-                    }}
-                    disabled={!displayStakeAmount || parseFloat(displayStakeAmount) <= (MINIMUM_STAKE_AMOUNT && rawToDisplayValue ? parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())) : 10000)}
-                  >
-                    -1,000
-                  </button>
-                  
-                  <div className="stake-amount-display">
-                    <input 
-                      type="number" 
-                      value={displayStakeAmount || ''} 
-                      onChange={(e) => {
-                        const newValue = e.target.value;
-                        const parsed = parseFloat(newValue);
-                        if (!isNaN(parsed) && setDisplayStakeAmount && setStakeAmount && displayToRawValue && MINIMUM_STAKE_AMOUNT) {
-                          setDisplayStakeAmount(newValue);
-                          const rawValue = displayToRawValue(newValue);
-                          const minRaw = parseInt(MINIMUM_STAKE_AMOUNT.toString(), 10);
-                          
-                          if (parseInt(rawValue, 10) >= minRaw) {
-                            setStakeAmount(rawValue);
-                          } else {
-                            setStakeAmount(MINIMUM_STAKE_AMOUNT.toString());
-                          }
-                        } else if (newValue === '' && setDisplayStakeAmount && setStakeAmount) {
-                          setDisplayStakeAmount('');
-                          setStakeAmount('');
-                        }
-                      }} 
-                      min={MINIMUM_STAKE_AMOUNT && rawToDisplayValue ? parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())) : 10000}
-                      step="1000"
-                      className="stake-amount-input"
-                      placeholder="10,000"
-                      required
-                    />
-                    <span className="token-label">tokens</span>
-                  </div>
-                  
-                  <button 
-                    type="button"
-                    className="stake-adjust-btn increase"
-                    onClick={() => {
-                      if (setDisplayStakeAmount && displayStakeAmount) {
-                        const current = parseFloat(displayStakeAmount) || 0;
-                        const newAmount = current + 1000;
-                        setDisplayStakeAmount(newAmount.toString());
-                        if (setStakeAmount && displayToRawValue) {
-                          setStakeAmount(displayToRawValue(newAmount.toString()));
-                        }
-                      }
-                    }}
-                  >
-                    +1,000
-                  </button>
-                </div>
-                
-                <div className="stake-quick-actions">
-                  <button 
-                    type="button"
-                    className="quick-stake-btn minimum"
-                    onClick={() => {
-                      if (setDisplayStakeAmount && setStakeAmount && rawToDisplayValue && MINIMUM_STAKE_AMOUNT) {
-                        const minAmount = rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString());
-                        setDisplayStakeAmount(minAmount);
-                        setStakeAmount(MINIMUM_STAKE_AMOUNT.toString());
-                      }
-                    }}
-                  >
-                    Minimum (10,000)
-                  </button>
-                  
-                  <button 
-                    type="button"
-                    className="quick-stake-btn max"
-                    onClick={() => {
-                      if (walletBalance && setStakeAmount && setDisplayStakeAmount && rawToDisplayValue) {
-                        setStakeAmount(walletBalance);
-                        setDisplayStakeAmount(rawToDisplayValue(walletBalance));
-                      }
-                    }}
-                    disabled={!walletBalance}
-                  >
-                    All Available
-                  </button>
-                </div>
-              </div>
-              
-              <div className="stake-requirements">
-                <p className="requirement-text">
-                  💡 <strong>Minimum:</strong> {MINIMUM_STAKE_AMOUNT && rawToDisplayValue ? parseFloat(rawToDisplayValue(MINIMUM_STAKE_AMOUNT.toString())).toLocaleString() : '10,000'} tokens required to become a provider
-                </p>
-                {displayStakeAmount && parseFloat(displayStakeAmount) > 0 && (
-                  <p className="stake-preview">
-                    🎯 <strong>After staking:</strong> You will have {(
-                      (provider?.providerInfo?.stake?.amount ? parseFloat(provider.providerInfo.stake.amount) / Math.pow(10, TOKEN_DECIMALS || 12) : 0) +
-                      parseFloat(displayStakeAmount)
-                    ).toLocaleString()} tokens staked
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="detail-group">
+          <StakeComponent
+            currentStake={provider?.providerInfo?.stake?.amount || '0'}
+            walletBalance={walletBalance}
+            isEditing={isEditMode}
+            onStakeChange={(newAmount) => {
+              if (setStakeAmount) {
+                setStakeAmount(newAmount);
+              }
+              if (setDisplayStakeAmount && rawToDisplayValue) {
+                setDisplayStakeAmount(rawToDisplayValue(newAmount));
+              }
+            }}
+            className="provider-stake"
+          />
         </div>
       )}
 

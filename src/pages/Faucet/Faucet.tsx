@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '../../contexts/WalletContext';
 import { FaucetClient } from 'ao-js-sdk';
-import UserBalanceSheet from '../../components/UserBalanceSheet';
+import UserBalanceSheet from '../../components/faucet/UserBalanceSheet';
 import './Faucet.css';
 
 const Faucet: React.FC = () => {

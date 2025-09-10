@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useWallet } from '../contexts/WalletContext';
-import { useProviders } from '../contexts/ProviderContext';
-import { aoHelpers } from '../utils/ao-helpers';
+import { useWallet } from '../../contexts/WalletContext';
+import { useProviders } from '../../contexts/ProviderContext';
+import { aoHelpers } from '../../utils/ao-helpers';
 import { GetUserInfoResponse } from 'ao-js-sdk';
 import './UserBalanceSheet.css';
 

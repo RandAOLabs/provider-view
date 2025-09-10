@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiServer, FiCpu, FiHardDrive, FiActivity, FiHash, FiPower, FiCheck, FiAlertTriangle, FiClock } from 'react-icons/fi';
-import { BiRefresh } from 'react-icons/bi';
+import { FiX, FiServer, FiCpu, FiActivity, FiHash, FiCheck, FiAlertTriangle, FiClock } from 'react-icons/fi';
 import { MonitoringData } from 'ao-js-sdk';
-import { aoHelpers } from '../utils/ao-helpers';
-import './ProviderDetailsModal.css';
+import { aoHelpers } from '../../utils/ao-helpers';
+import './ProviderMonitoringDisplay.css';
 
-interface ProviderDetailsModalProps {
+interface ProviderMonitoringDisplayProps {
   isOpen: boolean;
   onClose: () => void;
   providerId: string;
@@ -15,7 +14,7 @@ interface ProviderDetailsModalProps {
   availableRandom?: number | null;
 }
 
-export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
+export const ProviderMonitoringDisplay: React.FC<ProviderMonitoringDisplayProps> = ({
   isOpen,
   onClose,
   providerId,
@@ -31,7 +30,7 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
   // Add logging when modal opens with monitoring data
   useEffect(() => {
     if (isOpen && monitoringData) {
-      console.log('ProviderDetailsModal opened with data:', monitoringData);
+      console.log('ProviderMonitoringDisplay opened with data:', monitoringData);
     }
   }, [isOpen, monitoringData]);
   
@@ -147,6 +146,14 @@ export const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
         action: "Turn back on",
         value: 0,
         className: "provider-status-team-off"
+      };
+    } else if (providerStatus === -4) {
+      return {
+        message: "Provider device has become stale",
+        subMessage: "Device is inactive and detached. Can be reactivated.",
+        action: "Reactivate device",
+        value: 0,
+        className: "provider-status-stale"
       };
     } else {
       return {
