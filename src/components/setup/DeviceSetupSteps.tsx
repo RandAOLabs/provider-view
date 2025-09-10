@@ -58,6 +58,7 @@ export default function DeviceSetupSteps({
   onProviderCreated 
 }: DeviceSetupStepsProps) {
   const { currentProvider, refreshProviders } = useProviders()
+  const [showPreChecklist, setShowPreChecklist] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('wallet')
   const [addressInfo, setAddressInfo] = useState<AddressInfo>({ address: '', isGenerating: false, error: null })
   const [walletInfo, setWalletInfo] = useState<WalletInfo>({ walletJson: null, isGenerating: false, error: null })
@@ -78,11 +79,13 @@ export default function DeviceSetupSteps({
   })
   const portalRef = useRef<PortalIntegration | null>(null)
 
-  // Initialize portal integration and check existing config
+  // Initialize portal integration and check existing config - only after pre-checklist
   useEffect(() => {
-    portalRef.current = new PortalIntegration(`http://${deviceIp}`)
-    checkExistingConfiguration()
-  }, [deviceIp])
+    if (!showPreChecklist) {
+      portalRef.current = new PortalIntegration(`http://${deviceIp}`)
+      checkExistingConfiguration()
+    }
+  }, [deviceIp, showPreChecklist])
 
   // Check if there's already configuration stored on the device
   const checkExistingConfiguration = async () => {
@@ -286,6 +289,11 @@ export default function DeviceSetupSteps({
   }
 
   const renderTabContent = () => {
+    // Don't render any content if pre-checklist hasn't been acknowledged
+    if (showPreChecklist) {
+      return null
+    }
+
     switch (activeTab) {
       case 'wallet':
         return (
@@ -363,14 +371,80 @@ export default function DeviceSetupSteps({
 
   return (
     <div className="device-setup-steps">
-      <SimpleTabs
-        tabs={getSteps()}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        mode="gated"
-      >
-        {renderTabContent()}
-      </SimpleTabs>
+      {/* Pre-checklist Modal */}
+      {showPreChecklist && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 style={{ color: '#0c4a6e', margin: 0 }}>📱 Device Setup Pre-Checklist</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '16px', fontWeight: 'bold' }}>
+                Before proceeding with the setup, please complete these steps:
+              </p>
+              <ol style={{ paddingLeft: '20px', lineHeight: '1.8', marginBottom: '20px' }}>
+                <li><strong>Plug in your device</strong> and wait 60 seconds for it to boot up</li>
+                <li><strong>Connect your computer's WiFi</strong> to the "DeviceSetup" network</li>
+                <li><strong>Ensure you have a stable connection</strong> to the device</li>
+              </ol>
+              <div style={{
+                backgroundColor: '#fee2e2',
+                border: '1px solid #dc2626',
+                borderRadius: '6px',
+                padding: '12px',
+                marginBottom: '16px',
+                color: '#dc2626',
+                fontSize: '13px'
+              }}>
+                <strong>⚠️ IMPORTANT:</strong> DO NOT refresh this page or close your browser during the setup process!
+              </div>
+              <p style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
+                Once you click "OK", you'll see the three setup steps and can proceed with the configuration.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button 
+                onClick={() => setShowPreChecklist(false)}
+                className="confirm-button"
+                style={{ width: '100%', padding: '12px' }}
+              >
+                OK - I'm Ready to Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main setup content - only show after pre-checklist is acknowledged */}
+      {!showPreChecklist && (
+        <>
+          {/* General setup warning message */}
+          <div style={{
+            backgroundColor: '#fee2e2',
+            border: '2px solid #dc2626',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            marginBottom: '20px',
+            color: '#dc2626',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            ⚠️ IMPORTANT: DO NOT refresh this page or close your browser during the setup process!
+            <br />
+            Please be patient and complete each step. Once finished with one step, click on the next unlocked step.
+          </div>
+
+          <SimpleTabs
+            tabs={getSteps()}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            mode="gated"
+          >
+            {renderTabContent()}
+          </SimpleTabs>
+        </>
+      )}
 
     </div>
   )
