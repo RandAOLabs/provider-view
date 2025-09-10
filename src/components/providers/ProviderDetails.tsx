@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { ProviderInfoAggregate } from 'ao-js-sdk'
 import { RequestFlowMinimal } from './RequestFlowMinimal'
 import { ProviderFormFields } from './ProviderFormFields'
-import { ProviderStatusSection } from './ProviderStatusSection'
 import { ProviderMetrics } from './ProviderMetrics'
 import { SocialLinksSection } from './SocialLinksSection'
 import { TurnOffProviderModal } from './TurnOffProviderModal'
@@ -59,8 +58,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const [availableRandom, setAvailableRandom] = useState<number | null>(null)
   const [isUpdatingRandom, setIsUpdatingRandom] = useState(false)
   const [randomUpdateSuccess, setRandomUpdateSuccess] = useState(false)
-  const [isClaimingRewards, setIsClaimingRewards] = useState(false)
-  const [claimSuccess, setClaimSuccess] = useState(false)
   const [isIncreasingStake, setIsIncreasingStake] = useState(false)
   const [increaseStakeAmount, setIncreaseStakeAmount] = useState('1000')
   const [isBelowMinimumStake, setIsBelowMinimumStake] = useState(false)
@@ -320,8 +317,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     setAvailableRandom,
     setIsUpdatingRandom,
     setRandomUpdateSuccess,
-    setIsClaimingRewards,
-    setClaimSuccess,
     setIsIncreasingStake,
     setIncreaseStakeAmount,
     setIsBelowMinimumStake,
@@ -331,7 +326,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     isBelowMinimumStake
   });
 
-  const { handleSubmit, handleUnstake, updateProviderStatus, handleClaimRewards, handleUpdateAvailableRandom } = actions;
+  const { handleSubmit, handleUnstake, updateProviderStatus, handleUpdateAvailableRandom } = actions;
 
 
   // Handle form input changes
@@ -456,10 +451,8 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             availableRandom={availableRandom}
             isUpdatingRandom={isUpdatingRandom}
             randomUpdateSuccess={randomUpdateSuccess}
-            isClaimingRewards={isClaimingRewards}
-            claimSuccess={claimSuccess}
             onUpdateAvailableRandom={handleUpdateAvailableRandom}
-            onClaimRewards={handleClaimRewards}
+            onError={setError}
           />
 
           {/* Show metrics for existing providers in view mode */}

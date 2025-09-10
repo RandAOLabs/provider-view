@@ -25,8 +25,6 @@ interface UseProviderActionsProps {
   setAvailableRandom: (value: number | null) => void;
   setIsUpdatingRandom: (updating: boolean) => void;
   setRandomUpdateSuccess: (success: boolean) => void;
-  setIsClaimingRewards: (claiming: boolean) => void;
-  setClaimSuccess: (success: boolean) => void;
   setIsIncreasingStake: (increasing: boolean) => void;
   setIncreaseStakeAmount: (amount: string) => void;
   setIsBelowMinimumStake: (below: boolean) => void;
@@ -59,8 +57,6 @@ export const useProviderActions = ({
   setAvailableRandom,
   setIsUpdatingRandom,
   setRandomUpdateSuccess,
-  setIsClaimingRewards,
-  setClaimSuccess,
   setIsIncreasingStake,
   setIncreaseStakeAmount,
   setIsBelowMinimumStake,
@@ -309,21 +305,6 @@ export const useProviderActions = ({
     }
   }, [setIsUpdatingRandom, setRandomUpdateSuccess, setShowTurnOffModal, setAvailableRandom, setError]);
 
-  const handleClaimRewards = useCallback(async () => {
-    setIsClaimingRewards(true);
-    setClaimSuccess(false);
-    setError(null);
-    try {
-      await aoHelpers.claimRandomRewards();
-      setClaimSuccess(true);
-      setTimeout(() => setClaimSuccess(false), 3000);
-    } catch (err) {
-      console.error('Error claiming rewards:', err);
-      setError('Failed to claim rewards');
-    } finally {
-      setIsClaimingRewards(false);
-    }
-  }, [setIsClaimingRewards, setClaimSuccess, setError]);
   
   const handleIncreaseStake = useCallback(async () => {
     if (!provider?.owner) {
@@ -379,7 +360,6 @@ export const useProviderActions = ({
     handleUnstake,
     handleUpdateAvailableRandom,
     updateProviderStatus,
-    handleClaimRewards,
     handleIncreaseStake
   };
 };

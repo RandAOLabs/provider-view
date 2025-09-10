@@ -1,7 +1,6 @@
 import React from 'react'
 import { FiPower, FiInfo, FiCircle } from 'react-icons/fi'
 import { BiRefresh } from 'react-icons/bi'
-import { GiTwoCoins } from 'react-icons/gi'
 import { ProviderInfoAggregate } from 'ao-js-sdk'
 
 interface ProviderStatusSectionProps {
@@ -144,6 +143,15 @@ export const ProviderStatusSection: React.FC<ProviderStatusSectionProps> = ({
       <label>
         <div className="status-header">
           Provider Status
+          {isEditMode && (
+            <>
+              <FiCircle 
+                className={`status-indicator status-${statusInfo.color}`}
+                title={`${statusInfo.label}: ${statusInfo.description}`}
+              />
+              <span className="status-label">{statusInfo.label}</span>
+            </>
+          )}
           <div className="status-info-container">
             <FiInfo className="status-info-icon" />
             <div className="status-tooltip">
@@ -164,60 +172,52 @@ export const ProviderStatusSection: React.FC<ProviderStatusSectionProps> = ({
         </div>
       </label>
       {isEditMode ? (
-        // Edit mode: Show status selector and controls
+        // Edit mode: Toggle controls below the header
         <div className="provider-status-edit-mode">
-          <div className="status-display-row">
-            <FiCircle 
-              className={`status-indicator status-${statusInfo.color}`}
-              title={`${statusInfo.label}: ${statusInfo.description}`}
-            />
-            <span className="status-label">{statusInfo.label}</span>
-            <span className="current-status-text">Current Status</span>
-          </div>
           
           <div className="status-controls">
-            <select
-              value={(() => {
-                // If user has made a selection, use that
-                if (providerStatus !== undefined) {
-                  return providerStatus;
-                }
-                // Otherwise, determine from current balance
-                const balance = provider?.providerActivity?.random_balance ?? 0;
-                if (balance >= 0) return '0';
-                if (balance === -1) return '-1';
-                if (balance === -2) return '-2';
-                if (balance === -3) return '-3';
-                if (balance === -4) return '-4';
-                return balance.toString();
-              })()}
-              onChange={(e) => onStatusChange?.(e.target.value)}
-              className="edit-input status-select"
-              disabled={(() => {
-                const balance = provider?.providerActivity?.random_balance ?? 0;
-                // Only disable editing for team disabled (-3) status
-                return balance === -3;
-              })()}
-            >
-              <option value="0">Active (0)</option>
-              <option value="-1">Turned Off (-1)</option>
-              <option value="-2">Slashed (-2)</option>
-              <option value="-4">Stale (-4)</option>
-              {(() => {
-                const balance = provider?.providerActivity?.random_balance ?? 0;
-                if (balance === -3) return <option value="-3">Team Disabled (-3)</option>;
-                return null;
-              })()}
-            </select>
-            <small className="form-help">
-              Changes to provider status will be applied when you save your changes.
-            </small>
-          </div>
-          
-          <div className="rewards-info">
-            <p style={{ fontSize: '13px', opacity: 0.9, marginTop: '10px' }}>
-              <strong>Claimable rewards:</strong> {provider?.providerActivity?.fulfillment_rewards ? (provider.providerActivity.fulfillment_rewards/1000000000).toLocaleString() + " Test RNG": "0 Test RNG"}
-            </p>
+            {(() => {
+              const currentBalance = provider?.providerActivity?.random_balance ?? 0;
+              const selectedStatus = providerStatus !== undefined ? parseInt(providerStatus) : currentBalance;
+              
+              // Check if provider can be toggled (not team disabled)
+              const canToggle = currentBalance !== -3;
+              
+              if (!canToggle) {
+                return (
+                  <div className="status-disabled-info">
+                    <p className="team-disabled-message">
+                      This provider has been disabled by the team. Contact support for assistance.
+                    </p>
+                  </div>
+                );
+              }
+              
+              // Toggle logic: if status is 0 or above, toggle is ON, if below 0, toggle is OFF
+              const isToggleOn = selectedStatus >= 0;
+              
+              return (
+                <div className="status-toggle-container">
+                  <div className="toggle-wrapper">
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={isToggleOn}
+                        onChange={(e) => {
+                          // If turning on (checked), set to 0. If turning off (unchecked), set to -1
+                          const newStatus = e.target.checked ? '0' : '-1';
+                          onStatusChange?.(newStatus);
+                        }}
+                      />
+                      <span className="toggle-slider">
+                        <span className="toggle-text on">ON</span>
+                        <span className="toggle-text off">OFF</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       ) : (

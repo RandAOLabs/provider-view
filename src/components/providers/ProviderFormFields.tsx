@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FiChevronDown, FiCheck, FiCopy } from 'react-icons/fi';
 import { StakeComponent } from './StakeComponent';
 import { ProviderStatusSection } from './ProviderStatusSection';
+import { ClaimableRewards } from './ClaimableRewards';
 
 // Add interface for profile client
 interface ProfileClient {
@@ -46,6 +47,7 @@ interface ProviderFormFieldsProps {
   claimSuccess?: boolean;
   onUpdateAvailableRandom?: (value: number) => void;
   onClaimRewards?: () => void;
+  onError?: (error: string) => void;
 }
 
 export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
@@ -82,7 +84,8 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
   isClaimingRewards,
   claimSuccess,
   onUpdateAvailableRandom,
-  onClaimRewards
+  onClaimRewards,
+  onError
 }) => {
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const isEditMode = isEditing || isRegisterMode || showStakingForm;
@@ -149,9 +152,6 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
               placeholder="Enter provider ID (will be used as actor ID)"
               required
             />
-            <small className="form-help">
-              This ID is used for provider identification and as the actor ID for random generation.
-            </small>
           </div>
         )}
 
@@ -188,6 +188,15 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
             isEditMode={isEditMode}
             providerStatus={providerStatus}
             onStatusChange={onStatusChange}
+          />
+        )}
+
+        {/* Claimable Rewards Section - show only in edit mode for existing providers */}
+        {!isInSetupMode && provider && isEditMode && (
+          <ClaimableRewards
+            provider={provider}
+            isEditMode={isEditMode}
+            onError={onError}
           />
         )}
       </div>

@@ -1504,6 +1504,17 @@ textarea.edit-input {
   position: relative;
 }
 
+.status-header .status-indicator {
+  width: 14px;
+  height: 14px;
+}
+
+.status-header .status-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+}
+
 .status-info-container {
   position: relative;
   display: inline-block;
@@ -1591,4 +1602,98 @@ textarea.edit-input {
   font-size: 0.6875rem;
   color: #6c757d;
   line-height: 1.2;
+}
+
+/* Toggle Switch Styles */
+.status-toggle-container {
+  margin-top: 8px;
+}
+
+.toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #dc3545;
+  border-radius: 30px;
+  transition: .4s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .4s;
+  z-index: 2;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #28a745;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(30px);
+}
+
+.toggle-text {
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.toggle-text.on {
+  margin-left: 2px;
+}
+
+.toggle-text.off {
+  margin-right: 2px;
+}
+
+.status-disabled-info {
+  padding: 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.team-disabled-message {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.875rem;
+  text-align: center;
 }
