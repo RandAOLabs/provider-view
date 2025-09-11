@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy": "npm run build && permaweb-deploy --deploy-folder ./build --ant-process $DEPLOY_ANT_PROCESS --undername=providers",
+    "deploy": "npm run build && permaweb-deploy --deploy-folder ./build --arns-name $DEPLOY_ARNS_NAME --undername=$DEPLOY_UNDERNAME",
     "lint": "eslint .",
     "preview": "vite preview"
   },
