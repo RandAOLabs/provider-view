@@ -1,54 +1,27 @@
 import React, { useState, useEffect } from 'react'
-import { ConnectWallet } from '../../components/common/ConnectWallet'
+
 import { Spinner } from '../../components/common/Spinner'
 import { useWallet } from '../../contexts/WalletContext'
 import { useProviders } from '../../contexts/ProviderContext'
 import DeviceSetupSteps from '../../components/setup/DeviceSetupSteps'
-import ProviderManagementTabs from '../../components/setup/ProviderManagementTabs'
 import PreliminaryCheck from '../../components/setup/PreliminaryCheck'
 import './Setup.css'
 
-type SetupMode = 'checking_owner' | 'preliminary_check' | 'device_setup' | 'provider_management'
+type SetupMode = 'preliminary_check' | 'device_setup'
 
-// Local storage key for setup state
-const SETUP_STATE_KEY = 'provider_setup_in_progress'
 
 export default function Setup() {
   const { address: walletAddress } = useWallet()
   const { providers, currentProvider, refreshProviders, loading } = useProviders()
-  const [setupMode, setSetupMode] = useState<SetupMode>('checking_owner')
+  const [setupMode, setSetupMode] = useState<SetupMode>('preliminary_check')
   const [addressCopied, setAddressCopied] = useState(false)
   const [walletBalance, setWalletBalance] = useState<string | null>(null)
 
-  // Determine setup mode based on wallet connection, provider ownership, balance, and setup state
+  // Always start with preliminary check
   useEffect(() => {
-    // Check if user is currently in setup process FIRST (before loading check)
-    const isInSetup = localStorage.getItem(SETUP_STATE_KEY) === 'true'
-    
-    if (isInSetup) {
-      // If in setup, bypass provider checks and go to device setup immediately
-      setSetupMode('device_setup')
-      return
-    }
-
-    // If still loading provider data, show checking state
-    if (loading) {
-      setSetupMode('checking_owner')
-      return
-    }
-
-    // Check if user is a provider owner
-    const isProviderOwner = currentProvider !== undefined
-    
-    if (isProviderOwner) {
-      // Owner path: bypass checks, go straight to management
-      setSetupMode('provider_management')
-      return
-    }
-
-    // Non-owner path: show preliminary check
     setSetupMode('preliminary_check')
-  }, [currentProvider, loading])
+  }, [])
+
 
   // Fetch wallet balance when wallet is connected
   useEffect(() => {
@@ -79,16 +52,13 @@ export default function Setup() {
   }
 
   const handleProviderCreated = () => {
-    // Clear the "in setup" flag since setup is complete
-    localStorage.removeItem(SETUP_STATE_KEY)
-    // Refresh providers and switch to management mode
+    // Refresh providers - setup is complete
     refreshProviders()
-    setSetupMode('provider_management')
+    // Could redirect to a different page or show success message
+    console.log('Provider setup completed successfully!')
   }
 
   const handleProceedToSetup = () => {
-    // Set the "in setup" flag in local storage
-    localStorage.setItem(SETUP_STATE_KEY, 'true')
     setSetupMode('device_setup')
   }
 
@@ -112,12 +82,6 @@ export default function Setup() {
 
   const renderContent = () => {
     switch (setupMode) {
-      case 'checking_owner':
-        return (
-          <div className="loading-container">
-            <Spinner text="Checking provider ownership..." />
-          </div>
-        )
 
       case 'preliminary_check':
         return (
@@ -141,17 +105,6 @@ export default function Setup() {
             />
         )
 
-      case 'provider_management':
-        return (
-          <div className="management-container">
-            <ProviderManagementTabs
-              walletAddress={walletAddress!}
-              walletBalance={walletBalance}
-              deviceIp={getProviderDeviceIp()}
-              onProviderUpdated={refreshProviders}
-            />
-          </div>
-        )
 
       default:
         return null

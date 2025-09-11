@@ -60,8 +60,6 @@ export default function DeviceSetupSteps({
   const { currentProvider, refreshProviders } = useProviders()
   const [showPreChecklist, setShowPreChecklist] = useState(true)
 
-  // Local storage key for setup state
-  const SETUP_STATE_KEY = 'provider_setup_in_progress'
   const [activeTab, setActiveTab] = useState<TabType>('wallet')
   const [addressInfo, setAddressInfo] = useState<AddressInfo>({ address: '', isGenerating: false, error: null })
   const [walletInfo, setWalletInfo] = useState<WalletInfo>({ walletJson: null, isGenerating: false, error: null })
@@ -282,9 +280,8 @@ export default function DeviceSetupSteps({
         isStaked: details.isStaked || false
       }))
 
-      // If this creates a new provider, clear setup flag and notify parent
+      // If this creates a new provider, notify parent
       if (details.isStaked && onProviderCreated) {
-        localStorage.removeItem(SETUP_STATE_KEY)
         await refreshProviders()
         onProviderCreated()
       }
@@ -420,11 +417,7 @@ export default function DeviceSetupSteps({
             </div>
             <div className="modal-actions">
               <button 
-                onClick={() => {
-                  // Set the "in setup" flag when user proceeds
-                  localStorage.setItem(SETUP_STATE_KEY, 'true')
-                  setShowPreChecklist(false)
-                }}
+                onClick={() => setShowPreChecklist(false)}
                 className="confirm-button"
                 style={{ width: '100%', padding: '12px' }}
               >
