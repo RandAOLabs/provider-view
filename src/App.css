@@ -38,6 +38,11 @@ body,
   min-height: 100vh;
 }
 
+.main-content.full-width {
+  margin-left: 0;
+  width: 100%;
+}
+
 .home-page {
   width: 100%;
   display: flex;

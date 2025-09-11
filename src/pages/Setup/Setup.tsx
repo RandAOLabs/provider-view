@@ -7,9 +7,11 @@ import DeviceSetupSteps from '../../components/setup/DeviceSetupSteps'
 import ProviderManagementTabs from '../../components/setup/ProviderManagementTabs'
 import PreliminaryCheck from '../../components/setup/PreliminaryCheck'
 import './Setup.css'
-import { FiMonitor } from 'react-icons/fi'
 
 type SetupMode = 'checking_owner' | 'preliminary_check' | 'device_setup' | 'provider_management'
+
+// Local storage key for setup state
+const SETUP_STATE_KEY = 'provider_setup_in_progress'
 
 export default function Setup() {
   const { address: walletAddress } = useWallet()
@@ -18,8 +20,17 @@ export default function Setup() {
   const [addressCopied, setAddressCopied] = useState(false)
   const [walletBalance, setWalletBalance] = useState<string | null>(null)
 
-  // Determine setup mode based on wallet connection, provider ownership, and balance
+  // Determine setup mode based on wallet connection, provider ownership, balance, and setup state
   useEffect(() => {
+    // Check if user is currently in setup process FIRST (before loading check)
+    const isInSetup = localStorage.getItem(SETUP_STATE_KEY) === 'true'
+    
+    if (isInSetup) {
+      // If in setup, bypass provider checks and go to device setup immediately
+      setSetupMode('device_setup')
+      return
+    }
+
     // If still loading provider data, show checking state
     if (loading) {
       setSetupMode('checking_owner')
@@ -68,12 +79,16 @@ export default function Setup() {
   }
 
   const handleProviderCreated = () => {
+    // Clear the "in setup" flag since setup is complete
+    localStorage.removeItem(SETUP_STATE_KEY)
     // Refresh providers and switch to management mode
     refreshProviders()
     setSetupMode('provider_management')
   }
 
   const handleProceedToSetup = () => {
+    // Set the "in setup" flag in local storage
+    localStorage.setItem(SETUP_STATE_KEY, 'true')
     setSetupMode('device_setup')
   }
 
@@ -145,7 +160,6 @@ export default function Setup() {
 
   return (
     <div className="setup-page">
-      <ConnectWallet />
       <main>
         <section className="setup-section">
           <div className="setup-container">

@@ -49,7 +49,7 @@ interface ProviderDetailsState {
   isStaked: boolean
 }
 
-type TabType = 'wallet' | 'provider' | 'device'
+type TabType = 'wallet' | 'device' | 'provider'
 
 export default function DeviceSetupSteps({ 
   walletAddress, 
@@ -59,6 +59,9 @@ export default function DeviceSetupSteps({
 }: DeviceSetupStepsProps) {
   const { currentProvider, refreshProviders } = useProviders()
   const [showPreChecklist, setShowPreChecklist] = useState(true)
+
+  // Local storage key for setup state
+  const SETUP_STATE_KEY = 'provider_setup_in_progress'
   const [activeTab, setActiveTab] = useState<TabType>('wallet')
   const [addressInfo, setAddressInfo] = useState<AddressInfo>({ address: '', isGenerating: false, error: null })
   const [walletInfo, setWalletInfo] = useState<WalletInfo>({ walletJson: null, isGenerating: false, error: null })
@@ -151,36 +154,37 @@ export default function DeviceSetupSteps({
   }
 
   const isDeviceStepComplete = () => {
-    // Device step is always accessible once provider is complete
+    // Device step is always accessible once wallet is complete
     return true
   }
 
-  // Get steps configuration for tabs (ordered flow)
+  // Get steps configuration for tabs (ordered flow: wallet -> iframe -> provider)
   const getSteps = () => {
     const walletComplete = isWalletStepComplete()
+    const deviceComplete = isDeviceStepComplete()
     const providerComplete = isProviderStepComplete()
 
     return [
       {
         id: 'wallet',
-        title: 'Device Wallet Generation',
+        title: 'Inject Wallet',
         icon: FiKey,
         isCompleted: walletComplete,
         isEnabled: true // Always enabled as first step
-      },
-      {
-        id: 'provider',
-        title: 'Provider Details',
-        icon: FiEdit,
-        isCompleted: providerComplete,
-        isEnabled: walletComplete // Can only access if wallet step is complete
       },
       {
         id: 'device',
         title: 'Device Iframe',
         icon: FiMonitor,
         isCompleted: false, // Never marked as "complete"
-        isEnabled: providerComplete // Can only access if provider step is complete
+        isEnabled: walletComplete // Can only access if wallet step is complete
+      },
+      {
+        id: 'provider',
+        title: 'Provider Setup',
+        icon: FiEdit,
+        isCompleted: providerComplete,
+        isEnabled: walletComplete // Can access after wallet is complete
       }
     ]
   }
@@ -278,11 +282,12 @@ export default function DeviceSetupSteps({
         isStaked: details.isStaked || false
       }))
 
-    //   // If this creates a new provider, notify parent
-    //   if (details.isStaked && onProviderCreated) {
-    //     await refreshProviders()
-    //     onProviderCreated()
-    //   }
+      // If this creates a new provider, clear setup flag and notify parent
+      if (details.isStaked && onProviderCreated) {
+        localStorage.removeItem(SETUP_STATE_KEY)
+        await refreshProviders()
+        onProviderCreated()
+      }
     } catch (error) {
       console.error('Error saving provider:', error)
     }
@@ -297,7 +302,7 @@ export default function DeviceSetupSteps({
     switch (activeTab) {
       case 'wallet':
         return (
-          <StepCard icon={FiKey} title="Device Wallet Generation">
+          <StepCard icon={FiKey} title="Inject Wallet">
             {connectionError ? (
               <div className="connection-error">
                 <div className="error-card">
@@ -333,17 +338,6 @@ export default function DeviceSetupSteps({
           </StepCard>
         )
 
-      case 'provider':
-        return (
-          <StepCard icon={FiEdit} title="Provider Details">
-            <CreateProvider
-              providerId={providerDetails.id}
-              onProviderCreated={handleProviderSave}
-              walletBalance={walletBalance}
-            />
-          </StepCard>
-        )
-
       case 'device':
         return (
           <StepCard icon={FiMonitor} title="Device Iframe">
@@ -360,7 +354,29 @@ export default function DeviceSetupSteps({
                 <FiMonitor />
                 Device management interface for IP: {deviceIp}
               </p>
+              <div style={{
+                backgroundColor: '#fef3c7',
+                border: '1px solid #f59e0b',
+                borderRadius: '6px',
+                padding: '12px',
+                marginTop: '16px',
+                color: '#92400e',
+                fontSize: '14px'
+              }}>
+                <strong>📶 WiFi Reconnection:</strong> After completing this step, you should reconnect to your regular WiFi network if your computer hasn't automatically done so already.
+              </div>
             </div>
+          </StepCard>
+        )
+
+      case 'provider':
+        return (
+          <StepCard icon={FiEdit} title="Provider Setup">
+            <CreateProvider
+              providerId={providerDetails.id}
+              onProviderCreated={handleProviderSave}
+              walletBalance={walletBalance}
+            />
           </StepCard>
         )
 
@@ -404,7 +420,11 @@ export default function DeviceSetupSteps({
             </div>
             <div className="modal-actions">
               <button 
-                onClick={() => setShowPreChecklist(false)}
+                onClick={() => {
+                  // Set the "in setup" flag when user proceeds
+                  localStorage.setItem(SETUP_STATE_KEY, 'true')
+                  setShowPreChecklist(false)
+                }}
                 className="confirm-button"
                 style={{ width: '100%', padding: '12px' }}
               >

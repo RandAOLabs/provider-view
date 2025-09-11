@@ -2,8 +2,13 @@ import React from 'react'
 import { useWallet } from '../../contexts/WalletContext'
 import './ConnectWallet.css'
 
-export const ConnectWallet = () => {
-  const { address, isConnected, isConnecting, connect, disconnect } = useWallet()
+interface ConnectWalletProps {
+  oneWayOnly?: boolean
+}
+
+export const ConnectWallet = ({ oneWayOnly = false }: ConnectWalletProps) => {
+  const walletContext = useWallet() as any // Type assertion to work with untyped context
+  const { address, isConnected, isConnecting } = walletContext
 
   const handleConnect = async () => {
     try {
@@ -19,7 +24,9 @@ export const ConnectWallet = () => {
         'DISPATCH'
       ])
       
-      connect()
+      if (walletContext.connect) {
+        await walletContext.connect()
+      }
     } catch (error) {
       console.error('Error connecting wallet:', error)
       alert('Failed to connect wallet. Please try again.')
@@ -29,7 +36,9 @@ export const ConnectWallet = () => {
   const handleDisconnect = async () => {
     try {
       await window.arweaveWallet.disconnect()
-      disconnect()
+      if (walletContext.disconnect) {
+        walletContext.disconnect()
+      }
     } catch (error) {
       console.error('Error disconnecting wallet:', error)
     }
@@ -40,16 +49,21 @@ export const ConnectWallet = () => {
     return `${addr.slice(0, 4)}...${addr.slice(-4)}`
   }
 
+  // If one-way only and already connected, don't show anything
+  if (oneWayOnly && isConnected) {
+    return null
+  }
+
   return (
     <div className="wallet-container">
       <button 
         className="connect-wallet" 
-        onClick={isConnected ? handleDisconnect : handleConnect}
+        onClick={oneWayOnly ? handleConnect : (isConnected ? handleDisconnect : handleConnect)}
         disabled={isConnecting}
       >
         {isConnecting ? 'Connecting...' : 
-         isConnected ? formatAddress(address) : 
-         'Connect Wallet'}
+         (oneWayOnly || !isConnected) ? 'Connect Wallet' :
+         formatAddress(address)}
       </button>
     </div>
   )
