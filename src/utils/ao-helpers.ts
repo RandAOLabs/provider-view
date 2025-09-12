@@ -39,6 +39,7 @@ class AOHelpers {
     private _providerProfileClient: ProviderProfileClient | null = null;
     private _randomRaffleClient: RaffleClient | null = null;
     private _randAOService: IRandAOService | null = null;
+    private _redemptionClient: any | null = null;
 
     // Use a unified approach for client initialization to handle possible inconsistencies
     private async initializeClient<T>(
@@ -113,6 +114,29 @@ class AOHelpers {
             this._randAOService = await RandAOService.autoConfiguration()
         }
         return this._randAOService;
+    }
+
+    async getRedemptionClient(): Promise<any> {
+        if (!this._redemptionClient) {
+            // Try to dynamically import RedemptionClient
+            try {
+                const aoSdk = await import('ao-js-sdk');
+                const RedemptionClient = (aoSdk as any).RedemptionClient;
+                
+                if (!RedemptionClient) {
+                    throw new Error('RedemptionClient not found in ao-js-sdk');
+                }
+                
+                this._redemptionClient = await this.initializeClient<any>(
+                    this._redemptionClient,
+                    RedemptionClient
+                );
+            } catch (error) {
+                console.error('RedemptionClient not available in ao-js-sdk:', error);
+                throw new Error('RedemptionClient is not available in the current ao-js-sdk version. Please update ao-js-sdk to use token redemption.');
+            }
+        }
+        return this._redemptionClient;
     }
 
     // Cache for getAllProviderInfo to prevent redundant API calls
@@ -382,6 +406,21 @@ class AOHelpers {
                 return await client.createRequest(providerIds, numProviders, callbackId);
             } catch (error) {
                 console.error('Error creating random request:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Redeem tokens using a redemption code
+         * @param code The redemption code to use
+         * @returns Promise that resolves to redemption result
+         */
+        async redeemTokens(code: string): Promise<any> {
+            try {
+                const client = await this.getRedemptionClient();
+                return await client.redeemCode(code);
+            } catch (error) {
+                console.error('Error redeeming tokens:', error);
                 throw error;
             }
         }

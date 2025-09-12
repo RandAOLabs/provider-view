@@ -4,18 +4,19 @@ import { aoHelpers, TOKEN_DECIMALS } from '../../utils/ao-helpers'
 import '../providers/ProviderDetails.css'
 
 interface CreateProviderProps {
-  providerId: string
+  providerId?: string
   onProviderCreated?: (details: { name: string; providerId: string; isStaked: boolean }) => void
   walletBalance?: string | null
 }
 
 export const CreateProvider: React.FC<CreateProviderProps> = ({
-  providerId,
+  providerId: initialProviderId,
   onProviderCreated,
   walletBalance
 }) => {
   const { address: walletAddress } = useWallet()
   const [name, setName] = useState('')
+  const [providerId, setProviderId] = useState(initialProviderId || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -33,8 +34,8 @@ export const CreateProvider: React.FC<CreateProviderProps> = ({
       return
     }
 
-    if (!providerId) {
-      setError('Provider ID is required')
+    if (!providerId.trim()) {
+      setError('Provider ID is required - please paste your provider ID')
       return
     }
 
@@ -103,10 +104,18 @@ export const CreateProvider: React.FC<CreateProviderProps> = ({
       <div className="provider-details-content">
         <form onSubmit={handleSubmit}>
           <div className="provider-grid">
-            {/* Provider ID Display */}
+            {/* Provider ID Input */}
             <div className="detail-group">
-              <label>Provider ID</label>
-              <div className="detail-value monospace">{providerId}</div>
+              <label>Provider ID *</label>
+              <input
+                type="text"
+                className="edit-input monospace"
+                value={providerId}
+                onChange={(e) => setProviderId(e.target.value)}
+                placeholder="Paste provider id here"
+                disabled={isSubmitting}
+                required
+              />
             </div>
 
             {/* Provider Name Input */}
@@ -153,7 +162,7 @@ export const CreateProvider: React.FC<CreateProviderProps> = ({
             <button 
               type="submit"
               className="submit-btn"
-              disabled={isSubmitting || !name.trim()}
+              disabled={isSubmitting || !name.trim() || !providerId.trim()}
             >
               {isSubmitting ? 'Creating Provider...' : 'Create Provider & Stake Tokens'}
             </button>

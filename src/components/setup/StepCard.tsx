@@ -1,6 +1,6 @@
 import React from 'react'
 import { IconType } from 'react-icons'
-import './DeviceSetup.css'
+import './Setup.css'
 
 interface StepCardProps {
   icon: IconType

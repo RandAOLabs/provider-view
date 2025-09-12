@@ -1,6 +1,6 @@
 import React from 'react'
 import { FiCheck } from 'react-icons/fi'
-import './SimpleTabs.css'
+import './Setup.css'
 
 interface Tab {
   id: string
