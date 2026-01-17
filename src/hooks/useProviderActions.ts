@@ -9,15 +9,13 @@ interface UseProviderActionsProps {
   formData: any;
   stakeAmount: string;
   walletBalance: string | null;
-  mode: 'view' | 'setup' | 'edit';
-  showStakingForm: boolean;
+  mode: 'view' | 'edit';
   isWalletRecognized: () => boolean;
   rawToDisplayValue: (raw: string) => string;
   displayToRawValue: (display: string) => string;
   refreshProviders: () => Promise<void>;
   setProvider: (provider: any) => void;
-  setMode: (mode: 'view' | 'setup') => void;
-  setShowStakingForm: (show: boolean) => void;
+  setMode: (mode: 'view') => void;
   setSuccess: (message: string) => void;
   setError: (error: string | null) => void;
   setIsSubmitting: (submitting: boolean) => void;
@@ -42,14 +40,12 @@ export const useProviderActions = ({
   stakeAmount,
   walletBalance,
   mode,
-  showStakingForm,
   isWalletRecognized,
   rawToDisplayValue,
   displayToRawValue,
   refreshProviders,
   setProvider,
   setMode,
-  setShowStakingForm,
   setSuccess,
   setError,
   setIsSubmitting,
@@ -91,32 +87,6 @@ export const useProviderActions = ({
     const neededStake = Math.max(0, minimumTotal - currentStake);
     const isStakingRequired = neededStake > 0;
     
-    // Validate staking amount when in setup mode for new providers or when staking is required
-    if ((mode === 'setup' || showStakingForm) && isStakingRequired) {
-      if (!stakeAmount || stakeAmount === '') {
-        setError('Additional staking is required to reach minimum 10k total stake');
-        return;
-      }
-      
-      const stakeAmountNum = parseInt(stakeAmount, 10);
-      const minNeededRaw = displayToRawValue(neededStake.toString());
-      
-      if (stakeAmountNum < parseInt(minNeededRaw, 10)) {
-        setError(`You need at least ${neededStake.toLocaleString()} more tokens to reach the 10k minimum`);
-        return;
-      }
-      
-      if (walletBalance && stakeAmountNum > parseInt(walletBalance, 10)) {
-        setError(`Staking amount exceeds your available balance of ${parseFloat(rawToDisplayValue(walletBalance)).toLocaleString()} tokens`);
-        return;
-      }
-    }
-    
-    // For setup mode, handle staking
-    if (mode === 'setup') {
-      await handleStake(formData);
-      return;
-    }
 
     // For edit mode with external handler - but skip if we have provider ID changes that need special handling
     const hasProviderIdChange = formData.providerId && formData.providerId !== (provider?.providerId || '');
@@ -201,7 +171,7 @@ export const useProviderActions = ({
       console.error('❌ Error updating provider:', error);
       setError('Failed to update provider details');
     }
-  }, [formData, stakeAmount, walletBalance, mode, showStakingForm, provider, walletAddress, rawToDisplayValue, displayToRawValue, setError, refreshProviders, setIsEditing, setSuccess]);
+  }, [formData, stakeAmount, walletBalance, mode, provider, walletAddress, rawToDisplayValue, displayToRawValue, setError, refreshProviders, setIsEditing, setSuccess]);
 
   const handleStake = useCallback(async (details: any) => {
     setIsSubmitting(true);
@@ -246,9 +216,7 @@ export const useProviderActions = ({
             setMode('view');
           }
         }
-        
-        // Hide staking form after success
-        setShowStakingForm(false);
+
         setSuccess(result.message);
       } else {
         throw new Error(result.message);
@@ -259,7 +227,7 @@ export const useProviderActions = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [stakeAmount, isWalletRecognized, provider, walletAddress, providers, refreshProviders, setIsSubmitting, setError, setSuccess, setProvider, setMode, setShowStakingForm]);
+  }, [stakeAmount, isWalletRecognized, provider, walletAddress, providers, refreshProviders, setIsSubmitting, setError, setSuccess, setProvider, setMode]);
 
   const handleUnstake = useCallback(async () => {
     try {

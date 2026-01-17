@@ -41,102 +41,315 @@ class AOHelpers {
     private _randAOService: IRandAOService | null = null;
     private _redemptionClient: any | null = null;
 
-    // Use a unified approach for client initialization to handle possible inconsistencies
-    private async initializeClient<T>(
-        clientRef: T | null, 
-        ClientClass: any, 
-        methodName: string = 'autoConfiguration'
-    ): Promise<T> {
-        if (!clientRef) {
-            try {
-                // Try to use the static method if it exists
-                if (typeof ClientClass[methodName] === 'function') {
-                    return await ClientClass[methodName]();
-                } else {
-                    // Fallback to constructor if the static method doesn't exist
-                    return new ClientClass();
-                }
-            } catch (error) {
-                console.error(`Error initializing client with ${methodName}:`, error);
-                // Last resort fallback
-                return new ClientClass();
-            }
+    // Pending promise guards to prevent concurrent initialization
+    private _randAOServicePromise: Promise<IRandAOService> | null = null;
+    private _providerstakingClientPromise: Promise<ProviderStakingClient> | null = null;
+    private _randomClientPromise: Promise<RandomClient> | null = null;
+    private _providerProfileClientPromise: Promise<ProviderProfileClient> | null = null;
+    private _randomRaffleClientPromise: Promise<RaffleClient> | null = null;
+    private _redemptionClientPromise: Promise<any> | null = null;
+
+    // Global initialization promise to ensure all clients initialize once
+    private _globalInitPromise: Promise<void> | null = null;
+    private _isInitialized: boolean = false;
+
+    /**
+     * Pre-initialize all clients at app startup to prevent concurrent initialization
+     * This should be called once when the app starts
+     */
+    async initializeClients(): Promise<void> {
+        if (this._isInitialized) {
+            return;
         }
-        return clientRef as T;
+
+        if (this._globalInitPromise) {
+            return this._globalInitPromise;
+        }
+
+        this._globalInitPromise = (async () => {
+            try {
+                console.log('[AOHelpers] Starting global client initialization...');
+
+                // Initialize all clients in parallel
+                await Promise.all([
+                    this.getRandomClient(),
+                    this.getStakingClient(),
+                    this.getProviderProfileClient(),
+                    this.getRandomRaffleClient(),
+                    this.getTokenClient()
+                ]);
+
+                // Initialize RandAOService (which depends on RandomClient and ProviderProfileClient)
+                await this.getRandAOService();
+
+                this._isInitialized = true;
+                console.log('[AOHelpers] Global client initialization complete');
+            } catch (err) {
+                console.error('[AOHelpers] Global initialization failed:', err);
+                this._globalInitPromise = null; // Reset so it can be retried
+                throw err;
+            }
+        })();
+
+        return this._globalInitPromise;
     }
 
     async getStakingClient(): Promise<ProviderStakingClient> {
-        this._providerstakingClient = await this.initializeClient<ProviderStakingClient>(
-            this._providerstakingClient,
-            ProviderStakingClient
-        );
-        return this._providerstakingClient;
+        if (this._providerstakingClient) {
+            return this._providerstakingClient;
+        }
+
+        if (this._providerstakingClientPromise) {
+            return this._providerstakingClientPromise;
+        }
+
+        this._providerstakingClientPromise = (async () => {
+            const builder = ProviderStakingClient.defaultBuilder();
+
+            // Add wallet if available
+            if (window.arweaveWallet) {
+                try {
+                    const wallet = window.arweaveWallet;
+                    builder.withWallet(wallet);
+                } catch (err) {
+                    console.log('[AOHelpers] No wallet available for ProviderStakingClient, using read-only mode');
+                }
+            }
+
+            const client = builder.build();
+            this._providerstakingClient = client;
+            this._providerstakingClientPromise = null;
+            return client;
+        })();
+
+        return this._providerstakingClientPromise;
     }
 
     async getTokenClient(): Promise<TokenClient> {
-        this._tokenClient = new TokenClient(new BaseClientConfigBuilder()
-        .withProcessId("rPpsRk9Rm8_SJ1JF8m9_zjTalkv9Soaa_5U0tYUloeY")
-        .build())
-        // .withAOConfig({
-        //     CU_URL: "https://cu.randao.net", // Primary CU
-        //    MU_URL: "https://mu.randao.net", 
-        //     MODE: 'legacy'
-        // }).build());
+        if (this._tokenClient) {
+            return this._tokenClient;
+        }
+
+        this._tokenClient = new TokenClient(
+            new BaseClientConfigBuilder()
+                .withProcessId("rPpsRk9Rm8_SJ1JF8m9_zjTalkv9Soaa_5U0tYUloeY")
+                .build()
+        );
         return this._tokenClient;
     }
 
     async getRandomClient(): Promise<RandomClient> {
-        this._randomClient = await this.initializeClient<RandomClient>(
-            this._randomClient,
-            RandomClient
-        );
-        return this._randomClient;
+        if (this._randomClient) {
+            return this._randomClient;
+        }
+
+        if (this._randomClientPromise) {
+            console.log('[AOHelpers] Waiting for existing RandomClient initialization...');
+            return this._randomClientPromise;
+        }
+
+        console.log('[AOHelpers] Starting RandomClient initialization...');
+        this._randomClientPromise = (async () => {
+            const builder = RandomClient.builder()
+                .withProcessId("1nTos_shMV8HlC7f2svZNZ3J09BROKCTK8DyvkrzLag")
+                .withAOConfig({ CU_URL: 'https://ur-cu.randao.net', MU_URL: 'https://ur-mu.randao.net', MODE: 'legacy' })
+                .withTokenProcessId("rPpsRk9Rm8_SJ1JF8m9_zjTalkv9Soaa_5U0tYUloeY")
+                .withTokenAOConfig({ CU_URL: 'https://ur-cu.randao.net', MU_URL: 'https://ur-mu.randao.net', MODE: 'legacy' });
+
+            // Add wallet if available
+            if (window.arweaveWallet) {
+                try {
+                    const wallet = window.arweaveWallet;
+                    builder.withWallet(wallet);
+                } catch (err) {
+                    console.log('[AOHelpers] No wallet available, using read-only mode');
+                }
+            }
+
+            const client = builder.build();
+            this._randomClient = client;
+            this._randomClientPromise = null;
+            console.log('[AOHelpers] RandomClient initialization complete');
+            return client;
+        })();
+
+        return this._randomClientPromise;
     }
 
     async getProviderProfileClient(): Promise<ProviderProfileClient> {
-        this._providerProfileClient = await this.initializeClient<ProviderProfileClient>(
-            this._providerProfileClient,
-            ProviderProfileClient
-        );
-        return this._providerProfileClient;
+        if (this._providerProfileClient) {
+            return this._providerProfileClient;
+        }
+
+        if (this._providerProfileClientPromise) {
+            return this._providerProfileClientPromise;
+        }
+
+        this._providerProfileClientPromise = (async () => {
+            const builder = ProviderProfileClient.defaultBuilder();
+
+            // Add wallet if available
+            if (window.arweaveWallet) {
+                try {
+                    const wallet = window.arweaveWallet;
+                    builder.withWallet(wallet);
+                } catch (err) {
+                    console.log('[AOHelpers] No wallet available for ProviderProfileClient, using read-only mode');
+                }
+            }
+
+            const client = builder.build();
+            this._providerProfileClient = client;
+            this._providerProfileClientPromise = null;
+            return client;
+        })();
+
+        return this._providerProfileClientPromise;
     }
 
     async getRandomRaffleClient(): Promise<RaffleClient> {
-        this._randomRaffleClient = await this.initializeClient<RaffleClient>(
-            this._randomRaffleClient,
-            RaffleClient
-        );
-        return this._randomRaffleClient;
+        if (this._randomRaffleClient) {
+            return this._randomRaffleClient;
+        }
+
+        if (this._randomRaffleClientPromise) {
+            return this._randomRaffleClientPromise;
+        }
+
+        this._randomRaffleClientPromise = (async () => {
+            const builder = RaffleClient.defaultBuilder();
+
+            // Add wallet if available
+            if (window.arweaveWallet) {
+                try {
+                    const wallet = window.arweaveWallet;
+                    builder.withWallet(wallet);
+                } catch (err) {
+                    console.log('[AOHelpers] No wallet available for RaffleClient, using read-only mode');
+                }
+            }
+
+            const client = builder.build();
+            this._randomRaffleClient = client;
+            this._randomRaffleClientPromise = null;
+            return client;
+        })();
+
+        return this._randomRaffleClientPromise;
     }
 
     async getRandAOService(): Promise<IRandAOService> {
-        if (!this._randAOService) {
-            this._randAOService = await RandAOService.autoConfiguration()
+        // Return existing instance if available
+        if (this._randAOService) {
+            return this._randAOService;
         }
-        return this._randAOService;
+
+        // If initialization is already in progress, wait for it
+        if (this._randAOServicePromise) {
+            console.log('[AOHelpers] Waiting for existing RandAOService initialization...');
+            return this._randAOServicePromise;
+        }
+
+        // Start new initialization - manually create service with properly configured clients
+        this._randAOServicePromise = (async () => {
+            try {
+                console.log('[AOHelpers] Starting RandAOService initialization...');
+
+                // Get the individual clients (these now support read-only mode)
+                const randomClient = await this.getRandomClient();
+                const providerProfileClient = await this.getProviderProfileClient();
+
+                // Dynamically import all required classes
+                const aoSdk = await import('ao-js-sdk');
+                const {
+                    RandAOService: RandAOServiceClass,
+                    RandAODataService,
+                    ARIOService,
+                    ARNSClient,
+                    MessagesService
+                } = aoSdk as any;
+
+                // Create ARNSClient without wallet for read-only mode
+                const arnsBuilder = ARNSClient.defaultBuilder();
+
+                // Add wallet if available
+                if (window.arweaveWallet) {
+                    try {
+                        arnsBuilder.withWallet(window.arweaveWallet);
+                    } catch (err) {
+                        console.log('[AOHelpers] No wallet available for ARNSClient, using read-only mode');
+                    }
+                }
+
+                const arnsClient = arnsBuilder.build();
+
+                // Create ARIOService with the configured ARNS client
+                const arioService = ARIOService.getInstance({ arnsClient });
+
+                // Create MessagesService
+                const messagesService = MessagesService.autoConfiguration();
+
+                // Create RandAODataService manually
+                const randAODataService = new RandAODataService(arioService, messagesService);
+
+                // Construct RandAOService with the clients
+                const service = new RandAOServiceClass(randomClient, providerProfileClient, randAODataService);
+
+                this._randAOService = service;
+                this._randAOServicePromise = null;
+                return service;
+            } catch (err) {
+                this._randAOServicePromise = null;
+                console.error('[AOHelpers] RandAOService initialization failed:', err);
+                throw err;
+            }
+        })();
+
+        return this._randAOServicePromise;
     }
 
     async getRedemptionClient(): Promise<any> {
-        if (!this._redemptionClient) {
-            // Try to dynamically import RedemptionClient
+        if (this._redemptionClient) {
+            return this._redemptionClient;
+        }
+
+        if (this._redemptionClientPromise) {
+            return this._redemptionClientPromise;
+        }
+
+        this._redemptionClientPromise = (async () => {
             try {
                 const aoSdk = await import('ao-js-sdk');
                 const RedemptionClient = (aoSdk as any).RedemptionClient;
-                
-                if (!RedemptionClient) {
+
+                if (!RedemptionClient || typeof RedemptionClient.defaultBuilder !== 'function') {
                     throw new Error('RedemptionClient not found in ao-js-sdk');
                 }
-                
-                this._redemptionClient = await this.initializeClient<any>(
-                    this._redemptionClient,
-                    RedemptionClient
-                );
+
+                const builder = RedemptionClient.defaultBuilder();
+
+                // Add wallet if available
+                if (window.arweaveWallet) {
+                    try {
+                        const wallet = window.arweaveWallet;
+                        builder.withWallet(wallet);
+                    } catch (err) {
+                        console.log('[AOHelpers] No wallet available for RedemptionClient, using read-only mode');
+                    }
+                }
+
+                const client = builder.build();
+                this._redemptionClient = client;
+                this._redemptionClientPromise = null;
+                return client;
             } catch (error) {
+                this._redemptionClientPromise = null;
                 console.error('RedemptionClient not available in ao-js-sdk:', error);
                 throw new Error('RedemptionClient is not available in the current ao-js-sdk version. Please update ao-js-sdk to use token redemption.');
             }
-        }
-        return this._redemptionClient;
+        })();
+
+        return this._redemptionClientPromise;
     }
 
     // Cache for getAllProviderInfo to prevent redundant API calls

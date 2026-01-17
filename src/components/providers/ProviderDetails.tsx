@@ -14,7 +14,7 @@ import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-
 import './ProviderDetails.css'
 
 
-type ProviderMode = 'view' | 'setup' | 'edit';
+type ProviderMode = 'view' | 'edit';
 
 interface ProviderDetailsProps {
   currentProvider?: ProviderInfoAggregate;
@@ -25,19 +25,17 @@ interface ProviderDetailsProps {
   walletBalance?: string | null;
   onCancel?: () => void;
   mode?: ProviderMode;
-  initialProviderId?: string;
 }
 
-export const ProviderDetails: React.FC<ProviderDetailsProps> = ({ 
-  currentProvider: externalCurrentProvider, 
+export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
+  currentProvider: externalCurrentProvider,
   isEditing: defaultIsEditing,
   onSave,
   isSubmitting: externalIsSubmitting,
   submitLabel = 'Save Changes',
   walletBalance: externalWalletBalance,
   onCancel: externalOnCancel,
-  mode: externalMode,
-  initialProviderId
+  mode: externalMode
 }) => {
   const { address: walletAddress } = useWallet()
   const { providers, loading: providersLoading, error: providersError, refreshProviders } = useProviders()
@@ -79,9 +77,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     discord: parsedDetails.discord || '',
     telegram: parsedDetails.telegram || '',
     domain: parsedDetails.domain || '',
-    providerId: provider?.providerId || initialProviderId || '',
+    providerId: provider?.providerId || '',
     owner: provider?.owner || '',
-    actorId: initialProviderId || '',
+    actorId: provider?.providerId || '',
     providerStatus: (() => {
       const balance = provider?.providerActivity?.random_balance ?? 0;
       if (balance >= 0) return '0';
@@ -97,9 +95,9 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     discord: parsedDetails.discord || '',
     telegram: parsedDetails.telegram || '',
     domain: parsedDetails.domain || '',
-    providerId: provider?.providerId || initialProviderId || '',
+    providerId: provider?.providerId || '',
     owner: provider?.owner || '',
-    actorId: initialProviderId || '',
+    actorId: provider?.providerId || '',
     providerStatus: (() => {
       const balance = provider?.providerActivity?.random_balance ?? 0;
       if (balance >= 0) return '0';
@@ -259,34 +257,18 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       };
       setFormData(newFormData);
       setOriginalFormData(newFormData);
-      
+
       // Always keep original stake amounts as 0 for change detection
       setOriginalStakeAmount('0');
       setOriginalDisplayStakeAmount('0');
       setStakeAmount('0');
       setDisplayStakeAmount('0');
-    } else if (initialProviderId) {
-      setFormData(prev => ({
-        ...prev,
-        providerId: initialProviderId,
-        actorId: initialProviderId,
-        providerStatus: '0'
-      }));
-      setOriginalFormData(prev => ({
-        ...prev,
-        providerId: initialProviderId,
-        actorId: initialProviderId,
-        providerStatus: '0'
-      }));
-      // Keep original stake amounts as 0 for new providers
-      setOriginalStakeAmount('0');
-      setOriginalDisplayStakeAmount('0');
     }
-  }, [provider, parsedDetails, initialProviderId]);
+  }, [provider, parsedDetails]);
 
   // Fetch wallet balance when needed
   useEffect(() => {
-    if ((mode === 'setup' || mode === 'edit') && walletAddress && !walletBalance) {
+    if (mode === 'edit' && walletAddress && !walletBalance) {
       aoHelpers.getWalletBalance(walletAddress)
         .then(setWalletBalance)
         .catch(err => console.error('Error fetching wallet balance:', err));
@@ -302,18 +284,15 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     stakeAmount,
     walletBalance,
     mode,
-    showStakingForm: mode === 'setup',
     isWalletRecognized,
     rawToDisplayValue,
     displayToRawValue,
     refreshProviders,
     setProvider,
     setMode,
-    setShowStakingForm: () => {}, // Not needed in simplified version
     setSuccess,
     setError,
     setIsSubmitting,
-    setIsEditing: () => {}, // Not needed in simplified version
     setAvailableRandom,
     setIsUpdatingRandom,
     setRandomUpdateSuccess,
@@ -378,13 +357,12 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     return <div className="provider-details">Loading...</div>;
   }
 
-  // Show "Become a Provider" UI for non-providers in view mode
+  // Show message for non-providers in view mode
   if (mode === 'view' && !externalCurrentProvider && !isWalletRecognized()) {
     return (
       <div className="add-provider">
-        <h2>Become a Provider</h2>
-        <p>By running a provider, you become a contributor to the ecosystem and can earn rewards.</p>
-        <button className="start-btn" onClick={() => setMode('setup')}>Become a Provider →</button>
+        <h2>No Provider Found</h2>
+        <p>This wallet is not associated with any provider.</p>
       </div>
     );
   }
@@ -403,11 +381,6 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             }}>Cancel</button>
           </div>
         )}
-        {mode === 'setup' && (
-          <div className="header-actions">
-            <button className="cancel-btn" onClick={() => setMode('view')}>Cancel</button>
-          </div>
-        )}
       </div>
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
@@ -415,9 +388,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
       <div className="provider-details-content">
         <div className="provider-grid">
           <ProviderFormFields
-            isEditing={mode === 'edit' || mode === 'setup'}
-            isRegisterMode={false}
-            showStakingForm={mode === 'setup'}
+            isEditing={mode === 'edit'}
             formData={formData}
             handleInputChange={handleFormInputChange}
             parsedDetails={parsedDetails}
@@ -426,16 +397,11 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
             copiedAddress={copiedAddress}
             copyToClipboard={copyToClipboard}
             truncateAddress={truncateAddress}
-            isSetupMode={mode === 'setup'}
             joinDate={provider?.providerInfo?.created_at ? new Date(provider.providerInfo.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
-            }) : (mode === 'setup' ? new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }) : undefined)}
+            }) : undefined}
             displayStakeAmount={displayStakeAmount}
             setDisplayStakeAmount={setDisplayStakeAmount}
             stakeAmount={stakeAmount}
@@ -462,7 +428,7 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
         </div>
 
         {/* Social Links Section */}
-        {provider && mode !== 'setup' && (
+        {provider && (
           <SocialLinksSection
             isEditing={mode === 'edit'}
             formData={formData}
@@ -484,10 +450,10 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
 
         {/* Submit Actions */}
-        {(mode === 'edit' || mode === 'setup') && (
+        {mode === 'edit' && (
           <div className="provider-actions">
-            {(mode === 'setup' || hasFormChanges) && (
-              <button 
+            {hasFormChanges && (
+              <button
                 className="submit-btn"
                 onClick={handleFormSubmit}
                 disabled={isSubmitting}

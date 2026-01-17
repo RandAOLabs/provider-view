@@ -11,24 +11,17 @@ import Providers from './pages/Providers/Providers'
 import InfoHow from './pages/Info/InfoHow'
 import Admin from './pages/Admin/Admin'
 import Faucet from './pages/Faucet/Faucet'
-import Setup from './pages/Setup/Setup'
 import { Sidebar } from './components/common/Sidebar'
+import { useClientInitialization } from './hooks/useClientInitialization'
 
-
-// Pages where sidebar should be hidden
-const PAGES_WITHOUT_SIDEBAR = ['/setup']
 
 function AppContent() {
-  const location = useLocation()
-  const shouldHideSidebar = PAGES_WITHOUT_SIDEBAR.includes(location.pathname)
-
   return (
     <div className="app-container">
-      {!shouldHideSidebar && <Sidebar />}
-      <main className={`main-content ${shouldHideSidebar ? 'full-width' : ''}`}>
+      <Sidebar />
+      <main className="main-content">
         <Routes>
-          <Route path="/" element={<Setup />} />
-          <Route path="/setup" element={<Setup />} />
+          <Route path="/" element={<Providers />} />
           <Route path="/about" element={<About />} />
           <Route path="/providers" element={<Providers />} />
           <Route path="/info/how" element={<InfoHow />} />
@@ -49,6 +42,47 @@ function AppContent() {
 }
 
 function App() {
+  const { isInitialized, error } = useClientInitialization();
+
+  // Show loading state while clients initialize
+  if (!isInitialized && !error) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div>Initializing RandAO clients...</div>
+        <div style={{ fontSize: '0.875rem', color: '#666' }}>
+          This prevents duplicate queries by pre-initializing all clients
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if initialization failed
+  if (error) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div style={{ color: '#f44336' }}>Failed to initialize clients</div>
+        <div style={{ fontSize: '0.875rem', color: '#666' }}>
+          {error.message}
+        </div>
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
+
   return (
     <WalletProvider>
       <ProviderProvider>

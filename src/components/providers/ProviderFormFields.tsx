@@ -14,8 +14,6 @@ declare const providerprofileclient: ProfileClient;
 
 interface ProviderFormFieldsProps {
   isEditing: boolean;
-  isRegisterMode: boolean;
-  showStakingForm: boolean;
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   parsedDetails: any;
@@ -24,7 +22,6 @@ interface ProviderFormFieldsProps {
   copiedAddress?: string | null;
   copyToClipboard: (address: string) => void;
   truncateAddress: (address: string) => string;
-  isSetupMode?: boolean;
   joinDate?: string;
   // Stake-related props
   displayStakeAmount?: string;
@@ -52,8 +49,6 @@ interface ProviderFormFieldsProps {
 
 export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
   isEditing,
-  isRegisterMode,
-  showStakingForm,
   formData,
   handleInputChange,
   parsedDetails,
@@ -62,7 +57,6 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
   copiedAddress,
   copyToClipboard,
   truncateAddress,
-  isSetupMode = false,
   joinDate,
   // Stake-related props
   displayStakeAmount,
@@ -88,15 +82,13 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
   onError
 }) => {
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-  const isEditMode = isEditing || isRegisterMode || showStakingForm;
-  const isInSetupMode = isSetupMode || showStakingForm;
 
   return (
     <>
       {/* Required Fields */}
       <div className="required-fields">
         {/* Only show Owner and Join Date in view mode */}
-        {!isEditMode && (
+        {!isEditing && (
           <>
             <div className="detail-group">
               <label>Owner Address</label>
@@ -140,7 +132,7 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
         )}
 
         {/* Provider ID field - only in edit mode */}
-        {isEditMode && (
+        {isEditing && (
           <div className="detail-group">
             <label>Provider ID / Actor ID *</label>
             <input
@@ -157,7 +149,7 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
 
         <div className="detail-group">
           <label>Name *</label>
-          {isEditMode ? (
+          {isEditing ? (
             <input
               type="text"
               name="name"
@@ -175,7 +167,7 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
         </div>
 
         {/* Provider Status Section - show for existing providers */}
-        {!isInSetupMode && provider && (
+        {provider && (
           <ProviderStatusSection
             provider={provider}
             availableRandom={availableRandom || provider.providerActivity?.random_balance || null}
@@ -185,29 +177,29 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
             claimSuccess={claimSuccess || false}
             onUpdateAvailableRandom={onUpdateAvailableRandom || (() => {})}
             onClaimRewards={onClaimRewards || (() => {})}
-            isEditMode={isEditMode}
+            isEditing={isEditing}
             providerStatus={providerStatus}
             onStatusChange={onStatusChange}
           />
         )}
 
         {/* Claimable Rewards Section - show only in edit mode for existing providers */}
-        {!isInSetupMode && provider && isEditMode && (
+        {provider && isEditing && (
           <ClaimableRewards
             provider={provider}
-            isEditMode={isEditMode}
+            isEditing={isEditing}
             onError={onError}
           />
         )}
       </div>
 
       {/* Stake Section */}
-      {isEditMode && (
+      {isEditing && (
         <div className="detail-group">
           <StakeComponent
             currentStake={provider?.providerInfo?.stake?.amount || '0'}
             walletBalance={walletBalance}
-            isEditing={isEditMode}
+            isEditing={isEditing}
             onStakeChange={(newAmount) => {
               if (setStakeAmount) {
                 setStakeAmount(newAmount);
@@ -222,7 +214,7 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
       )}
 
       {/* Optional Fields Toggle */}
-      {isEditMode && (
+      {isEditing && (
         <div 
           className={`optional-fields-toggle ${showOptionalFields ? 'expanded' : ''}`}
           onClick={() => setShowOptionalFields(!showOptionalFields)}
@@ -233,10 +225,10 @@ export const ProviderFormFields: React.FC<ProviderFormFieldsProps> = ({
       )}
 
       {/* Optional Fields */}
-      <div className={`optional-fields ${!showOptionalFields && isEditMode ? 'collapsed' : ''}`}>
+      <div className={`optional-fields ${!showOptionalFields && isEditing ? 'collapsed' : ''}`}>
         <div className="detail-group description-group">
           <label>Description</label>
-          {isEditMode ? (
+          {isEditing ? (
             <textarea
               name="description"
               value={formData.description}

@@ -3,8 +3,6 @@ import { FiCheck, FiCopy } from 'react-icons/fi';
 
 interface ProviderActorSectionProps {
   isEditing: boolean;
-  isRegisterMode: boolean;
-  showStakingForm: boolean;
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   provider?: any;
@@ -12,26 +10,22 @@ interface ProviderActorSectionProps {
   copiedAddress?: string | null;
   copyToClipboard: (address: string) => void;
   truncateAddress: (address: string) => string;
-  isSetupMode?: boolean;
 }
 
 export const ProviderActorSection: React.FC<ProviderActorSectionProps> = ({
   isEditing,
-  isRegisterMode,
-  showStakingForm,
   formData,
   handleInputChange,
   provider,
   walletAddress,
   copiedAddress,
   copyToClipboard,
-  truncateAddress,
-  isSetupMode = false
+  truncateAddress
 }) => {
   return (
     <div className="detail-group">
       <label>Provider ID / Actor ID</label>
-      {isEditing || isRegisterMode || showStakingForm || isSetupMode ? (
+      {isEditing ? (
         <>
           <input
             type="text"
