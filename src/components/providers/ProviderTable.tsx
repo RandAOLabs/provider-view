@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { FiCircle, FiChevronDown, FiChevronUp, FiCheck, FiCopy, FiLoader, FiInfo } from 'react-icons/fi'
 import { aoHelpers } from '../../utils/ao-helpers'
 import { GiTwoCoins } from 'react-icons/gi'
@@ -6,6 +6,10 @@ import { ProviderDetails } from './ProviderDetails'
 import { ProviderActivity, ProviderInfo, ProviderInfoAggregate } from 'ao-js-sdk'
 import rngLogo from '../../assets/rng-logo.svg'
 import './ProviderTable.css'
+import { AnimatedRandomBalance } from './AnimatedRandomBalance'
+import { TotalFulfilledCell } from './TotalFulfilledCell'
+import { useTotalFulfilled } from '../../contexts/TotalFulfilledContext'
+import { useProviders } from '../../contexts/ProviderContext'
 
 interface ProviderTableProps {
   providers: ProviderInfoAggregate[]
@@ -28,6 +32,14 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
   const [stakingProvider, setStakingProvider] = useState<ProviderInfoAggregate | null>(null)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
   const [isRandomFeeLoading, setIsRandomFeeLoading] = useState(false)
+
+  // Progressive lazy loading for current random provided (only queries CURRENTRANDOMID)
+  const { loadProviders, getCachedValue } = useTotalFulfilled()
+  const hasStartedLoadingRef = useRef(false)
+
+  // Import useProviders to get the current provider (owned by connected wallet)
+  const { currentProvider } = useProviders()
+
   const [sortConfig, setSortConfig] = useState({
     key: 'active',
     direction: 'desc'
@@ -133,6 +145,24 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
     })
   }
 
+  // Progressive lazy loading: start loading visible providers after page stabilizes
+  useEffect(() => {
+    if (hasStartedLoadingRef.current || providers.length === 0) {
+      return;
+    }
+
+    // Wait 2 seconds for page to stabilize, then start loading
+    const timer = setTimeout(() => {
+      hasStartedLoadingRef.current = true;
+
+      // Load all providers in batches (the hook handles batching)
+      const providerIds = providers.map(p => p.providerId);
+      loadProviders(providerIds);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [providers, loadProviders]);
+
   const handleSort = (key: string) => {
     // Don't sort if clicking on Address or Name
     if (key === 'address' || key === 'name') return
@@ -233,37 +263,45 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
     if (isLoading || providers.length === 0) {
       return [];
     }
-  
-    return [...providers].sort((a, b) => {
+
+    const sorted = [...providers].sort((a, b) => {
+      // ALWAYS show user's own provider first
+      const aIsOwned = currentProvider && a.providerId === currentProvider.providerId;
+      const bIsOwned = currentProvider && b.providerId === currentProvider.providerId;
+
+      if (aIsOwned && !bIsOwned) return -1;
+      if (!aIsOwned && bIsOwned) return 1;
+
+      // For all other providers, apply normal sorting
       const aActive = a.providerActivity?.active ? 1 : 0;
       const bActive = b.providerActivity?.active ? 1 : 0;
-  
+
       if (sortConfig.key === 'status') {
         // Sort by provider version
         const aVersion = getProviderVersion(a);
         const bVersion = getProviderVersion(b);
         // The compareVersions function now returns higher versions first,
         // so we need to invert the logic for asc/desc
-        return sortConfig.direction === 'desc' 
-          ? compareVersions(aVersion, bVersion) 
+        return sortConfig.direction === 'desc'
+          ? compareVersions(aVersion, bVersion)
           : compareVersions(bVersion, aVersion);
       } else if (sortConfig.key === 'active' || aActive !== bActive) {
         if (aActive === bActive) {
           const aStake = Number(a.providerInfo?.stake?.amount || "0");
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
-  
+
           if (aStake === bStake) {
             const aName = a.providerInfo?.provider_details?.name || '';
             const bName = b.providerInfo?.provider_details?.name || '';
             return aName.localeCompare(bName);
           }
-  
+
           return bStake - aStake;
         }
-  
+
         return bActive - aActive;
       }
-  
+
       let comparison = 0;
       switch (sortConfig.key) {
         case 'joinDate':
@@ -277,32 +315,25 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
             (b.providerActivity?.random_balance || 0);
           break;
         case 'randomProvided':
-          comparison = (a.totalFullfullilled || 0) - (b.totalFullfullilled || 0);
+          // Sort by cached GraphQL values (from current random process)
+          const aRandomProvided = getCachedValue(a.providerId) ?? 0;
+          const bRandomProvided = getCachedValue(b.providerId) ?? 0;
+          comparison = aRandomProvided - bRandomProvided;
           break;
         case 'totalStaked':
           const aStake = Number(a.providerInfo?.stake?.amount || "0");
           const bStake = Number(b.providerInfo?.stake?.amount || "0");
           comparison = aStake - bStake;
           break;
-        case 'delegationFee':
-          const aFee = Number(
-            (a.providerInfo?.provider_details as ExtendedProviderDetails)?.delegationFee || "0"
-          );
-          const bFee = Number(
-            (b.providerInfo?.provider_details as ExtendedProviderDetails)?.delegationFee || "0"
-          );
-          comparison = aFee - bFee;
-          break;
-        case 'randomValueFee':
-          comparison = 0; // Currently all values are 0
-          break;
         default:
           comparison = 0;
       }
-  
+
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
-  }, [providers, sortConfig, isLoading]);
+
+    return sorted;
+  }, [providers, sortConfig, isLoading, currentProvider]);
   
 
   // // Debug logging for provider objects in table - COMPLETE OBJECT DUMP
@@ -403,28 +434,16 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 </span>
               )}
             </th>
-            <th onClick={() => handleSort('delegationFee')} className="sortable">
-              Delegation Fee {sortConfig.key === 'delegationFee' && (
-                <span className="sort-indicator">
-                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                </span>
-              )}
-            </th>
-            <th onClick={() => handleSort('randomValueFee')} className="sortable">
-              Random Value Fee {sortConfig.key === 'randomValueFee' && (
-                <span className="sort-indicator">
-                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                </span>
-              )}
-            </th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {sortedProviders.map(provider => (
+          {sortedProviders.map(provider => {
+            const isOwnedProvider = currentProvider && provider.providerId === currentProvider.providerId;
+            return (
             <React.Fragment key={provider.providerId}>
               <tr
-                className={expandedRows.has(provider.providerId) ? 'expanded' : ''}
+                className={`${expandedRows.has(provider.providerId) ? 'expanded' : ''} ${isOwnedProvider ? 'owned-provider' : ''}`}
                 onClick={(e) => toggleRow(provider.providerId, e)}
               >
                 <td>
@@ -433,7 +452,7 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                       const status = getProviderStatus(provider.providerActivity?.random_balance);
                       return (
                         <>
-                          <FiCircle 
+                          <FiCircle
                             className={`status-indicator status-${status.color}`}
                             title={`${status.label}: ${status.description}`}
                           />
@@ -441,19 +460,22 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                         </>
                       );
                     })()}
+                    {isOwnedProvider && (
+                      <span className="owned-provider-badge">YOUR PROVIDER</span>
+                    )}
                     {provider.providerActivity?.provider_info && (
                       <span className="provider-version">
                         {hasNetworkIp(provider) && (
-                          <img 
-                            src={rngLogo} 
-                            alt="RNG" 
+                          <img
+                            src={rngLogo}
+                            alt="RNG"
                             className="rng-logo"
                             style={{ width: '16px', height: '16px', marginRight: '4px' }}
                           />
                         )}
                         {(() => {
                           const info = provider.providerActivity.provider_info;
-                          
+
                           // If it's a string, try to parse as JSON
                           if (typeof info === 'string') {
                             try {
@@ -469,13 +491,13 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                               return info;
                             }
                           }
-                          
+
                           // If it's an object, try to access providerVersion directly
                           if (typeof info === 'object' && info !== null) {
                             const version = (info as any).providerVersion;
                             return version ? `v${version}` : '';
                           }
-                          
+
                           return '';
                         })()}
                       </span>
@@ -502,51 +524,19 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 </td>
                 <td>{(provider.providerInfo as ProviderInfo)?.created_at ? new Date((provider.providerInfo as ProviderInfo).created_at).toISOString().split('T')[0] : 'N/A'}</td>
                 <td>
-                  {isLoading ? (
-                    <div className="loading-spinner">
-                      <FiLoader className="animate-spin" size={16} />
-                    </div>
-                  ) : (
-                    provider.providerActivity?.random_balance || 0
-                  )}
+                  <AnimatedRandomBalance
+                    providerId={provider.providerId}
+                    initialValue={provider.providerActivity?.random_balance}
+                  />
                 </td>
 
                 <td>
-                  {isLoading ? (
-                    <div className="loading-spinner">
-                      <FiLoader className="animate-spin" size={16} />
-                    </div>
-                  ) : (
-                    provider.totalFullfullilled || 0
-                  )}
+                  <TotalFulfilledCell
+                    providerId={provider.providerId}
+                    autoLoad={false}
+                  />
                 </td>
                 <td>{formatTokenAmount((provider.providerInfo as ProviderInfo)?.stake?.amount || "0")}</td>
-                <td>
-                  <div className="delegation-fee">
-                    <span>
-                      {(provider.providerInfo?.provider_details as ExtendedProviderDetails)?.delegationFee !== undefined ? 
-                        `${(provider.providerInfo?.provider_details as ExtendedProviderDetails).delegationFee}%` : 'N/A'}
-                    </span>
-                    <button 
-                      className="stake-button" 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setStakingProvider(provider)
-                      }}
-                    >
-                      <GiTwoCoins />
-                    </button>
-                  </div>
-                </td>
-                <td>
-                  {isRandomFeeLoading ? (
-                    <div className="loading-spinner">
-                      <FiLoader className="animate-spin" size={16} />
-                    </div>
-                  ) : (
-                    0
-                  )}
-                </td>
                 <td>
                   {expandedRows.has(provider.providerId) ? 
                     <FiChevronUp className="expand-icon" /> : 
@@ -556,7 +546,7 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
               </tr>
               {expandedRows.has(provider.providerId) && (
                 <tr className="expanded-content">
-                  <td colSpan={10}>
+                  <td colSpan={8}>
                     <div className="expanded-details">
                       <ProviderDetails
                         currentProvider={provider}
@@ -567,7 +557,7 @@ export const ProviderTable = ({ providers }: ProviderTableProps) => {
                 </tr>
               )}
             </React.Fragment>
-          ))}
+          )})}
         </tbody>
         </table>
       </div>

@@ -53,7 +53,7 @@ export const ProviderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null);
 
     try {
-      console.log('Fetching providers data...');
+      // console.log('Fetching providers data...');
 
       // FIXED: Bypass the SDK's getAllProviderInfo() which makes N domain queries (one per provider)
       // Instead, fetch the data directly from the already-initialized clients
@@ -119,7 +119,7 @@ export const ProviderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return stakeAmount > 0;
         });
 
-      console.log(`Fetched ${fetchedProviders.length} providers (bypassed SDK's getAllProviderInfo to avoid ${allProviderIds.size} domain queries)`);
+      // console.log(`Fetched ${fetchedProviders.length} providers (bypassed SDK's getAllProviderInfo to avoid ${allProviderIds.size} domain queries)`);
       setProviders(fetchedProviders);
       hasInitialFetchRef.current = true;
     } catch (err) {

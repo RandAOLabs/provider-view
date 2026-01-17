@@ -23,6 +23,7 @@ const RANDOMPROCCESS = [
   "lgqfjApWiekA_O3Svv7tNJU1Ol3eZD1_JzWKZ7E4ek8",
   "1nTos_shMV8HlC7f2svZNZ3J09BROKCTK8DyvkrzLag"
 ];
+const CURRENTRANDOMID = "1nTos_shMV8HlC7f2svZNZ3J09BROKCTK8DyvkrzLag"
 /**
  * Fetches the total number of matching transactions from Arweave using the count field.
  *
@@ -235,6 +236,46 @@ export async function getProviderTotalRandom(provider_id: string) {
       response: error.response,
       stack: error.stack
     });
+    return 0;
+  }
+}
+
+/**
+ * Fetches the current random count provided by a specific provider for the CURRENT random process only.
+ * This is much faster than getProviderTotalRandom as it only queries one process instead of 17.
+ *
+ * @param {string} provider_id - The provider's wallet address
+ * @returns {Promise<number>} The count of random provided by this provider for the current process
+ */
+export async function getProviderCurrentRandom(provider_id: string) {
+  try {
+    const queryObject = {
+      query: `{
+        transactions(
+          recipients: ["${CURRENTRANDOMID}"],
+          owners: ["${provider_id}"],
+          tags: [
+            { name: "Action", values: ["Reveal-Puzzle-Params"] },
+            { name: "Data-Protocol", values: ["ao"] }
+          ]
+        ) {
+          count
+        }
+      }`
+    };
+
+    try {
+      const response = await arweave.api.post('/graphql', queryObject);
+      const rawCount = response.data?.data?.transactions?.count;
+
+      // Convert count to number (handles both string and number returns from API)
+      return rawCount ? Number(rawCount) : 0;
+    } catch (error) {
+      console.error(`Error fetching transaction count for current random process:`, error);
+      return 0;
+    }
+  } catch (error) {
+    console.error("Error fetching provider current random:", error);
     return 0;
   }
 }

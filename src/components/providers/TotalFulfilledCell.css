@@ -1,0 +1,130 @@
+.total-fulfilled-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.total-fulfilled-cell:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.total-fulfilled-cell.status-loading,
+.total-fulfilled-cell.status-idle {
+  cursor: wait;
+}
+
+.total-fulfilled-cell.status-loading:hover,
+.total-fulfilled-cell.status-idle:hover {
+  background-color: transparent;
+}
+
+/* Loading state */
+.total-fulfilled-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+}
+
+/* Custom spinner - ultra compact */
+.total-fulfilled-loading .custom-spinner {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+}
+
+.total-fulfilled-loading .custom-spinner .spinner-ring {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  animation: spin-ring 0.8s linear infinite;
+}
+
+.total-fulfilled-loading .custom-spinner .spinner-ring:nth-child(1) {
+  width: 12px;
+  height: 12px;
+  border-top-color: #6366f1;
+  border-right-color: #6366f1;
+  top: 0;
+  left: 0;
+}
+
+.total-fulfilled-loading .custom-spinner .spinner-ring:nth-child(2) {
+  width: 8px;
+  height: 8px;
+  border-bottom-color: #8b5cf6;
+  border-left-color: #8b5cf6;
+  top: 2px;
+  left: 2px;
+  animation-direction: reverse;
+}
+
+.total-fulfilled-loading .custom-spinner .spinner-ring:nth-child(3) {
+  width: 4px;
+  height: 4px;
+  border-top-color: #a78bfa;
+  top: 4px;
+  left: 4px;
+  animation-duration: 0.6s;
+}
+
+@keyframes spin-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loaded state */
+.total-fulfilled-loaded {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.total-fulfilled-loaded .value {
+  font-weight: 500;
+  color: #000000;
+}
+
+.total-fulfilled-loaded .refresh-icon {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: #4CAF50;
+}
+
+.total-fulfilled-cell:hover .refresh-icon {
+  opacity: 1;
+}
+
+/* Error state */
+.total-fulfilled-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f44336;
+}
+
+.total-fulfilled-error .error-text {
+  font-size: 0.875rem;
+}
+
+.total-fulfilled-error .refresh-icon {
+  opacity: 0.7;
+}
+
+.total-fulfilled-cell.status-error:hover .refresh-icon {
+  opacity: 1;
+}
+
+/* Idle state - now uses loading spinner */

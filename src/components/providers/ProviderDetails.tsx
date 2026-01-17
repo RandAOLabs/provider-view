@@ -11,6 +11,7 @@ import { useProviderActions } from '../../hooks/useProviderActions'
 import { useWallet } from '../../contexts/WalletContext'
 import { useProviders } from '../../contexts/ProviderContext'
 import { aoHelpers, MINIMUM_STAKE_AMOUNT, TOKEN_DECIMALS } from '../../utils/ao-helpers'
+import { getProviderTotalRandom } from '../../utils/graphQLquery'
 import './ProviderDetails.css'
 
 
@@ -59,6 +60,10 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
   const [isIncreasingStake, setIsIncreasingStake] = useState(false)
   const [increaseStakeAmount, setIncreaseStakeAmount] = useState('1000')
   const [isBelowMinimumStake, setIsBelowMinimumStake] = useState(false)
+
+  // GraphQL query state for total random
+  const [totalRandomGraphQL, setTotalRandomGraphQL] = useState<number | null>(null)
+  const [isLoadingGraphQL, setIsLoadingGraphQL] = useState(false)
   
   
   // Form data
@@ -275,6 +280,29 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
     }
   }, [mode, walletAddress, walletBalance]);
 
+  // Fetch GraphQL total random when component mounts (auto-trigger on expand)
+  const fetchGraphQLTotalRandom = async () => {
+    if (!provider?.providerId) return;
+
+    setIsLoadingGraphQL(true);
+    try {
+      const total = await getProviderTotalRandom(provider.providerId);
+      setTotalRandomGraphQL(total);
+    } catch (err) {
+      console.error('Error fetching GraphQL total random:', err);
+      setTotalRandomGraphQL(null);
+    } finally {
+      setIsLoadingGraphQL(false);
+    }
+  };
+
+  // Auto-trigger GraphQL query when provider details are shown
+  useEffect(() => {
+    if (provider?.providerId) {
+      fetchGraphQLTotalRandom();
+    }
+  }, [provider?.providerId]);
+
   // Use actions hook for complex operations
   const actions = useProviderActions({
     provider,
@@ -423,7 +451,12 @@ export const ProviderDetails: React.FC<ProviderDetailsProps> = ({
 
           {/* Show metrics for existing providers in view mode */}
           {mode === 'view' && provider && (
-            <ProviderMetrics provider={provider} />
+            <ProviderMetrics
+              provider={provider}
+              totalRandomGraphQL={totalRandomGraphQL}
+              isLoadingGraphQL={isLoadingGraphQL}
+              onRefreshGraphQL={fetchGraphQLTotalRandom}
+            />
           )}
         </div>
 

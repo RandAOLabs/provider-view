@@ -14,11 +14,11 @@ export const useClientInitialization = () => {
 
     const initialize = async () => {
       try {
-        console.log('[useClientInitialization] Starting client initialization...');
+        // console.log('[useClientInitialization] Starting client initialization...');
         await aoHelpers.initializeClients();
 
         if (mounted) {
-          console.log('[useClientInitialization] Client initialization complete');
+          // console.log('[useClientInitialization] Client initialization complete');
           setIsInitialized(true);
         }
       } catch (err) {

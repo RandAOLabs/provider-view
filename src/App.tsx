@@ -5,6 +5,7 @@ import { Raffle, Lootbox, CriticalStrike, Lottery, RandomNumber } from './pages/
 import { WalletProvider } from './contexts/WalletContext'
 import { ProviderProvider } from './contexts/ProviderContext'
 import { RequestsContextProvider } from './contexts/RequestsContext'
+import { TotalFulfilledProvider } from './contexts/TotalFulfilledContext'
 import './App.css'
 import About from './pages/About/About'
 import Providers from './pages/Providers/Providers'
@@ -86,11 +87,13 @@ function App() {
   return (
     <WalletProvider>
       <ProviderProvider>
-        <RequestsContextProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </RequestsContextProvider>
+        <TotalFulfilledProvider>
+          <RequestsContextProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </RequestsContextProvider>
+        </TotalFulfilledProvider>
       </ProviderProvider>
     </WalletProvider>
   )

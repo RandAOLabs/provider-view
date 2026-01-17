@@ -68,7 +68,7 @@ class AOHelpers {
 
         this._globalInitPromise = (async () => {
             try {
-                console.log('[AOHelpers] Starting global client initialization...');
+                // console.log('[AOHelpers] Starting global client initialization...');
 
                 // Initialize all clients in parallel
                 await Promise.all([
@@ -83,7 +83,7 @@ class AOHelpers {
                 await this.getRandAOService();
 
                 this._isInitialized = true;
-                console.log('[AOHelpers] Global client initialization complete');
+                // console.log('[AOHelpers] Global client initialization complete');
             } catch (err) {
                 console.error('[AOHelpers] Global initialization failed:', err);
                 this._globalInitPromise = null; // Reset so it can be retried
@@ -144,11 +144,11 @@ class AOHelpers {
         }
 
         if (this._randomClientPromise) {
-            console.log('[AOHelpers] Waiting for existing RandomClient initialization...');
+            // console.log('[AOHelpers] Waiting for existing RandomClient initialization...');
             return this._randomClientPromise;
         }
 
-        console.log('[AOHelpers] Starting RandomClient initialization...');
+        // console.log('[AOHelpers] Starting RandomClient initialization...');
         this._randomClientPromise = (async () => {
             const builder = RandomClient.builder()
                 .withProcessId("1nTos_shMV8HlC7f2svZNZ3J09BROKCTK8DyvkrzLag")
@@ -169,7 +169,7 @@ class AOHelpers {
             const client = builder.build();
             this._randomClient = client;
             this._randomClientPromise = null;
-            console.log('[AOHelpers] RandomClient initialization complete');
+            // console.log('[AOHelpers] RandomClient initialization complete');
             return client;
         })();
 
@@ -246,14 +246,14 @@ class AOHelpers {
 
         // If initialization is already in progress, wait for it
         if (this._randAOServicePromise) {
-            console.log('[AOHelpers] Waiting for existing RandAOService initialization...');
+            // console.log('[AOHelpers] Waiting for existing RandAOService initialization...');
             return this._randAOServicePromise;
         }
 
         // Start new initialization - manually create service with properly configured clients
         this._randAOServicePromise = (async () => {
             try {
-                console.log('[AOHelpers] Starting RandAOService initialization...');
+                // console.log('[AOHelpers] Starting RandAOService initialization...');
 
                 // Get the individual clients (these now support read-only mode)
                 const randomClient = await this.getRandomClient();
