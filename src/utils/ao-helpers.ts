@@ -1,20 +1,21 @@
-import { 
-    ProviderStakingClient, 
-    TokenClient, 
-    RandomClient, 
-    ProviderProfileClient, 
-    GetOpenRandomRequestsResponse, 
-    RaffleClient, 
-    ViewPullsResponse, 
-    ViewEntrantsResponse, 
-    ViewRaffleOwnersResponse, 
-    RandAOService, 
-    ProviderInfoAggregate, 
+import {
+    ProviderStakingClient,
+    TokenClient,
+    RandomClient,
+    ProviderProfileClient,
+    GetOpenRandomRequestsResponse,
+    RaffleClient,
+    ViewPullsResponse,
+    ViewEntrantsResponse,
+    ViewRaffleOwnersResponse,
+    RandAOService,
+    ProviderInfoAggregate,
     IRandAOService,
     Logger,
     LogLevel,
     BaseClientConfigBuilder,
     ProviderActivity,
+    FaucetClient,
 } from 'ao-js-sdk';
 import { connect, createDataItemSigner, dryrun, message } from "@permaweb/aoconnect";
 
@@ -35,11 +36,13 @@ export interface ProviderDetailsInput {
 class AOHelpers {
     private _providerstakingClient: ProviderStakingClient | null = null;
     private _tokenClient: TokenClient | null = null;
+    private _aoTokenClient: TokenClient | null = null;
     private _randomClient: RandomClient | null = null;
     private _providerProfileClient: ProviderProfileClient | null = null;
     private _randomRaffleClient: RaffleClient | null = null;
     private _randAOService: IRandAOService | null = null;
     private _redemptionClient: any | null = null;
+    private _faucetClient: FaucetClient | null = null;
 
     // Pending promise guards to prevent concurrent initialization
     private _randAOServicePromise: Promise<IRandAOService> | null = null;
@@ -48,6 +51,9 @@ class AOHelpers {
     private _providerProfileClientPromise: Promise<ProviderProfileClient> | null = null;
     private _randomRaffleClientPromise: Promise<RaffleClient> | null = null;
     private _redemptionClientPromise: Promise<any> | null = null;
+    private _tokenClientPromise: Promise<TokenClient> | null = null;
+    private _aoTokenClientPromise: Promise<TokenClient> | null = null;
+    private _faucetClientPromise: Promise<FaucetClient> | null = null;
 
     // Global initialization promise to ensure all clients initialize once
     private _globalInitPromise: Promise<void> | null = null;
@@ -76,7 +82,9 @@ class AOHelpers {
                     this.getStakingClient(),
                     this.getProviderProfileClient(),
                     this.getRandomRaffleClient(),
-                    this.getTokenClient()
+                    this.getTokenClient(),
+                    this.getAOTokenClient(),
+                    this.getFaucetClient()
                 ]);
 
                 // Initialize RandAOService (which depends on RandomClient and ProviderProfileClient)
@@ -130,12 +138,66 @@ class AOHelpers {
             return this._tokenClient;
         }
 
-        this._tokenClient = new TokenClient(
-            new BaseClientConfigBuilder()
+        if (this._tokenClientPromise) {
+            return this._tokenClientPromise;
+        }
+
+        this._tokenClientPromise = (async () => {
+            const builder = new BaseClientConfigBuilder()
                 .withProcessId("rPpsRk9Rm8_SJ1JF8m9_zjTalkv9Soaa_5U0tYUloeY")
-                .build()
-        );
-        return this._tokenClient;
+                .withAOConfig({ CU_URL: 'https://ur-cu.randao.net', MU_URL: 'https://ur-mu.randao.net', MODE: 'legacy' });
+
+            // Add wallet if available
+            if (window.arweaveWallet) {
+                try {
+                    const wallet = window.arweaveWallet;
+                    builder.withWallet(wallet);
+                } catch (err) {
+                    console.log('[AOHelpers] No wallet available for TokenClient (RNG), using read-only mode');
+                }
+            }
+
+            const client = new TokenClient(builder.build());
+            this._tokenClient = client;
+            this._tokenClientPromise = null;
+            return client;
+        })();
+
+        return this._tokenClientPromise;
+    }
+
+    async getAOTokenClient(): Promise<TokenClient> {
+        if (this._aoTokenClient) {
+            return this._aoTokenClient;
+        }
+
+        if (this._aoTokenClientPromise) {
+            return this._aoTokenClientPromise;
+        }
+
+        this._aoTokenClientPromise = (async () => {
+            // AO token uses custom CU but default MU
+            const builder = new BaseClientConfigBuilder()
+                .withProcessId("0syT13r0s0tgPmIed95bJnuSqaD29HQNN8D3ElLSrsc")
+                .withAOConfig({ CU_URL: 'https://ur-cu.randao.net', MODE: 'legacy' });
+
+            // Add wallet if available
+            if (window.arweaveWallet) {
+                try {
+                    const wallet = window.arweaveWallet;
+                    builder.withWallet(wallet);
+                } catch (err) {
+                    console.log('[AOHelpers] No wallet available for TokenClient (AO), using read-only mode');
+                }
+            }
+
+            const client = new TokenClient(builder.build());
+            this._aoTokenClient = client;
+            this._aoTokenClientPromise = null;
+            return client;
+        })();
+
+        return this._aoTokenClientPromise;
     }
 
     async getRandomClient(): Promise<RandomClient> {
@@ -352,6 +414,38 @@ class AOHelpers {
         return this._redemptionClientPromise;
     }
 
+    async getFaucetClient(): Promise<FaucetClient> {
+        if (this._faucetClient) {
+            return this._faucetClient;
+        }
+
+        if (this._faucetClientPromise) {
+            return this._faucetClientPromise;
+        }
+
+        this._faucetClientPromise = (async () => {
+            // FaucetClient.defaultBuilder() returns a Promise, so we need to await it
+            const builder = await FaucetClient.defaultBuilder();
+
+            // Add wallet if available
+            if (window.arweaveWallet) {
+                try {
+                    const wallet = window.arweaveWallet;
+                    builder.withWallet(wallet);
+                } catch (err) {
+                    console.log('[AOHelpers] No wallet available for FaucetClient, using read-only mode');
+                }
+            }
+
+            const client = builder.build();
+            this._faucetClient = client;
+            this._faucetClientPromise = null;
+            return client;
+        })();
+
+        return this._faucetClientPromise;
+    }
+
     // Cache for getAllProviderInfo to prevent redundant API calls
     private _providersCache: ProviderInfoAggregate[] | null = null;
     private _providersCacheTimestamp: number = 0;
@@ -371,13 +465,36 @@ class AOHelpers {
         }
     }
 
-    // Get wallet token balance
+    // Get wallet token balance (RNG token)
     async getWalletBalance(walletAddress: string): Promise<string> {
         try {
             const client = await this.getTokenClient();
             return await client.balance(walletAddress);
         } catch (error) {
             console.error('Error getting wallet balance:', error);
+            throw error;
+        }
+    }
+
+    // Get AO token balance
+    async getAOWalletBalance(walletAddress: string): Promise<string> {
+        try {
+            const client = await this.getAOTokenClient();
+            return await client.balance(walletAddress);
+        } catch (error) {
+            console.error('Error getting AO wallet balance:', error);
+            throw error;
+        }
+    }
+
+    // Use faucet to exchange AO for RNG tokens
+    async useFaucet(): Promise<string> {
+        try {
+            const client = await this.getFaucetClient();
+            const result = await client.useFaucet();
+            return result.toString();
+        } catch (error) {
+            console.error('Error using faucet:', error);
             throw error;
         }
     }

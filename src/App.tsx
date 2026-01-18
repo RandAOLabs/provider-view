@@ -43,46 +43,8 @@ function AppContent() {
 }
 
 function App() {
-  const { isInitialized, error } = useClientInitialization();
-
-  // Show loading state while clients initialize
-  if (!isInitialized && !error) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div>Initializing RandAO clients...</div>
-        <div style={{ fontSize: '0.875rem', color: '#666' }}>
-          This prevents duplicate queries by pre-initializing all clients
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state if initialization failed
-  if (error) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div style={{ color: '#f44336' }}>Failed to initialize clients</div>
-        <div style={{ fontSize: '0.875rem', color: '#666' }}>
-          {error.message}
-        </div>
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </div>
-    );
-  }
+  // Initialize clients in the background - errors logged to console only
+  useClientInitialization();
 
   return (
     <WalletProvider>

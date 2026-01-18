@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../../contexts/WalletContext';
-import { useProviders } from '../../contexts/ProviderContext';
 import { aoHelpers } from '../../utils/ao-helpers';
 import { GetUserInfoResponse } from 'ao-js-sdk';
 import './UserBalanceSheet.css';
 
 // RNG token has 9 decimal places
 const TOKEN_DECIMALS = 9;
-
-interface UserInfo {
-  balance: string;
-  createdAt: string;
-}
 
 // Helper function to ensure we always return a string balance
 const ensureStringBalance = (balance: string | number | undefined): string => {
@@ -21,11 +15,14 @@ const ensureStringBalance = (balance: string | number | undefined): string => {
 
 const UserBalanceSheet: React.FC = () => {
   const { address, isConnected } = useWallet();
-  const { currentProvider } = useProviders();
   const [rngBalance, setRngBalance] = useState<string>('0');
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [aoBalance, setAoBalance] = useState<string>('0');
+  const [prepaidBalance, setPrepaidBalance] = useState<string>('0');
   const [prepayAmount, setPrepayAmount] = useState<number>(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingRng, setIsLoadingRng] = useState(false);
+  const [isLoadingAo, setIsLoadingAo] = useState(false);
+  const [isLoadingPrepaid, setIsLoadingPrepaid] = useState(false);
+  const [isPrepaying, setIsPrepaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -39,34 +36,63 @@ const UserBalanceSheet: React.FC = () => {
 
   const resetState = () => {
     setRngBalance('0');
-    setUserInfo(null);
+    setAoBalance('0');
+    setPrepaidBalance('0');
     setError(null);
     setSuccess(null);
   };
 
   const fetchBalances = async () => {
     if (!address) return;
-    
-    setIsLoading(true);
+
     setError(null);
-    
-    try {
-      // Fetch wallet balance
-      const balance = await aoHelpers.getWalletBalance(address);
-      setRngBalance(balance);
-      
-      // Fetch user info using aoHelpers function
-      const info: GetUserInfoResponse = await aoHelpers.getUserInfo(address);
-      setUserInfo({
-        balance: ensureStringBalance(info.balance),
-        createdAt: info.created_at ? new Date(info.created_at).toLocaleString() : 'N/A'
-      });
-    } catch (err: any) {
-      console.error("Error fetching balance information:", err);
-      setError(`Failed to fetch balance: ${err.message || "Unknown error"}`);
-    } finally {
-      setIsLoading(false);
-    }
+
+    // Fetch all balances in parallel - each updates independently when it completes
+    const fetchRngBalance = async () => {
+      setIsLoadingRng(true);
+      try {
+        const balance = await aoHelpers.getWalletBalance(address);
+        setRngBalance(balance);
+      } catch (err: any) {
+        console.error("Error fetching RNG balance:", err);
+        setError(prev => prev ? `${prev}\nFailed to fetch RNG balance` : "Failed to fetch RNG balance");
+      } finally {
+        setIsLoadingRng(false);
+      }
+    };
+
+    const fetchAoBalance = async () => {
+      setIsLoadingAo(true);
+      try {
+        const aoBalanceValue = await aoHelpers.getAOWalletBalance(address);
+        setAoBalance(aoBalanceValue);
+      } catch (err: any) {
+        console.error("Error fetching AO balance:", err);
+        setError(prev => prev ? `${prev}\nFailed to fetch AO balance` : "Failed to fetch AO balance");
+      } finally {
+        setIsLoadingAo(false);
+      }
+    };
+
+    const fetchPrepaidBalance = async () => {
+      setIsLoadingPrepaid(true);
+      try {
+        const info: GetUserInfoResponse = await aoHelpers.getUserInfo(address);
+        setPrepaidBalance(ensureStringBalance(info.balance));
+      } catch (err: any) {
+        console.error("Error fetching prepaid balance:", err);
+        setError(prev => prev ? `${prev}\nFailed to fetch prepaid balance` : "Failed to fetch prepaid balance");
+      } finally {
+        setIsLoadingPrepaid(false);
+      }
+    };
+
+    // Execute all fetches in parallel - each updates UI as soon as it completes
+    Promise.allSettled([
+      fetchRngBalance(),
+      fetchAoBalance(),
+      fetchPrepaidBalance()
+    ]);
   };
 
   const handlePrepay = async () => {
@@ -74,17 +100,17 @@ const UserBalanceSheet: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsPrepaying(true);
     setError(null);
     setSuccess(null);
 
     try {
       // Convert user-friendly amount to raw amount with 9 decimals
       const rawAmount = Math.floor(prepayAmount * Math.pow(10, TOKEN_DECIMALS));
-      
+
       // Use aoHelpers function instead of direct getRandomClient call
       const result = await aoHelpers.prepayTokens(rawAmount, address);
-      
+
       if (result) {
         setSuccess(`Successfully prepaid ${prepayAmount} RNG tokens for future random requests.`);
         // Refresh balances
@@ -96,7 +122,7 @@ const UserBalanceSheet: React.FC = () => {
       console.error("Prepay error:", err);
       setError(`Failed to prepay: ${err.message || "Unknown error"}`);
     } finally {
-      setIsLoading(false);
+      setIsPrepaying(false);
     }
   };
 
@@ -120,23 +146,21 @@ const UserBalanceSheet: React.FC = () => {
       
       <div className="balance-info">
         <div className="balance-row">
-          <span className="balance-label">Wallet Balance:</span>
-          <span className="balance-value">{isLoading ? 'Loading...' : formatBalance(rngBalance)} RNG</span>
+          <span className="balance-label">AO Balance:</span>
+          <span className="balance-value">{isLoadingAo ? 'Loading...' : formatBalance(aoBalance)} AO</span>
         </div>
-        
-        {userInfo && (
-          <div className="balance-row">
-            <span className="balance-label">Prepaid Balance:</span>
-            <span className="balance-value">{formatBalance(userInfo.balance)} RNG</span>
-          </div>
-        )}
-        
-        {userInfo && (
-          <div className="balance-row">
-            <span className="balance-label">Account Created:</span>
-            <span className="balance-value">{userInfo.createdAt}</span>
-          </div>
-        )}
+
+        <div className="balance-row">
+          <span className="balance-label">RNG Wallet Balance:</span>
+          <span className="balance-value">{isLoadingRng ? 'Loading...' : formatBalance(rngBalance)} RNG</span>
+        </div>
+
+        <div className="balance-row">
+          <span className="balance-label">RNG Prepaid Balance:</span>
+          <span className="balance-value">
+            {isLoadingPrepaid ? 'Loading...' : formatBalance(prepaidBalance)} RNG
+          </span>
+        </div>
       </div>
 
       <div className="prepay-section">
@@ -150,28 +174,20 @@ const UserBalanceSheet: React.FC = () => {
             placeholder="Amount to prepay"
             value={prepayAmount}
             onChange={(e) => setPrepayAmount(Math.max(1, parseInt(e.target.value) || 0))}
-            disabled={isLoading}
+            disabled={isPrepaying}
           />
-          <button 
+          <button
             onClick={handlePrepay}
-            disabled={isLoading || !isConnected}
-            className={isLoading ? 'loading' : ''}
+            disabled={isPrepaying || !isConnected}
+            className={isPrepaying ? 'loading' : ''}
           >
-            {isLoading ? 'Processing...' : 'Prepay RNG Tokens'}
+            {isPrepaying ? 'Processing...' : 'Prepay RNG Tokens'}
           </button>
         </div>
         
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
       </div>
-      
-      <button 
-        className="refresh-button"
-        onClick={fetchBalances}
-        disabled={isLoading || !isConnected}
-      >
-        Refresh Balances
-      </button>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet } from '../../contexts/WalletContext';
-import { FaucetClient } from 'ao-js-sdk';
+import { aoHelpers } from '../../utils/ao-helpers';
 import UserBalanceSheet from '../../components/faucet/UserBalanceSheet';
 import './Faucet.css';
 
@@ -23,14 +23,11 @@ const Faucet: React.FC = () => {
     setSuccess(false);
 
     try {
-      // Initialize the FaucetClient using defaultBuilder
-      const faucetClient = (await FaucetClient.defaultBuilder()).build();
-      
-      // Use the faucet to exchange tokens
-      const result = await faucetClient.useFaucet();
-      
+      // Use the faucet to exchange tokens via aoHelpers
+      const result = await aoHelpers.useFaucet();
+
       // Handle successful transaction
-      setTxHash(result.toString());
+      setTxHash(result);
       setSuccess(true);
       setError(null);
     } catch (err: any) {
