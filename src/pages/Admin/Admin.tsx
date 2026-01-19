@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { aoHelpers, TOKEN_DECIMALS } from '../../utils/ao-helpers';
+import React, { useState } from 'react';
+import { aoHelpers } from '../../utils/ao-helpers';
 import { useProviders } from '../../contexts/ProviderContext';
-import { connect, createDataItemSigner, message } from "@permaweb/aoconnect";
 import { ConnectWallet } from '../../components/common/ConnectWallet';
 import { Spinner } from '../../components/common/Spinner';
 import { ButtonSpinner } from '../../components/common/ButtonSpinner';
-import { ProviderInfoAggregate, RandomClient, RNGToken, MonitoringData, ProviderActivity } from 'ao-js-sdk';
+import { ProviderInfoAggregate, MonitoringData, ProviderActivity } from 'ao-js-sdk';
 import { useWallet } from '../../contexts/WalletContext';
-import { FiCheck, FiRefreshCw, FiSend, FiZap, FiPlus, FiMinus, FiShuffle, FiInfo, FiCpu, FiDatabase, FiServer } from 'react-icons/fi';
+import { FiCheck, FiRefreshCw, FiZap, FiMinus, FiInfo } from 'react-icons/fi';
 import './Admin.css';
 import { ProviderMonitoringDisplay } from '../../components/providers/ProviderMonitoringDisplay';
 
@@ -16,6 +15,7 @@ interface ProviderManagementProps {
   providers: ProviderInfoAggregate[];
   isConnected: boolean;
   isLoading: boolean;
+  error: any;
   reinitializingProviders: { [key: string]: boolean };
   reinitSuccessProviders: { [key: string]: boolean };
   reinitAllLoading: boolean;
@@ -31,6 +31,7 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
   providers,
   isConnected,
   isLoading,
+  error,
   reinitializingProviders,
   reinitSuccessProviders,
   reinitAllLoading,
@@ -41,12 +42,6 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
   onTurnOffProvider,
   connectedAddress,
 }) => {
-  const [selectedProviders, setSelectedProviders] = useState<ProviderInfoAggregate[]>([]);
-  const [numRandomProviders, setNumRandomProviders] = useState<number>(3);
-  const [requestMethod, setRequestMethod] = useState<'direct' | 'client'>('direct');
-  const [requestLoading, setRequestLoading] = useState<boolean>(false);
-  const [requestResult, setRequestResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -115,63 +110,6 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
     setModalOpen(true);
   };
 
-  const selectAllProviders = () => {
-    setSelectedProviders([...filteredProviders]);
-  };
-
-  const clearSelectedProviders = () => {
-    setSelectedProviders([]);
-  };
-
-  const toggleProviderSelection = (provider: ProviderInfoAggregate) => {
-    if (selectedProviders.find(p => p.providerId === provider.providerId)) {
-      setSelectedProviders(selectedProviders.filter(p => p.providerId !== provider.providerId));
-    } else {
-      setSelectedProviders([...selectedProviders, provider]);
-    }
-  };
-
-  const selectRandomProviders = () => {
-    // Ensure we don't try to select more providers than available
-    const count = Math.min(numRandomProviders, filteredProviders.length);
-    
-    // Shuffle the providers array and take the first 'count' items
-    const shuffled = [...filteredProviders].sort(() => 0.5 - Math.random());
-    setSelectedProviders(shuffled.slice(0, count));
-  };
-
-  // Create a unified method for requesting random values
-  const requestRandom = async () => {
-    if (!isConnected || selectedProviders.length === 0) {
-      setError('Please connect your wallet and select at least one provider');
-      return;
-    }
-
-    const providerIds = selectedProviders.map(p => p.providerId);
-    const callbackId = `request-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    
-    setRequestLoading(true);
-    setRequestResult(null);
-    setError(null);
-
-    try {
-      // Use aoHelpers function instead of direct getRandomClient call
-      const result = await aoHelpers.createRandomRequest(providerIds, providerIds.length, callbackId);
-      
-      setRequestResult(`Request sent! Callback ID: ${callbackId}`);
-      console.log('Random request result:', result);
-    } catch (error: any) {
-      console.error('Error requesting random:', error);
-      setError(`Error requesting random: ${error.message || error}`);
-    } finally {
-      setRequestLoading(false);
-    }
-  };
-
-  // Handle the request button click - method selection is now just visual
-  const handleRequest = () => {
-    requestRandom();
-  };
 
   return (
     <div className="provider-management-section">
@@ -245,91 +183,9 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
         </div>
       </div>
       
-      <div className="provider-random-container">
-        {/* Request Random Panel - Now on top */}
-        <div className="request-panel">
-          <h3>Request Random</h3>
-          
-          <div className="selection-stats">
-            <div className="selected-count">
-              <span className="count-label">Selected Providers:</span>
-              <span className="count-value">{selectedProviders.length}</span>
-            </div>
-            
-            <div className="selection-actions">
-              <button
-                className="action-button"
-                onClick={selectAllProviders}
-                disabled={filteredProviders.length === 0}
-              >
-                <FiPlus /> Select All
-              </button>
-              <button
-                className="action-button"
-                onClick={clearSelectedProviders}
-                disabled={selectedProviders.length === 0}
-              >
-                <FiMinus /> Clear
-              </button>
-              <div className="random-selection">
-                <input
-                  type="number"
-                  min="1"
-                  max={filteredProviders.length}
-                  value={numRandomProviders}
-                  onChange={(e) => setNumRandomProviders(Math.max(1, Math.min(filteredProviders.length, parseInt(e.target.value) || 1)))}
-                  className="random-count-input"
-                />
-                <button
-                  className="action-button"
-                  onClick={selectRandomProviders}
-                  disabled={filteredProviders.length === 0}
-                >
-                  <FiShuffle /> Random
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="request-controls">
-            <div className="request-method-toggle">
-              <button
-                className={`method-button ${requestMethod === 'direct' ? 'active' : ''}`}
-                onClick={() => setRequestMethod('direct')}
-              >
-                Direct Request
-              </button>
-              <button
-                className={`method-button ${requestMethod === 'client' ? 'active' : ''}`}
-                onClick={() => setRequestMethod('client')}
-              >
-                Client Request
-              </button>
-            </div>
-            
-            <button
-              className="request-button"
-              onClick={handleRequest}
-              disabled={requestLoading || selectedProviders.length === 0 || !isConnected}
-            >
-              {requestLoading ? (
-                <ButtonSpinner />
-              ) : (
-                <>
-                  <FiSend />
-                  <span>Send Request</span>
-                </>
-              )}
-            </button>
-          </div>
-          
-          {error && <div className="request-error">{error}</div>}
-          {requestResult && <div className="request-success">{requestResult}</div>}
-        </div>
-
-        {/* Provider Grid/Table - Now below */}
-        <div className="providers-panel">
-          <h3>Providers</h3>
+      {/* Provider Grid/Table */}
+      <div className="providers-panel">
+        <h3>Providers</h3>
           
           {isLoading ? (
             <div className="loading-container">
@@ -342,17 +198,15 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
           ) : view === 'grid' ? (
             <div className="provider-grid">
               {filteredProviders.map(provider => {
-                const isSelected = selectedProviders.some(p => p.providerId === provider.providerId);
                 const isReinitializing = reinitializingProviders[provider.providerId];
                 const isReinitSuccess = reinitSuccessProviders[provider.providerId];
                 const needsReinit = (provider.providerActivity?.random_balance || 0) < 0;
                 const monitoringData = getProviderMonitoringData(provider);
-                
+
                 return (
                   <div
                     key={provider.providerId}
-                    className={`provider-card ${isSelected ? 'selected' : ''} ${needsReinit ? 'needs-reinit' : ''}`}
-                    onClick={() => toggleProviderSelection(provider)}
+                    className={`provider-card ${needsReinit ? 'needs-reinit' : ''}`}
                   >
                     <div className="provider-name">
                       {provider.providerInfo?.provider_details?.name || provider.providerId.slice(0, 4) + '...' + provider.providerId.slice(-4)}
@@ -474,10 +328,6 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
                         </button>
                       </div>
                     </div>
-                    
-                    {isSelected && (
-                      <div className="selected-indicator"><FiCheck /></div>
-                    )}
                   </div>
                 );
               })}
@@ -487,7 +337,6 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
               <table className="provider-table">
                 <thead>
                   <tr>
-                    <th>Select</th>
                     <th>Provider ID</th>
                     <th>Name</th>
                     <th>Random Available</th>
@@ -497,21 +346,13 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
                 </thead>
                 <tbody>
                   {filteredProviders.map(provider => {
-                    const isSelected = selectedProviders.some(p => p.providerId === provider.providerId);
                     const isReinitializing = reinitializingProviders[provider.providerId];
                     const isReinitSuccess = reinitSuccessProviders[provider.providerId];
                     const needsReinit = (provider.providerActivity?.random_balance || 0) < 0;
                     const monitoringData = getProviderMonitoringData(provider);
-                    
+
                     return (
                       <tr key={provider.providerId} className={needsReinit ? 'needs-reinit' : ''}>
-                        <td>
-                          <input 
-                            type="checkbox" 
-                            checked={isSelected}
-                            onChange={() => toggleProviderSelection(provider)}
-                          />
-                        </td>
                         <td className="provider-id-cell">{provider.providerId}</td>
                         <td>
                           {provider.providerInfo?.provider_details?.name || provider.providerId.slice(0, 4) + '...' + provider.providerId.slice(-4)}
@@ -597,7 +438,6 @@ const ProviderManagement: React.FC<ProviderManagementProps> = ({
               </table>
             </div>
           )}
-        </div>
       </div>
     </div>
   );
@@ -608,43 +448,10 @@ export default function Admin() {
   const [reinitializing, setReinitializing] = useState<{ [key: string]: boolean }>({});
   const [reinitSuccess, setReinitSuccess] = useState<{ [key: string]: boolean }>({});
   const [reinitAllLoading, setReinitAllLoading] = useState(false);
-  
-  // Token transfer state
-  const [walletBalance, setWalletBalance] = useState<string>('0');
-  const [recipientAddress, setRecipientAddress] = useState<string>('');
-  const [transferAmount, setTransferAmount] = useState<string>('');
-  const [transferLoading, setTransferLoading] = useState<boolean>(false);
-  const [transferSuccess, setTransferSuccess] = useState<boolean>(false);
-  const [transferError, setTransferError] = useState<string | null>(null);
-  const [loadingBalance, setLoadingBalance] = useState<boolean>(false);
-  
+
   // Get providers data from context
   const { providers, loading, error } = useProviders();
   const { address: connectedAddress, isConnected, isConnecting, isReady } = useWallet();
-  // Process IDs will be retrieved from RandomClient when needed
-
-  // Fetch wallet balance
-  const fetchWalletBalance = async () => {
-    if (!connectedAddress || !isConnected) return;
-    
-    setLoadingBalance(true);
-    try {
-      const balance = await aoHelpers.getWalletBalance(connectedAddress);
-      setWalletBalance(balance);
-    } catch (err) {
-      console.error('Error fetching wallet balance:', err);
-    } finally {
-      setLoadingBalance(false);
-    }
-  };
-
-  useEffect(() => {
-    // Just fetch wallet balance when address is available
-    // Providers are now handled by the context
-    if (connectedAddress && isConnected) {
-      fetchWalletBalance();
-    }
-  }, [connectedAddress, isConnected]);
 
   // Common function to handle provider actions
   const handleProviderAction = async (providerId: string, action: 'reinit' | 'restart' | 'turnOff') => {
@@ -903,71 +710,6 @@ export default function Admin() {
     }
   };
 
-  const handleSendTokens = async () => {
-    if (!isConnected || !window.arweaveWallet) {
-      alert('Please connect your wallet first.');
-      return;
-    }
-
-    if (!recipientAddress) {
-      setTransferError('Please enter a recipient address.');
-      return;
-    }
-
-    if (!transferAmount || parseFloat(transferAmount) <= 0) {
-      setTransferError('Please enter a valid amount.');
-      return;
-    }
-
-    setTransferLoading(true);
-    setTransferSuccess(false);
-    setTransferError(null);
-
-    try {
-      const amount = parseFloat(transferAmount);
-      // Convert to token units with proper decimals
-      const tokenAmount = (amount * Math.pow(10, TOKEN_DECIMALS)).toString();
-
-      // Create RNGToken client with default builder
-      const tokenClient = await RNGToken.defaultBuilder()
-        // No need to override the defaults as they should be set to RandAO URLs
-        .build();
-      
-      // Use the token client to send tokens
-      await tokenClient.transfer(recipientAddress, tokenAmount);
-
-      // Reset form and show success
-      setTransferSuccess(true);
-      setRecipientAddress('');
-      setTransferAmount('');
-      
-      // Refresh balance after short delay
-      setTimeout(() => {
-        fetchWalletBalance();
-        setTransferSuccess(false);
-      }, 3000);
-    } catch (err) {
-      console.error('Error sending tokens:', err);
-      setTransferError(`Failed to send tokens: ${err}`);
-    } finally {
-      setTransferLoading(false);
-    }
-  };
-
-  const truncateAddress = (address: string) => {
-    if (!address) return '';
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
-  };
-
-  // Format balance for display
-  const formatBalance = (balanceStr: string) => {
-    try {
-      const balanceNum = parseFloat(balanceStr) / Math.pow(10, TOKEN_DECIMALS);
-      return balanceNum.toLocaleString(undefined, { maximumFractionDigits: 6 });
-    } catch (e) {
-      return '0';
-    }
-  };
 
   return (
     <div className="providers-page">
@@ -978,69 +720,13 @@ export default function Admin() {
         </header>
         <div className="content">
           {isConnected && (
-            <div className="admin-section token-transfer-section">
-              <h2>RANDAO Token Management</h2>
-              <div className="balance-display">
-                <span>Your Balance: </span>
-                {loadingBalance ? (
-                  <span className="loading-text">Loading...</span>
-                ) : (
-                  <span className="token-balance">{formatBalance(walletBalance)} RANDAO</span>
-                )}
-
-                <button onClick={fetchWalletBalance} className="refresh-button">
-                  <FiRefreshCw />
-                </button>
-              </div>
-              <div className="transfer-form">
-                <h3>Send Tokens</h3>
-                <div className="form-group">
-                  <label htmlFor="recipient">Recipient Address:</label>
-                  <input
-                    type="text"
-                    id="recipient"
-                    value={recipientAddress}
-                    onChange={(e) => setRecipientAddress(e.target.value)}
-                    placeholder="Enter recipient wallet address"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="amount">Amount:</label>
-                  <input
-                    type="number"
-                    id="amount"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                    placeholder="Enter amount to send"
-                    min="0"
-                    step="0.000001"
-                  />
-                </div>
-                <button 
-                  className="send-button" 
-                  onClick={handleSendTokens}
-                  disabled={transferLoading || !recipientAddress || !transferAmount}
-                >
-                  {transferLoading ? (
-                    <ButtonSpinner />
-                  ) : transferSuccess ? (
-                    <><FiCheck className="success-icon" /> Sent!</>
-                  ) : (
-                    <><FiSend /> Send Tokens</>
-                  )}
-                </button>
-                {transferError && <div className="error-message">{transferError}</div>}
-              </div>
-            </div>
-          )}
-
-          {isConnected && (
             <div className="admin-section provider-management-container">
-              <h2>Provider Management & Random Requests</h2>
-              <ProviderManagement 
-                providers={providers} 
-                isConnected={isConnected} 
+              <h2>Provider Management</h2>
+              <ProviderManagement
+                providers={providers}
+                isConnected={isConnected}
                 isLoading={loading}
+                error={error}
                 reinitializingProviders={reinitializing}
                 reinitSuccessProviders={reinitSuccess}
                 reinitAllLoading={reinitAllLoading}
@@ -1049,7 +735,7 @@ export default function Admin() {
                 onReinitializeProvider={handleReinitialize}
                 onRestartProvider={handleRestartProvider}
                 onTurnOffProvider={handleTurnOffProvider}
-                connectedAddress={connectedAddress} 
+                connectedAddress={connectedAddress}
               />
             </div>
           )}

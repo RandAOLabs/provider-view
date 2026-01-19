@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useWallet } from '../../contexts/WalletContext';
 import { aoHelpers } from '../../utils/ao-helpers';
 import UserBalanceSheet from '../../components/faucet/UserBalanceSheet';
+import SendTokens from '../../components/faucet/SendTokens';
+import RequestRandom from '../../components/faucet/RequestRandom';
 import './Faucet.css';
 
 const Faucet: React.FC = () => {
@@ -41,8 +43,9 @@ const Faucet: React.FC = () => {
 
   return (
     <div className="faucet-container">
-      <h1>RNG Test Token Faucet</h1>
-      
+      <h1>RandAO Faucet & Utilities</h1>
+
+      {/* Section 1: Faucet Exchange */}
       <div className="faucet-card">
         <div className="faucet-info">
           <h2>Exchange AO for RNG Test Tokens</h2>
@@ -53,7 +56,7 @@ const Faucet: React.FC = () => {
             <li>Become a RandAO provider</li>
             <li>Request random values for testing</li>
           </ul>
-          
+
           <div className="exchange-rate">
             <div className="token-exchange">
               <span className="token-amount">0.1 AO</span>
@@ -64,14 +67,14 @@ const Faucet: React.FC = () => {
         </div>
 
         {!isConnected ? (
-          <button 
-            className="connect-wallet-button" 
+          <button
+            className="connect-wallet-button"
             onClick={connectWallet}
           >
             Connect Wallet to Use Faucet
           </button>
         ) : (
-          <button 
+          <button
             className={`faucet-button ${isLoading ? 'loading' : ''}`}
             onClick={handleFaucetExchange}
             disabled={isLoading}
@@ -98,8 +101,15 @@ const Faucet: React.FC = () => {
           </div>
         )}
       </div>
-      
+
+      {/* Section 2: User Balance */}
       {isConnected && <UserBalanceSheet />}
+
+      {/* Section 3: Send Tokens */}
+      <SendTokens />
+
+      {/* Section 4: Request Random */}
+      <RequestRandom />
     </div>
   );
 };

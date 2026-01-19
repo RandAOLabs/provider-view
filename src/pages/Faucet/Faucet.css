@@ -1,13 +1,15 @@
 .faucet-container {
-  padding: 4rem 2rem;
+  padding: 2rem;
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   background: #ffffff;
 }
 
 .faucet-container h1 {
   text-align: center;
   font-size: 2.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
   color: #000000;
   font-weight: 600;
 }
@@ -19,12 +21,12 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   max-width: 800px;
-  margin: 0 auto;
+  margin: 0 auto 2rem auto;
   transition: transform 0.3s ease;
 }
 
 .faucet-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -142,4 +144,28 @@
 .tx-hash span {
   color: #212529;
   font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .faucet-container {
+    padding: 1rem;
+  }
+
+  .faucet-container h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .faucet-card {
+    padding: 1.5rem;
+  }
+
+  .token-amount {
+    font-size: 1.4rem;
+  }
+
+  .exchange-arrow {
+    font-size: 1.5rem;
+  }
 }
