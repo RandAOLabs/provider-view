@@ -16,7 +16,7 @@ export const Sidebar = () => {
         <img src={rngLogo} alt="RandAO Logo" />
       </div>
       <nav className="main-nav">
-        <Link to="/" className={`nav-item ${isActive('/') ? 'active' : ''}`}>
+        <Link to="/about" className={`nav-item ${isActive('/about') ? 'active' : ''}`}>
           <FiInfo />
           About
         </Link>
